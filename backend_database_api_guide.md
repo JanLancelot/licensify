@@ -174,3 +174,66 @@ The backend enforces the following security patterns which the frontend must be 
 2. **IDOR Protection:** Queries fetching user-specific records (e.g., `api.attempts.getAttemptWithAnswers`) enforce strict ownership checks. Ensure you only request attempts owned by the logged-in user, otherwise the API will throw an `Unauthorized` error.
 3. **Data Sanitization:** Endpoints that return test or quiz data (e.g., `api.quizzes.getQuizWithQuestions`) automatically strip sensitive fields like `correctChoiceId` and `explanation` to prevent cheating. These fields are only available when the attempt is graded and returned via `api.attempts.submitQuizAttempt`.
 4. **Rate Limiting:** Key mutations (`startQuizAttempt`, `recordAnswer`) are rate-limited. Ensure the frontend handles potential `Error("Rate limit exceeded")` exceptions gracefully, especially during network reconnection bursts.
+
+---
+
+## 6. Automated Backend Testing
+
+To ensure the backend functions remain secure, reliable, and regression-free, we have established an automated testing environment. Tests run against a mock database inside an in-memory execution context and do not require a running frontend.
+
+### Running Tests
+To run the test suite once (useful for CI/CD checks):
+```bash
+npm run test
+```
+
+To run tests in interactive watch mode (automatically re-runs when files are modified):
+```bash
+npx vitest
+```
+
+### Setup Overview
+*   **Test Runner:** [Vitest](https://vitest.dev/) (defined in [vitest.config.ts](file:///c:/Users/Adrian/OneDrive/Desktop/ReApp/react-native-repo/vitest.config.ts))
+*   **Mock Database:** `convex-test` (manages mock clients, mock database transactions, and component mocking)
+*   **Test File Location:** Backend tests are located inside the `convex/` directory with a `.test.ts` extension (e.g., [attempts.test.ts](file:///c:/Users/Adrian/OneDrive/Desktop/ReApp/react-native-repo/convex/attempts.test.ts)).
+*   **Scenarios Covered:**
+    1.  **Data Sanitization:** Ensures answer keys (`correctChoiceId` and `explanation`) are stripped from payloads.
+    2.  **IDOR Protection:** Validates that users cannot query attempts belonging to others.
+    3.  **Invalid Choice Validation:** Asserts that registering invalid choice IDs throws a validation error.
+    4.  **Quiz Start Rate Limiter:** Confirms the mutation limits starting too many quiz attempts.
+    5.  **Practice Quiz Size Limit:** Verifies that generating a practice quiz with >100 questions is blocked.
+    6.  **Answer Submission Rate Limiter:** Confirms that recording answers too quickly triggers the rate limiter.
+
+### Writing a New Test (Template)
+If you add new backend functions, create a test file in the `convex/` directory using this template:
+
+```typescript
+import { convexTest } from "convex-test";
+import { expect, test } from "vitest";
+import { api } from "./_generated/api";
+import schema from "./schema";
+import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
+
+test("Module description under test", async () => {
+  // 1. Initialize in-memory DB and register backend functions
+  const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+  
+  // 2. Register required components (e.g., rate-limiter component)
+  registerRateLimiter(t, "ratelimiter");
+
+  // 3. Setup Mock Identities (User Auth Context)
+  const student = t.withIdentity({ subject: "student_a_subject" });
+  const studentId = await student.mutation(api.users.storeUser, { username: "stud_a" });
+
+  // 4. Perform direct database seeding (if needed) bypassing validation
+  await t.run(async (ctx) => {
+    await ctx.db.patch(studentId, { role: "student" });
+  });
+
+  // 5. Execute queries/mutations and assert output behavior
+  const profile = await student.query(api.users.getCurrentUserProfile);
+  expect(profile).not.toBeNull();
+  expect(profile!.username).toBe("stud_a");
+});
+```
+
