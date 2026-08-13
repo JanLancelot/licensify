@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { and, eq, inArray } from 'drizzle-orm';
+import * as crypto from 'expo-crypto';
+import { useCallback, useEffect, useState } from 'react';
 import { db } from '../db/client';
 import * as schema from '../db/schema';
-import { eq, desc, and, inArray } from 'drizzle-orm';
-import * as crypto from 'expo-crypto';
 import { useSyncService } from '../services/useSyncService';
 
 /**
@@ -30,8 +30,30 @@ export function useLocalSubjects() {
   }, []);
 
   useEffect(() => {
-    fetchSubjects();
-  }, [fetchSubjects]);
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await db
+          .select()
+          .from(schema.subjects)
+          .where(eq(schema.subjects.isPublished, true))
+          .orderBy(schema.subjects.order);
+        if (active) {
+          setSubjects(data);
+        }
+      } catch (error) {
+        console.error('[useLocalSubjects] Error fetching:', error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return { subjects, loading, refetch: fetchSubjects };
 }
@@ -210,7 +232,7 @@ export function useLocalMaterials(subjectId: string, topicId?: string) {
         if (topicId) {
           conditions = and(conditions, eq(schema.materials.topicId, topicId))!;
         }
-        
+
         const data = await db
           .select()
           .from(schema.materials)
@@ -243,7 +265,7 @@ export function useLocalQuizzes(subjectId: string, topicId?: string) {
         if (topicId) {
           conditions = and(conditions, eq(schema.quizzes.topicId, topicId))!;
         }
-        
+
         const data = await db
           .select()
           .from(schema.quizzes)
@@ -276,7 +298,7 @@ export function useLocalFlashcards(subjectId: string, topicId?: string) {
         if (topicId) {
           conditions = and(conditions, eq(schema.flashcards.topicId, topicId))!;
         }
-        
+
         const data = await db
           .select()
           .from(schema.flashcards)
@@ -311,24 +333,24 @@ export function useLocalQuizWithQuestions(quizId: string) {
           .from(schema.quizzes)
           .where(eq(schema.quizzes.id, quizId))
           .limit(1);
-          
+
         if (quizData.length > 0) {
           const q = quizData[0];
           setQuiz(q);
-          
+
           let questionIds: string[] = [];
           try {
             questionIds = JSON.parse(q.questionIds as string);
           } catch (e) {
             console.error("Failed to parse questionIds", e);
           }
-          
+
           if (questionIds.length > 0) {
             const qs = await db
               .select()
               .from(schema.questions)
               .where(inArray(schema.questions.id, questionIds));
-              
+
             // Sort questions to match the order in questionIds
             const sortedQs = [...qs].sort((a, b) => {
               return questionIds.indexOf(a.id) - questionIds.indexOf(b.id);
