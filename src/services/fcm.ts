@@ -39,6 +39,7 @@ export async function requestFcmToken(): Promise<string | null> {
     }
 
     // Dynamic optional import for Firebase Messaging to avoid crash on Expo Go / Web without native build
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const messaging = require('@react-native-firebase/messaging')?.default;
     if (!messaging) {
       console.log('[FCM] Firebase messaging module not available, using fallback notification token');
