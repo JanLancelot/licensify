@@ -78,3 +78,73 @@ export const sendNotification = mutation({
     return notificationId;
   },
 });
+
+/**
+ * Mutation: Send a study room invite notification to another user.
+ */
+export const inviteUserToStudyRoom = mutation({
+  args: {
+    targetUserId: v.id("users"),
+    roomId: v.id("studyRooms"),
+  },
+  handler: async (ctx, args) => {
+    const sender = await requireUser(ctx);
+    const room = await ctx.db.get(args.roomId);
+
+    if (!room || room.status !== "active") {
+      throw new Error("Study room is not active.");
+    }
+
+    const now = Date.now();
+    const title = "Study Room Invite";
+    const body = `${sender.username} invited you to join "${room.name}" study session!`;
+
+    const notificationId = await ctx.db.insert("notifications", {
+      userId: args.targetUserId,
+      type: "study_room",
+      title,
+      body,
+      data: {
+        type: "study_room",
+        roomId: args.roomId,
+        inviterName: sender.username,
+      },
+      isRead: false,
+      createdAt: now,
+    });
+
+    return { success: true, notificationId };
+  },
+});
+
+/**
+ * Background / Admin Mutation: Triggers automated study reminders to active users.
+ */
+export const triggerStudyReminders = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const activeUsers = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    const now = Date.now();
+    let sentCount = 0;
+
+    for (const user of activeUsers) {
+      await ctx.db.insert("notifications", {
+        userId: user._id,
+        type: "exam",
+        title: "Daily ALE Board Exam Study Reminder",
+        body: "Time for your daily practice quiz! Keep your streak alive.",
+        data: { type: "exam" },
+        isRead: false,
+        createdAt: now,
+      });
+      sentCount++;
+    }
+
+    return { success: true, count: sentCount };
+  },
+});
+

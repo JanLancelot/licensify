@@ -132,3 +132,23 @@ export const getUserById = query({
     return await ctx.db.get(args.userId);
   },
 });
+
+/**
+ * Mutation to store or refresh FCM Push Notification token for user.
+ */
+export const updateFcmToken = mutation({
+  args: { fcmToken: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const now = Date.now();
+
+    await ctx.db.patch(user._id, {
+      fcmToken: args.fcmToken,
+      lastActiveAt: now,
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
