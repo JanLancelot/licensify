@@ -3,7 +3,9 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@convex-dev/rate-limiter": "^0.3.2",
     "@expo/ui": "~57.0.9",
+    "convex": "^1.17.4",
     "expo": "~57.0.11",
     "expo-constants": "~57.0.9",
     "expo-device": "~57.0.1",
