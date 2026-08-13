@@ -108,7 +108,7 @@ async function handleUpload(fileBlob: Blob) {
 
 | Function | Type | Parameters | Description |
 |---|---|---|---|
-| `api.quizzes.listQuizzes` | Query | `{ type?: "practice" \| "mock_exam" }` | List practice quizzes or mock exams |
+| `api.quizzes.listQuizzes` | Query | `{ type?: "practice" \| "mock_exam", paginationOpts }` | List quizzes (Paginated) |
 | `api.quizzes.getQuizWithQuestions` | Query | `{ quizId }` | Fetch quiz with populated question cards |
 | `api.quizzes.generatePracticeQuiz` | Mutation | `{ title, subjectId, topicId?, questionCount }` | Create dynamic practice quiz |
 | `api.attempts.startQuizAttempt` | Mutation | `{ quizId }` | Starts exam attempt (`in_progress`) |
@@ -163,3 +163,14 @@ To seed default Architecture Board Exam subjects, topics, flashcards, and questi
 ```bash
 npx convex run seed:seedDatabase
 ```
+
+---
+
+## 5. Security Patterns
+
+The backend enforces the following security patterns which the frontend must be aware of:
+
+1. **Pagination Required:** Endpoints returning unbounded lists (e.g., `api.quizzes.listQuizzes`) require `paginationOpts`. The frontend must use Convex's `usePaginatedQuery` hook to interact with these endpoints to prevent memory and bandwidth exhaustion.
+2. **IDOR Protection:** Queries fetching user-specific records (e.g., `api.attempts.getAttemptWithAnswers`) enforce strict ownership checks. Ensure you only request attempts owned by the logged-in user, otherwise the API will throw an `Unauthorized` error.
+3. **Data Sanitization:** Endpoints that return test or quiz data (e.g., `api.quizzes.getQuizWithQuestions`) automatically strip sensitive fields like `correctChoiceId` and `explanation` to prevent cheating. These fields are only available when the attempt is graded and returned via `api.attempts.submitQuizAttempt`.
+4. **Rate Limiting:** Key mutations (`startQuizAttempt`, `recordAnswer`) are rate-limited. Ensure the frontend handles potential `Error("Rate limit exceeded")` exceptions gracefully, especially during network reconnection bursts.

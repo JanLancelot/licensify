@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./authHelpers";
+import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
+import { components } from "./_generated/api";
+
+const rateLimiter = new RateLimiter((components as any).ratelimiter, {
+  startQuizAttempt: { kind: "token bucket", rate: 5, period: MINUTE, capacity: 5 },
+  recordAnswer: { kind: "token bucket", rate: 60, period: MINUTE, capacity: 20 },
+});
 
 /**
  * Mutation: Start a new attempt for a quiz or mock exam.
@@ -9,6 +16,14 @@ export const startQuizAttempt = mutation({
   args: { quizId: v.id("quizzes") },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+
+    const { ok, retryAfter } = await rateLimiter.limit(ctx, "startQuizAttempt", {
+      key: user._id,
+    });
+    if (!ok) {
+      throw new Error(`Too many quiz attempts. Please try again in ${Math.round(retryAfter / 1000)}s.`);
+    }
+
     const quiz = await ctx.db.get(args.quizId);
 
     if (!quiz) {
@@ -40,6 +55,14 @@ export const recordAnswer = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+
+    const { ok, retryAfter } = await rateLimiter.limit(ctx, "recordAnswer", {
+      key: user._id,
+    });
+    if (!ok) {
+      throw new Error(`Rate limit exceeded. Please wait ${Math.round(retryAfter / 1000)}s before submitting another answer.`);
+    }
+
     const attempt = await ctx.db.get(args.attemptId);
 
     if (!attempt || attempt.userId !== user._id) {
@@ -53,6 +76,11 @@ export const recordAnswer = mutation({
     const question = await ctx.db.get(args.questionId);
     if (!question) {
       throw new Error("Question not found.");
+    }
+
+    const validChoice = question.choices.find(c => c.id === args.selectedChoiceId);
+    if (!validChoice) {
+      throw new Error("Invalid answer choice ID.");
     }
 
     // Check correctness against question's correctChoiceId
@@ -85,6 +113,7 @@ export const recordAnswer = mutation({
     }
   },
 });
+
 
 /**
  * Mutation: Submit quiz attempt, calculate score, and finalize attempt record.
@@ -138,8 +167,13 @@ export const submitQuizAttempt = mutation({
 export const getAttemptWithAnswers = query({
   args: { attemptId: v.id("quizAttempts") },
   handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
     const attempt = await ctx.db.get(args.attemptId);
     if (!attempt) return null;
+
+    if (attempt.userId !== user._id) {
+      throw new Error("Unauthorized to view this attempt");
+    }
 
     const quiz = await ctx.db.get(attempt.quizId);
     const answers = await ctx.db

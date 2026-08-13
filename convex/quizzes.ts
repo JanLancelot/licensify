@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireContentManager, requireUser } from "./authHelpers";
+import { paginationOptsValidator } from "convex/server";
 
 /**
  * Public/Student query: List published quizzes filtered by type (practice or mock_exam).
@@ -8,6 +9,7 @@ import { requireContentManager, requireUser } from "./authHelpers";
 export const listQuizzes = query({
   args: {
     type: v.optional(v.union(v.literal("practice"), v.literal("mock_exam"))),
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     let quizQuery = ctx.db.query("quizzes").filter((q) => q.eq(q.field("isPublished"), true));
@@ -17,10 +19,10 @@ export const listQuizzes = query({
         .query("quizzes")
         .withIndex("by_type", (q) => q.eq("type", args.type!))
         .filter((q) => q.eq(q.field("isPublished"), true))
-        .collect();
+        .paginate(args.paginationOpts);
     }
 
-    return await quizQuery.collect();
+    return await quizQuery.paginate(args.paginationOpts);
   },
 });
 
@@ -38,8 +40,14 @@ export const getQuizWithQuestions = query({
       quiz.questionIds.map(async (qId) => await ctx.db.get(qId))
     );
 
-    // Filter out deleted/null questions
-    const validQuestions = questions.filter((q) => q !== null && q.isPublished);
+    // Filter out deleted/null questions and strip sensitive fields
+    const validQuestions = questions
+      .filter((q) => q !== null && q.isPublished)
+      .map((q) => {
+        // Remove correctChoiceId and explanation so they don't leak to the client
+        const { correctChoiceId, explanation, ...safeQuestion } = q!;
+        return safeQuestion;
+      });
 
     return {
       ...quiz,
@@ -99,6 +107,10 @@ export const generatePracticeQuiz = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const now = Date.now();
+
+    if (args.questionCount > 100) {
+      throw new Error("Maximum 100 questions allowed per practice quiz.");
+    }
 
     // Query questions matching subject/topic
     let pool = await ctx.db
