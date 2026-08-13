@@ -34,6 +34,9 @@ export default defineSchema({
 
     isActive: v.boolean(),
 
+    fcmToken: v.optional(v.string()),
+    lastActiveAt: v.optional(v.number()),
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })
