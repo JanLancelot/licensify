@@ -1,7 +1,7 @@
+import { ConvexProvider, ConvexReactClient } from 'convex/react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
-import { ConvexProvider, ConvexReactClient } from 'convex/react';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
@@ -9,7 +9,7 @@ import { SyncProvider } from '@/components/SyncProvider';
 
 SplashScreen.preventAutoHideAsync();
 
-const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL || 'https://placeholder.convex.cloud';
+const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL || 'https://convex.dev';
 const convex = new ConvexReactClient(convexUrl, {
   unsavedChangesWarning: false,
 });
