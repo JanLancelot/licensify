@@ -5,7 +5,7 @@ import { useSyncService } from '../services/useSyncService';
 import { seedSampleData } from '../db/seed';
 
 export default function DebugSQLite() {
-  const { subjects, loading } = useLocalSubjects();
+  const { subjects, loading, refetch } = useLocalSubjects();
   const { syncDown } = useSyncService();
   const [seeding, setSeeding] = useState(false);
 
@@ -13,6 +13,7 @@ export default function DebugSQLite() {
     try {
       setSeeding(true);
       await seedSampleData();
+      await refetch?.();
       Alert.alert('Success', 'Sample database seeded! Switch to the Home tab to see subjects.');
     } catch (err: any) {
       Alert.alert('Seed Failed', err?.message || 'Error occurred while seeding');
