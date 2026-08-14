@@ -5,22 +5,32 @@ import {
   User,
   Award,
   BookMarked,
-  Settings,
   Flame,
   Shield,
   ChevronRight,
+  Sun,
+  Moon,
+  Smartphone,
+  Palette,
 } from 'lucide-react-native';
 
-import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme, ThemeMode } from '@/context/theme-context';
+import { Radius } from '@/constants/theme';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
+  const { colors, themeMode, setThemeMode, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
+
+  const themeOptions: { mode: ThemeMode; label: string; icon: typeof Sun }[] = [
+    { mode: 'system', label: 'System', icon: Smartphone },
+    { mode: 'light', label: 'Light', icon: Sun },
+    { mode: 'dark', label: 'Dark', icon: Moon },
+  ];
 
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -29,36 +39,36 @@ export default function ProfileScreen() {
         ]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.kicker, { color: theme.accent }]}>
+          <Text style={[styles.kicker, { color: colors.accent }]}>
             EXAMINEE PROFILE
           </Text>
-          <Text style={[styles.title, { color: theme.text }]}>
-            Study Statistics
+          <Text style={[styles.title, { color: colors.text }]}>
+            Account & Settings
           </Text>
         </View>
 
-        {/* Profile Card */}
+        {/* Profile Card with Sharp Corners */}
         <View
           style={[
             styles.profileCard,
             {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
             },
           ]}>
           <View
             style={[
               styles.avatar,
-              { backgroundColor: 'rgba(217, 119, 6, 0.15)' },
+              { backgroundColor: colors.accentMuted, borderColor: colors.border },
             ]}>
-            <User size={32} color={theme.accent} />
+            <User size={28} color={colors.accent} />
           </View>
           <View style={styles.profileInfo}>
-            <Text style={[styles.name, { color: theme.text }]}>
+            <Text style={[styles.name, { color: colors.text }]}>
               Architect Aspirant
             </Text>
-            <Text style={[styles.role, { color: theme.textSecondary }]}>
-              ALE 2026 Examinee
+            <Text style={[styles.role, { color: colors.textSecondary }]}>
+              ALE 2026 Board Examinee
             </Text>
           </View>
         </View>
@@ -69,13 +79,13 @@ export default function ProfileScreen() {
             style={[
               styles.statCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
               },
             ]}>
-            <Flame size={20} color={theme.accent} />
-            <Text style={[styles.statNumber, { color: theme.text }]}>14</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+            <Flame size={18} color={colors.accent} />
+            <Text style={[styles.statNumber, { color: colors.text }]}>14</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
               Day Streak
             </Text>
           </View>
@@ -84,13 +94,13 @@ export default function ProfileScreen() {
             style={[
               styles.statCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
               },
             ]}>
-            <Award size={20} color={theme.accent} />
-            <Text style={[styles.statNumber, { color: theme.text }]}>84%</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+            <Award size={18} color={colors.accent} />
+            <Text style={[styles.statNumber, { color: colors.text }]}>84%</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
               Avg Score
             </Text>
           </View>
@@ -99,51 +109,109 @@ export default function ProfileScreen() {
             style={[
               styles.statCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
               },
             ]}>
-            <BookMarked size={20} color={theme.accent} />
-            <Text style={[styles.statNumber, { color: theme.text }]}>142</Text>
-            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+            <BookMarked size={18} color={colors.accent} />
+            <Text style={[styles.statNumber, { color: colors.text }]}>142</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
               Saved Items
             </Text>
           </View>
         </View>
 
-        {/* Settings Links */}
-        <View style={styles.menuContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.menuItem,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}>
-            <Shield size={20} color={theme.textSecondary} />
-            <Text style={[styles.menuText, { color: theme.text }]}>
-              Syllabus Coverage Breakdown
+        {/* Appearance & Theme Setting Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Palette size={16} color={colors.accent} />
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+              APPEARANCE & THEME
             </Text>
-            <ChevronRight size={18} color={theme.textSecondary} />
-          </Pressable>
+          </View>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.menuItem,
+          <View
+            style={[
+              styles.themeSelectorContainer,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-                opacity: pressed ? 0.85 : 1,
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
               },
             ]}>
-            <Settings size={20} color={theme.textSecondary} />
-            <Text style={[styles.menuText, { color: theme.text }]}>
-              Reviewer Preferences & Timers
+            {themeOptions.map((opt) => {
+              const isSelected = themeMode === opt.mode;
+              const Icon = opt.icon;
+              return (
+                <Pressable
+                  key={opt.mode}
+                  onPress={() => setThemeMode(opt.mode)}
+                  style={[
+                    styles.themeOptionButton,
+                    isSelected && {
+                      backgroundColor: colors.accent,
+                      borderColor: colors.accent,
+                    },
+                  ]}>
+                  <Icon
+                    size={16}
+                    color={isSelected ? '#FFFFFF' : colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.themeOptionText,
+                      {
+                        color: isSelected ? '#FFFFFF' : colors.textSecondary,
+                        fontWeight: isSelected ? '700' : '500',
+                      },
+                    ]}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* General Links */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Shield size={16} color={colors.accent} />
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+              REVIEWER PREFERENCES
             </Text>
-            <ChevronRight size={18} color={theme.textSecondary} />
-          </Pressable>
+          </View>
+
+          <View style={styles.menuContainer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.menuItem,
+                {
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}>
+              <Text style={[styles.menuText, { color: colors.text }]}>
+                Syllabus Coverage Breakdown
+              </Text>
+              <ChevronRight size={18} color={colors.textSecondary} />
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.menuItem,
+                {
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}>
+              <Text style={[styles.menuText, { color: colors.text }]}>
+                Timer & Exam Mock Configurations
+              </Text>
+              <ChevronRight size={18} color={colors.textSecondary} />
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -162,13 +230,14 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   kicker: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     letterSpacing: 1.2,
     marginBottom: 2,
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 22,
@@ -178,63 +247,99 @@ const styles = StyleSheet.create({
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: Radius.lg, // Sharp professional edges
     borderWidth: 1,
-    gap: 16,
-    marginBottom: 16,
+    gap: 14,
+    marginBottom: 14,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 52,
+    height: 52,
+    borderRadius: Radius.md, // Sharp square avatar
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   profileInfo: {
-    gap: 4,
+    gap: 2,
   },
   name: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
   },
   role: {
-    fontSize: 13,
+    fontSize: 12,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     marginBottom: 20,
   },
   statCard: {
     flex: 1,
-    padding: 14,
-    borderRadius: 16,
+    padding: 12,
+    borderRadius: Radius.md, // Sharp corners
     borderWidth: 1,
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
   },
   statNumber: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  themeSelectorContainer: {
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    gap: 4,
+  },
+  themeOptionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: Radius.sm, // Crisp sharp button
+  },
+  themeOptionText: {
+    fontSize: 12,
+    letterSpacing: 0.2,
   },
   menuContainer: {
-    gap: 10,
+    gap: 8,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: Radius.md,
     borderWidth: 1,
-    gap: 12,
   },
   menuText: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '600',
-    flex: 1,
   },
 });

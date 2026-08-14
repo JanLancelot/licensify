@@ -1,14 +1,16 @@
+import React from 'react';
 import {
   Award,
   BookOpen,
   CheckCircle2,
   Clock,
-  Compass
+  Compass,
 } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
+import { Radius } from '@/constants/theme';
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -37,14 +39,17 @@ export default function HomeScreen() {
           <View
             style={[
               styles.badge,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+              },
             ]}>
-            <Compass size={18} color={theme.accent} />
+            <Compass size={16} color={theme.accent} />
             <Text style={[styles.badgeText, { color: theme.text }]}>ALE 2026</Text>
           </View>
         </View>
 
-        {/* Exam Countdown & Readiness Hero */}
+        {/* Readiness Hero Card with Sharp Architectural Edges */}
         <View
           style={[
             styles.heroCard,
@@ -55,13 +60,16 @@ export default function HomeScreen() {
           ]}>
           <View style={styles.heroHeader}>
             <View style={styles.heroTitleRow}>
-              <Award size={20} color={theme.accent} />
+              <Award size={18} color={theme.accent} />
               <Text style={[styles.heroSubtitle, { color: theme.textSecondary }]}>
                 Overall Readiness
               </Text>
             </View>
             <View
-              style={[styles.tag, { backgroundColor: 'rgba(217, 119, 6, 0.15)' }]}>
+              style={[
+                styles.tag,
+                { backgroundColor: theme.accentMuted, borderColor: theme.border },
+              ]}>
               <Text style={[styles.tagText, { color: theme.accent }]}>
                 72% Prepared
               </Text>
@@ -73,7 +81,11 @@ export default function HomeScreen() {
           </Text>
 
           {/* Quick Metrics */}
-          <View style={styles.metricsRow}>
+          <View
+            style={[
+              styles.metricsRow,
+              { borderTopColor: theme.border },
+            ]}>
             <View style={styles.metricItem}>
               <Clock size={16} color={theme.textSecondary} />
               <Text style={[styles.metricValue, { color: theme.text }]}>
@@ -105,15 +117,6 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
-
-        {/* Database Diagnostic & Sync Component */}
-        {/* <View style={styles.sectionHeader}>
-          <Sparkles size={16} color={theme.accent} />
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            DATABASE & ENGINE STATUS
-          </Text>
-        </View>
-        <DebugSQLite /> */}
       </ScrollView>
     </SafeAreaView>
   );
@@ -137,10 +140,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   kicker: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     letterSpacing: 1.2,
     marginBottom: 2,
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 22,
@@ -151,18 +155,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.sm, // Sharp badge
     borderWidth: 1,
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   heroCard: {
-    padding: 18,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: Radius.lg, // Sharp card edges
     borderWidth: 1,
     marginBottom: 24,
   },
@@ -182,16 +186,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.xs, // Sharp tag
+    borderWidth: 1,
   },
   tagText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   heroHeading: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     marginBottom: 16,
   },
@@ -201,7 +206,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(150, 150, 150, 0.15)',
   },
   metricItem: {
     alignItems: 'center',
@@ -218,16 +222,5 @@ const styles = StyleSheet.create({
   metricDivider: {
     width: 1,
     height: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
   },
 });

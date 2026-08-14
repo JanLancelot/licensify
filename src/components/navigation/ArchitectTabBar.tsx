@@ -5,14 +5,12 @@ import {
   Pressable,
   StyleSheet,
   Platform,
-  useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import {
   BookOpen,
@@ -23,11 +21,12 @@ import {
 } from 'lucide-react-native';
 import type { Tabs } from 'expo-router';
 
-import { Colors } from '@/constants/theme';
+import { Radius, ThemePalette } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 
-export type ArchitectTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
-
-type ThemePalette = (typeof Colors)[keyof typeof Colors];
+export type ArchitectTabBarProps = Parameters<
+  NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>
+>[0];
 
 interface TabItemConfig {
   name: string;
@@ -56,34 +55,17 @@ function TabItem({
   colors: ThemePalette;
 }) {
   const scale = useSharedValue(1);
-  const activeProgress = useSharedValue(isFocused ? 1 : 0);
-
-  React.useEffect(() => {
-    activeProgress.value = withTiming(isFocused ? 1 : 0, { duration: 220 });
-  }, [isFocused]);
 
   const animatedIconStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
-  const animatedIndicatorStyle = useAnimatedStyle(() => ({
-    opacity: activeProgress.value,
-    transform: [
-      {
-        scale: withSpring(activeProgress.value ? 1 : 0.4, {
-          damping: 15,
-          stiffness: 200,
-        }),
-      },
-    ],
-  }));
-
   const handlePressIn = () => {
-    scale.value = withSpring(0.88, { damping: 12, stiffness: 300 });
+    scale.value = withSpring(0.9, { damping: 14, stiffness: 350 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 12, stiffness: 300 });
+    scale.value = withSpring(1, { damping: 14, stiffness: 350 });
   };
 
   const IconComponent = config.Icon;
@@ -100,17 +82,9 @@ function TabItem({
       style={styles.tabButton}>
       <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
         <IconComponent
-          size={22}
+          size={21}
           color={iconColor}
-          strokeWidth={isFocused ? 2.3 : 1.8}
-        />
-        {/* Active Pill Indicator */}
-        <Animated.View
-          style={[
-            styles.activeIndicator,
-            { backgroundColor: colors.tabActive },
-            animatedIndicatorStyle,
-          ]}
+          strokeWidth={isFocused ? 2.2 : 1.6}
         />
       </Animated.View>
 
@@ -144,11 +118,11 @@ function CenterHomeButton({
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.92, { damping: 10, stiffness: 350 });
+    scale.value = withSpring(0.92, { damping: 12, stiffness: 350 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 10, stiffness: 350 });
+    scale.value = withSpring(1, { damping: 12, stiffness: 350 });
   };
 
   return (
@@ -166,26 +140,14 @@ function CenterHomeButton({
             styles.centerButton,
             {
               backgroundColor: colors.tabCenterBg,
-              borderColor: isFocused ? colors.accent : colors.tabBarBorder,
-              shadowColor: colors.accent,
+              borderColor: isFocused ? colors.text : colors.tabCenterBorder,
             },
             animatedStyle,
           ]}>
-          {/* Architectural Drafting Crosshair/Accent background ring */}
-          <View
-            style={[
-              styles.centerRing,
-              {
-                borderColor: isFocused
-                  ? 'rgba(245, 158, 11, 0.4)'
-                  : 'rgba(255, 255, 255, 0.1)',
-              },
-            ]}
-          />
           <Building2
-            size={26}
+            size={24}
             color={colors.tabCenterIcon}
-            strokeWidth={2.4}
+            strokeWidth={2.2}
           />
         </Animated.View>
 
@@ -205,8 +167,7 @@ function CenterHomeButton({
 }
 
 export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTabBarProps) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
 
   const activeRouteName = state.routes[state.index]?.name;
@@ -216,7 +177,7 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
       style={[
         styles.outerContainer,
         {
-          paddingBottom: Math.max(insets.bottom, 12),
+          paddingBottom: Math.max(insets.bottom, 10),
         },
       ]}>
       <View
@@ -225,7 +186,7 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
           {
             backgroundColor: colors.tabBarBackground,
             borderColor: colors.tabBarBorder,
-            shadowColor: scheme === 'dark' ? '#000000' : '#0F172A',
+            shadowColor: isDark ? '#000000' : '#111827',
           },
         ]}>
         {TAB_CONFIGS.map((config) => {
@@ -287,23 +248,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    width: '94%',
-    maxWidth: 520,
-    height: 64,
-    borderRadius: 24,
+    width: '95%',
+    maxWidth: 500,
+    height: 60,
+    borderRadius: Radius.lg, // Sharper professional corners
     borderWidth: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     ...Platform.select({
       ios: {
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.16,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
       },
       android: {
-        elevation: 8,
+        elevation: 6,
       },
       web: {
-        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
       },
     }),
   },
@@ -311,69 +272,55 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
+    paddingVertical: 4,
     height: '100%',
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    height: 28,
-  },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: -4,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    height: 24,
   },
   tabLabel: {
-    fontSize: 11,
-    marginTop: 3,
-    letterSpacing: 0.2,
+    fontSize: 10.5,
+    marginTop: 4,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   centerButtonWrapper: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -24,
+    marginTop: -20,
   },
   centerPressable: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   centerButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 48,
+    height: 48,
+    borderRadius: Radius.md, // Sharp professional architectural square
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     ...Platform.select({
       ios: {
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
       },
       android: {
-        elevation: 10,
+        elevation: 8,
       },
       web: {
-        boxShadow: '0 6px 20px rgba(245, 158, 11, 0.35)',
+        boxShadow: '0 4px 14px rgba(200, 90, 50, 0.35)',
       },
     }),
   },
-  centerRing: {
-    position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-  },
   centerLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
     marginTop: 4,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
 });

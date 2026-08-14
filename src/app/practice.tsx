@@ -2,16 +2,15 @@ import React from 'react';
 import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  FileEdit,
   Zap,
   Flame,
   Shuffle,
   Clock,
-  Sparkles,
   ChevronRight,
 } from 'lucide-react-native';
 
 import { useTheme } from '@/hooks/use-theme';
+import { Radius } from '@/constants/theme';
 
 const PRACTICE_MODES = [
   {
@@ -86,9 +85,12 @@ export default function PracticeScreen() {
                 <View
                   style={[
                     styles.iconBox,
-                    { backgroundColor: 'rgba(217, 119, 6, 0.12)' },
+                    {
+                      backgroundColor: theme.accentMuted,
+                      borderColor: theme.border,
+                    },
                   ]}>
-                  <Icon size={22} color={theme.accent} />
+                  <Icon size={20} color={theme.accent} />
                 </View>
 
                 <View style={styles.cardContent}>
@@ -99,7 +101,10 @@ export default function PracticeScreen() {
                     <View
                       style={[
                         styles.badge,
-                        { backgroundColor: 'rgba(217, 119, 6, 0.12)' },
+                        {
+                          backgroundColor: theme.accentMuted,
+                          borderColor: theme.border,
+                        },
                       ]}>
                       <Text style={[styles.badgeText, { color: theme.accent }]}>
                         {item.badge}
@@ -137,10 +142,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   kicker: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     letterSpacing: 1.2,
     marginBottom: 2,
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 22,
@@ -148,26 +154,27 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   listContainer: {
-    gap: 12,
+    gap: 10,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 18,
+    padding: 14,
+    borderRadius: Radius.md, // Sharp clean edges
     borderWidth: 1,
-    gap: 14,
+    gap: 12,
   },
   iconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: Radius.sm, // Sharp square
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   cardContent: {
     flex: 1,
-    gap: 4,
+    gap: 2,
   },
   titleRow: {
     flexDirection: 'row',
@@ -176,14 +183,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
     flex: 1,
   },
   badge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: Radius.xs, // Sharp badge
+    borderWidth: 1,
   },
   badgeText: {
     fontSize: 10,

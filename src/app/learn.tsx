@@ -2,7 +2,6 @@ import React from 'react';
 import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  BookOpen,
   Layers,
   Building,
   Scale,
@@ -11,6 +10,7 @@ import {
 } from 'lucide-react-native';
 
 import { useTheme } from '@/hooks/use-theme';
+import { Radius } from '@/constants/theme';
 
 const MODULES = [
   {
@@ -85,9 +85,12 @@ export default function LearnScreen() {
                 <View
                   style={[
                     styles.iconBox,
-                    { backgroundColor: 'rgba(217, 119, 6, 0.12)' },
+                    {
+                      backgroundColor: theme.accentMuted,
+                      borderColor: theme.border,
+                    },
                   ]}>
-                  <Icon size={22} color={theme.accent} />
+                  <Icon size={20} color={theme.accent} />
                 </View>
 
                 <View style={styles.cardContent}>
@@ -128,10 +131,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   kicker: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     letterSpacing: 1.2,
     marginBottom: 2,
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 22,
@@ -139,29 +143,30 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   modulesContainer: {
-    gap: 12,
+    gap: 10,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 18,
+    padding: 14,
+    borderRadius: Radius.md, // Sharp clean edges
     borderWidth: 1,
-    gap: 14,
+    gap: 12,
   },
   iconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: Radius.sm, // Sharp square icon container
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   cardContent: {
     flex: 1,
-    gap: 3,
+    gap: 2,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
   },
   cardSubtext: {
@@ -171,6 +176,6 @@ const styles = StyleSheet.create({
   cardCount: {
     fontSize: 11,
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 2,
   },
 });

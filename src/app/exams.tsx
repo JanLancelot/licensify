@@ -2,15 +2,14 @@ import React from 'react';
 import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Target,
   FileCheck2,
-  Trophy,
   AlertCircle,
   ChevronRight,
   Timer,
 } from 'lucide-react-native';
 
 import { useTheme } from '@/hooks/use-theme';
+import { Radius } from '@/constants/theme';
 
 const MOCK_EXAMS = [
   {
@@ -68,11 +67,11 @@ export default function ExamsScreen() {
           style={[
             styles.noticeCard,
             {
-              backgroundColor: 'rgba(217, 119, 6, 0.08)',
-              borderColor: 'rgba(217, 119, 6, 0.25)',
+              backgroundColor: theme.accentMuted,
+              borderColor: theme.border,
             },
           ]}>
-          <AlertCircle size={18} color={theme.accent} />
+          <AlertCircle size={16} color={theme.accent} />
           <Text style={[styles.noticeText, { color: theme.text }]}>
             Simulations mirror official PRC ALE time limits, question weighting, and negative marking rules.
           </Text>
@@ -95,9 +94,12 @@ export default function ExamsScreen() {
                 <View
                   style={[
                     styles.iconBox,
-                    { backgroundColor: 'rgba(217, 119, 6, 0.12)' },
+                    {
+                      backgroundColor: theme.accentMuted,
+                      borderColor: theme.border,
+                    },
                   ]}>
-                  <FileCheck2 size={22} color={theme.accent} />
+                  <FileCheck2 size={20} color={theme.accent} />
                 </View>
                 <View style={styles.headerInfo}>
                   <Text style={[styles.cardTitle, { color: theme.text }]}>
@@ -105,7 +107,7 @@ export default function ExamsScreen() {
                   </Text>
                   <View style={styles.metaRow}>
                     <View style={styles.metaItem}>
-                      <Timer size={13} color={theme.textSecondary} />
+                      <Timer size={12} color={theme.textSecondary} />
                       <Text
                         style={[
                           styles.metaText,
@@ -133,7 +135,10 @@ export default function ExamsScreen() {
                 <View
                   style={[
                     styles.statusBadge,
-                    { backgroundColor: 'rgba(217, 119, 6, 0.12)' },
+                    {
+                      backgroundColor: theme.accentMuted,
+                      borderColor: theme.border,
+                    },
                   ]}>
                   <Text style={[styles.statusText, { color: theme.accent }]}>
                     {exam.status}
@@ -164,10 +169,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   kicker: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     letterSpacing: 1.2,
     marginBottom: 2,
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 22,
@@ -178,10 +184,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    padding: 14,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: Radius.md, // Sharp clean edges
     borderWidth: 1,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   noticeText: {
     fontSize: 12,
@@ -189,31 +195,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContainer: {
-    gap: 14,
+    gap: 10,
   },
   card: {
-    padding: 16,
-    borderRadius: 18,
+    padding: 14,
+    borderRadius: Radius.md, // Sharp clean edges
     borderWidth: 1,
-    gap: 14,
+    gap: 12,
   },
   cardHeader: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: Radius.sm, // Sharp square
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   headerInfo: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
   },
   metaRow: {
@@ -233,16 +240,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: 10,
     borderTopWidth: 1,
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.xs, // Sharp badge
+    borderWidth: 1,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
   },
 });
