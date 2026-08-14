@@ -7,6 +7,8 @@ import {
   AlertCircle,
   ChevronRight,
   Timer,
+  BookOpen,
+  Award,
 } from 'lucide-react-native';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -16,36 +18,42 @@ export const MOCK_EXAMS = [
   {
     id: 'area-1',
     title: 'Area 1: History, Theory, Planning & Laws',
-    questions: '100 Questions',
+    description: 'History of Architecture, Theory of Design, Urban & Regional Planning, RA 9266, NBCP (PD 1096).',
+    questions: '3 Demo Items (100 Official)',
     timeLimit: '3 Hours',
-    passingRate: 'Target: 70%',
+    passingRate: 'Passing: 70%',
     status: 'Ready to Start',
   },
   {
     id: 'area-2',
     title: 'Area 2: Structural, Utilities & Building Materials',
-    questions: '100 Questions',
+    description: 'Structural Conceptualization, Building Technology, MEPFS Systems, Specifications & Estimation.',
+    questions: '3 Demo Items (100 Official)',
     timeLimit: '3 Hours',
-    passingRate: 'Target: 70%',
+    passingRate: 'Passing: 70%',
     status: 'Ready to Start',
   },
   {
     id: 'area-3',
-    title: 'Area 3: Architectural Design & Site Planning Simulation',
-    questions: 'Design Scenario + Computations',
+    title: 'Area 3: Architectural Design & Site Planning',
+    description: 'Design problem scenarios, space programming, site planning, zoning analysis and Rule 7 & 8 computations.',
+    questions: 'Design Scenario',
     timeLimit: '6 Hours',
-    passingRate: 'Target: 70%',
+    passingRate: 'Passing: 70%',
     status: 'Mock Board Sim',
   },
 ];
 
-export default function ExamsScreen() {
+export default function ExamsSelectionScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const handleStartExam = (id: string) => {
-    router.push(`/(tabs)/exams/${id}` as any);
+  const handleSelectExam = (id: string) => {
+    router.push({
+      pathname: '/(tabs)/exams/details',
+      params: { id },
+    });
   };
 
   return (
@@ -61,10 +69,10 @@ export default function ExamsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.kicker, { color: theme.accent }]}>
-            FULL SIMULATION
+            PRC ALE SIMULATION
           </Text>
           <Text style={[styles.title, { color: theme.text }]}>
-            Mock Board Exams
+            Select Mock Exam
           </Text>
         </View>
 
@@ -79,7 +87,7 @@ export default function ExamsScreen() {
           ]}>
           <AlertCircle size={16} color={theme.accent} />
           <Text style={[styles.noticeText, { color: theme.text }]}>
-            Simulations mirror official PRC ALE time limits, question weighting, and negative marking rules.
+            Select a subject area below to review instructions and start the timed multiple-choice simulation.
           </Text>
         </View>
 
@@ -88,7 +96,7 @@ export default function ExamsScreen() {
           {MOCK_EXAMS.map((exam) => (
             <Pressable
               key={exam.id}
-              onPress={() => handleStartExam(exam.id)}
+              onPress={() => handleSelectExam(exam.id)}
               style={({ pressed }) => [
                 styles.card,
                 {
@@ -111,6 +119,10 @@ export default function ExamsScreen() {
                 <View style={styles.headerInfo}>
                   <Text style={[styles.cardTitle, { color: theme.text }]}>
                     {exam.title}
+                  </Text>
+                  <Text
+                    style={[styles.cardDesc, { color: theme.textSecondary }]}>
+                    {exam.description}
                   </Text>
                   <View style={styles.metaRow}>
                     <View style={styles.metaItem}>
@@ -230,10 +242,16 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: '700',
   },
+  cardDesc: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginTop: 4,
   },
   metaItem: {
     flexDirection: 'row',
@@ -241,7 +259,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 11.5,
   },
   cardFooter: {
     flexDirection: 'row',

@@ -15,6 +15,8 @@ export default function ExamsLayout() {
         },
       }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="details" options={{ headerShown: false }} />
+      <Stack.Screen name="session" options={{ headerShown: false }} />
       <Stack.Screen name="[id]" options={{ headerShown: false }} />
     </Stack>
   );
