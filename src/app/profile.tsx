@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: Radius.md,
+    borderRadius: 26, // Circular profile avatar
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
