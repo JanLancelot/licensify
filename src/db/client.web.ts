@@ -98,7 +98,7 @@ function matchesCondition(item: any, condition: any): boolean {
         return condition.values.includes(item[col]);
       }
     }
-  } catch (_e) {
+  } catch {
     // If AST parsing fails, retain item
     return true;
   }

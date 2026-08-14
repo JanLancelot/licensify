@@ -34,3 +34,6 @@ jobs:
 
       - name: Run Automated Unit Tests (Vitest)
         run: npx vitest run
+
+      - name: Expo Web Build Export
+        run: npm run build:web
