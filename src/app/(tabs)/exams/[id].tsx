@@ -16,7 +16,7 @@ export default function ExamSimulationScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right', 'bottom']}
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Top Header */}
+      {/* Top Header with Instant Back */}
       <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
         <Pressable
           onPress={() => router.back()}
@@ -36,7 +36,7 @@ export default function ExamSimulationScreen() {
             EXAM SIMULATION
           </Text>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
-            {id ? id.toUpperCase() : 'MOCK BOARD'}
+            {id ? String(id).toUpperCase() : 'MOCK BOARD'}
           </Text>
         </View>
 

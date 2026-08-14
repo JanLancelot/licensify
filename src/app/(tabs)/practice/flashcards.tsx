@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
   RotateCw,
-  CheckCircle2,
-  XCircle,
-  Sparkles,
   BookOpen,
 } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
-  useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
 
@@ -52,7 +48,6 @@ const FLASHCARDS_DATA = [
 
 export default function FlashcardsScreen() {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -94,7 +89,7 @@ export default function FlashcardsScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right', 'bottom']}
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Top Header with Back Navigation */}
+      {/* Top Header with Instant Back Navigation */}
       <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
         <Pressable
           onPress={() => router.back()}

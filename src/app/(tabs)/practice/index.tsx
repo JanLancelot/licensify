@@ -3,57 +3,58 @@ import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
-  Layers,
-  Building,
-  Scale,
-  TreePine,
+  Zap,
+  Flame,
+  Shuffle,
+  Clock,
   ChevronRight,
 } from 'lucide-react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
 
-export const MODULES = [
+const PRACTICE_MODES = [
   {
-    id: 'history',
-    title: 'History & Theory of Architecture',
-    subtext: 'Ancient Egyptian to Contemporary Architecture',
-    icon: Building,
-    count: '34 Lessons',
+    id: 'flashcards',
+    title: 'Architectural Terms & Styles',
+    description: 'Flashcards on architectural orders, periods, and architects.',
+    icon: Shuffle,
+    badge: 'Flashcards',
+    route: '/(tabs)/practice/flashcards',
   },
   {
-    id: 'building-tech',
-    title: 'Building Technology & Utilities',
-    subtext: 'Structural Systems, MEPFS & Materials',
-    icon: Layers,
-    count: '48 Lessons',
+    id: 'daily-streak',
+    title: 'Daily 20-Question Drill',
+    description: 'Fresh curated questions across all areas to build habit.',
+    icon: Flame,
+    badge: 'Daily Streak',
+    route: '/(tabs)/practice/flashcards',
   },
   {
-    id: 'practice-law',
-    title: 'Professional Practice & Laws',
-    subtext: 'RA 9266, NBCP (PD 1096), Fire Code (RA 9514)',
-    icon: Scale,
-    count: '26 Lessons',
+    id: 'rule7-8',
+    title: 'Rule 7 & 8 NBCP Computation',
+    description: 'TOSL, AMBF, PSO, ISA, USA, and GFA practice problems.',
+    icon: Zap,
+    badge: 'High Yield',
+    route: '/(tabs)/practice/flashcards',
   },
   {
-    id: 'urban-planning',
-    title: 'Urban Planning & Site Planning',
-    subtext: 'Zoning, Subdivisions (BP 220, PD 957)',
-    icon: TreePine,
-    count: '19 Lessons',
+    id: 'timed-quiz',
+    title: 'Speed Challenge Drill',
+    description: '60 seconds per question with instant explanations.',
+    icon: Clock,
+    badge: 'Timed Mode',
+    route: '/(tabs)/practice/flashcards',
   },
 ];
 
-export default function LearnScreen() {
+export default function PracticeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const handleOpenModule = (id: string) => {
-    router.push({
-      pathname: '/learn/[id]',
-      params: { id },
-    });
+  const handleOpenPractice = (route: string) => {
+    router.push(route as any);
   };
 
   return (
@@ -69,21 +70,21 @@ export default function LearnScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.kicker, { color: theme.accent }]}>
-            CURRICULUM & SYLLABUS
+            HANDS-ON REVIEW
           </Text>
           <Text style={[styles.title, { color: theme.text }]}>
-            Board Exam Modules
+            Practice Arena
           </Text>
         </View>
 
-        {/* Modules List */}
-        <View style={styles.modulesContainer}>
-          {MODULES.map((item) => {
+        {/* Practice Modes */}
+        <View style={styles.listContainer}>
+          {PRACTICE_MODES.map((item) => {
             const Icon = item.icon;
             return (
               <Pressable
                 key={item.id}
-                onPress={() => handleOpenModule(item.id)}
+                onPress={() => handleOpenPractice(item.route)}
                 style={({ pressed }) => [
                   styles.card,
                   {
@@ -104,15 +105,26 @@ export default function LearnScreen() {
                 </View>
 
                 <View style={styles.cardContent}>
-                  <Text style={[styles.cardTitle, { color: theme.text }]}>
-                    {item.title}
-                  </Text>
+                  <View style={styles.titleRow}>
+                    <Text style={[styles.cardTitle, { color: theme.text }]}>
+                      {item.title}
+                    </Text>
+                    <View
+                      style={[
+                        styles.badge,
+                        {
+                          backgroundColor: theme.accentMuted,
+                          borderColor: theme.border,
+                        },
+                      ]}>
+                      <Text style={[styles.badgeText, { color: theme.accent }]}>
+                        {item.badge}
+                      </Text>
+                    </View>
+                  </View>
                   <Text
                     style={[styles.cardSubtext, { color: theme.textSecondary }]}>
-                    {item.subtext}
-                  </Text>
-                  <Text style={[styles.cardCount, { color: theme.accent }]}>
-                    {item.count}
+                    {item.description}
                   </Text>
                 </View>
 
@@ -152,7 +164,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.5,
   },
-  modulesContainer: {
+  listContainer: {
     gap: 10,
   },
   card: {
@@ -175,17 +187,29 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   cardTitle: {
     fontSize: 14.5,
+    fontWeight: '700',
+    flex: 1,
+  },
+  badge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: 10,
     fontWeight: '700',
   },
   cardSubtext: {
     fontSize: 12,
     lineHeight: 16,
-  },
-  cardCount: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
   },
 });

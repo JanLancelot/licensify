@@ -45,10 +45,7 @@ export default function ExamsScreen() {
   const router = useRouter();
 
   const handleStartExam = (id: string) => {
-    router.push({
-      pathname: '/exams/[id]',
-      params: { id },
-    });
+    router.push(`/(tabs)/exams/${id}` as any);
   };
 
   return (

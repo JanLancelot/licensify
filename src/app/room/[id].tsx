@@ -8,9 +8,11 @@ import { Id } from '../../../convex/_generated/dataModel';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function StudyRoomScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const roomId = id as Id<'studyRooms'>;
@@ -54,7 +56,7 @@ export default function StudyRoomScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <ThemedText type="small">← Back to Explorer</ThemedText>

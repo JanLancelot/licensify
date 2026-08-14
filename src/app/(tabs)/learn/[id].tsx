@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, BookOpen, Clock, CheckCircle2 } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
@@ -16,7 +16,7 @@ export default function ModuleDetailScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right', 'bottom']}
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Header */}
+      {/* Header with instant back */}
       <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
         <Pressable
           onPress={() => router.back()}
@@ -36,7 +36,7 @@ export default function ModuleDetailScreen() {
             CURRICULUM MODULE
           </Text>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
-            Module: {id ? id.toUpperCase() : 'DETAILS'}
+            Module: {id ? String(id).toUpperCase() : 'DETAILS'}
           </Text>
         </View>
       </View>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
 import {
   DarkTheme,
@@ -7,14 +7,20 @@ import {
   Stack,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as SystemUI from 'expo-system-ui';
 import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, View } from 'react-native';
+import { enableFreeze, enableScreens } from 'react-native-screens';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { SyncProvider } from '@/components/SyncProvider';
 import {
   ThemeProvider as AppThemeProvider,
   useAppTheme,
 } from '@/context/theme-context';
+
+// Keep screens pre-rendered in memory
+enableScreens(true);
+enableFreeze(false);
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,46 +30,65 @@ const convex = new ConvexReactClient(convexUrl, {
 });
 
 function AppLayoutContent() {
-  const { isDark } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
+
+  useEffect(() => {
+    // Hide splash screen on load
+    SplashScreen.hideAsync().catch(() => {});
+    // Dye system root view with active background
+    SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
+  }, [colors.background]);
+
+  const navigationTheme = {
+    dark: isDark,
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      background: colors.background,
+      card: colors.backgroundElement,
+      text: colors.text,
+      border: colors.border,
+      primary: colors.accent,
+    },
+    fonts: isDark ? DarkTheme.fonts : DefaultTheme.fonts,
+  };
 
   return (
-    <ExpoNavThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <SyncProvider>
-        <AnimatedSplashOverlay />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-          }}>
-          {/* Main 5-Tab Navigator */}
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <ExpoNavThemeProvider value={navigationTheme}>
+      <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <SyncProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_right',
+              animationDuration: 200,
+              gestureEnabled: true,
+              fullScreenGestureEnabled: true,
+              contentStyle: {
+                backgroundColor: colors.background,
+              },
+            }}>
+            {/* Main Tabs Navigator (Hosts nested tab stacks) */}
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.background },
+              }}
+            />
 
-          {/* Practice Sub-Pages */}
-          <Stack.Screen
-            name="practice/flashcards"
-            options={{ headerShown: false, presentation: 'card' }}
-          />
-
-          {/* Learn Detail Sub-Pages */}
-          <Stack.Screen
-            name="learn/[id]"
-            options={{ headerShown: false, presentation: 'card' }}
-          />
-
-          {/* Exam Simulator Sub-Pages */}
-          <Stack.Screen
-            name="exams/[id]"
-            options={{ headerShown: false, presentation: 'card' }}
-          />
-
-          {/* Study Room */}
-          <Stack.Screen
-            name="room/[id]"
-            options={{ headerShown: false, presentation: 'card' }}
-          />
-        </Stack>
-      </SyncProvider>
+            {/* Global Modals / Study Room */}
+            <Stack.Screen
+              name="room/[id]"
+              options={{
+                headerShown: false,
+                presentation: 'modal',
+                contentStyle: { backgroundColor: colors.background },
+              }}
+            />
+          </Stack>
+        </SyncProvider>
+      </View>
     </ExpoNavThemeProvider>
   );
 }
@@ -77,3 +102,9 @@ export default function RootLayout() {
     </ConvexProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+  },
+});
