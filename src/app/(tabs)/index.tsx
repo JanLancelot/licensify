@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: Radius.sm, // Sharp badge
+    borderRadius: Radius.sm,
     borderWidth: 1,
   },
   badgeText: {
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     padding: 16,
-    borderRadius: Radius.lg, // Sharp card edges
+    borderRadius: Radius.lg,
     borderWidth: 1,
     marginBottom: 24,
   },
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   tag: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: Radius.xs, // Sharp tag
+    borderRadius: Radius.xs,
     borderWidth: 1,
   },
   tagText: {

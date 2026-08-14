@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
   FileCheck2,
   AlertCircle,
@@ -11,9 +12,9 @@ import {
 import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
 
-const MOCK_EXAMS = [
+export const MOCK_EXAMS = [
   {
-    id: 'day1-am',
+    id: 'area-1',
     title: 'Area 1: History, Theory, Planning & Laws',
     questions: '100 Questions',
     timeLimit: '3 Hours',
@@ -21,7 +22,7 @@ const MOCK_EXAMS = [
     status: 'Ready to Start',
   },
   {
-    id: 'day1-pm',
+    id: 'area-2',
     title: 'Area 2: Structural, Utilities & Building Materials',
     questions: '100 Questions',
     timeLimit: '3 Hours',
@@ -29,7 +30,7 @@ const MOCK_EXAMS = [
     status: 'Ready to Start',
   },
   {
-    id: 'day2-full',
+    id: 'area-3',
     title: 'Area 3: Architectural Design & Site Planning Simulation',
     questions: 'Design Scenario + Computations',
     timeLimit: '6 Hours',
@@ -41,6 +42,14 @@ const MOCK_EXAMS = [
 export default function ExamsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+
+  const handleStartExam = (id: string) => {
+    router.push({
+      pathname: '/exams/[id]',
+      params: { id },
+    });
+  };
 
   return (
     <SafeAreaView
@@ -82,6 +91,7 @@ export default function ExamsScreen() {
           {MOCK_EXAMS.map((exam) => (
             <Pressable
               key={exam.id}
+              onPress={() => handleStartExam(exam.id)}
               style={({ pressed }) => [
                 styles.card,
                 {
@@ -185,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     padding: 12,
-    borderRadius: Radius.md, // Sharp clean edges
+    borderRadius: Radius.md,
     borderWidth: 1,
     marginBottom: 16,
   },
@@ -199,7 +209,7 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 14,
-    borderRadius: Radius.md, // Sharp clean edges
+    borderRadius: Radius.md,
     borderWidth: 1,
     gap: 12,
   },
@@ -210,7 +220,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 42,
     height: 42,
-    borderRadius: Radius.sm, // Sharp square
+    borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -246,7 +256,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: Radius.xs, // Sharp badge
+    borderRadius: Radius.xs,
     borderWidth: 1,
   },
   statusText: {

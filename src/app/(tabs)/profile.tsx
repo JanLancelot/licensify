@@ -51,7 +51,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        {/* Profile Card with Sharp Corners */}
+        {/* Profile Card with Circular Avatar */}
         <View
           style={[
             styles.profileCard,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: 26, // Circular profile avatar
+    borderRadius: 26, // Circular profile picture
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

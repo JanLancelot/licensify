@@ -1,12 +1,20 @@
+import React from 'react';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
-import { DarkTheme, DefaultTheme, ThemeProvider as ExpoNavThemeProvider } from 'expo-router';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as ExpoNavThemeProvider,
+  Stack,
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import { SyncProvider } from '@/components/SyncProvider';
-import { ThemeProvider as AppThemeProvider, useAppTheme } from '@/context/theme-context';
+import {
+  ThemeProvider as AppThemeProvider,
+  useAppTheme,
+} from '@/context/theme-context';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,7 +31,38 @@ function AppLayoutContent() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <SyncProvider>
         <AnimatedSplashOverlay />
-        <AppTabs />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}>
+          {/* Main 5-Tab Navigator */}
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+          {/* Practice Sub-Pages */}
+          <Stack.Screen
+            name="practice/flashcards"
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+
+          {/* Learn Detail Sub-Pages */}
+          <Stack.Screen
+            name="learn/[id]"
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+
+          {/* Exam Simulator Sub-Pages */}
+          <Stack.Screen
+            name="exams/[id]"
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+
+          {/* Study Room */}
+          <Stack.Screen
+            name="room/[id]"
+            options={{ headerShown: false, presentation: 'card' }}
+          />
+        </Stack>
       </SyncProvider>
     </ExpoNavThemeProvider>
   );
