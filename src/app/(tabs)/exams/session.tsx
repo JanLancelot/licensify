@@ -504,7 +504,13 @@ export default function ExamSessionScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => router.replace('/(tabs)/exams')}
+              onPress={() => {
+                if (router.canDismiss?.()) {
+                  router.dismissAll();
+                } else {
+                  router.replace('/(tabs)/exams' as any);
+                }
+              }}
               style={({ pressed }) => [
                 styles.finishBtn,
                 {

@@ -175,7 +175,23 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
 
-  const activeRouteName = state.routes[state.index]?.name;
+  const currentRoute = state.routes[state.index] as any;
+  const activeRouteName = currentRoute?.name;
+
+  // Check if current tab is in a nested sub-screen (e.g. flashcards, session, details, [id])
+  const nestedState = currentRoute?.state;
+  const isNestedSubScreen =
+    nestedState &&
+    typeof nestedState.index === 'number' &&
+    nestedState.index > 0;
+
+  const focusedDescriptor = descriptors[currentRoute?.key];
+  const isTabHiddenByOptions =
+    (focusedDescriptor?.options?.tabBarStyle as any)?.display === 'none';
+
+  if (isNestedSubScreen || isTabHiddenByOptions) {
+    return null;
+  }
 
   return (
     <View

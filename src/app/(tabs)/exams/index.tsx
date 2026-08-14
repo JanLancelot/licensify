@@ -51,7 +51,7 @@ export default function ExamsSelectionScreen() {
 
   const handleSelectExam = (id: string) => {
     router.push({
-      pathname: '/(tabs)/exams/details',
+      pathname: '/(tabs)/exams/details' as any,
       params: { id },
     });
   };

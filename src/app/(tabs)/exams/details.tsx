@@ -24,7 +24,7 @@ export default function ExamDetailsScreen() {
 
   const handleStartSession = () => {
     router.push({
-      pathname: '/(tabs)/exams/session',
+      pathname: '/(tabs)/exams/session' as any,
       params: { id: examId },
     });
   };
