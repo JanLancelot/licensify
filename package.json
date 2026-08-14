@@ -5,6 +5,7 @@
   "dependencies": {
     "@convex-dev/rate-limiter": "^0.3.2",
     "@expo/ui": "~57.0.9",
+    "@react-navigation/bottom-tabs": "^7.18.16",
     "convex": "^1.17.4",
     "drizzle-orm": "^0.45.2",
     "expo": "~57.0.11",

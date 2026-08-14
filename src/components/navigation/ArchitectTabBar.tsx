@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   Platform,
+  useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -12,7 +13,6 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  interpolateColor,
 } from 'react-native-reanimated';
 import {
   BookOpen,
@@ -21,10 +21,13 @@ import {
   Target,
   User,
 } from 'lucide-react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { Tabs } from 'expo-router';
 
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from 'react-native';
+
+export type ArchitectTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
+
+type ThemePalette = (typeof Colors)[keyof typeof Colors];
 
 interface TabItemConfig {
   name: string;
@@ -50,7 +53,7 @@ function TabItem({
   config: TabItemConfig;
   isFocused: boolean;
   onPress: () => void;
-  colors: typeof Colors.light;
+  colors: ThemePalette;
 }) {
   const scale = useSharedValue(1);
   const activeProgress = useSharedValue(isFocused ? 1 : 0);
@@ -132,7 +135,7 @@ function CenterHomeButton({
 }: {
   isFocused: boolean;
   onPress: () => void;
-  colors: typeof Colors.light;
+  colors: ThemePalette;
 }) {
   const scale = useSharedValue(1);
 
@@ -201,7 +204,7 @@ function CenterHomeButton({
   );
 }
 
-export function ArchitectTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTabBarProps) {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const insets = useSafeAreaInsets();
@@ -214,7 +217,6 @@ export function ArchitectTabBar({ state, descriptors, navigation }: BottomTabBar
         styles.outerContainer,
         {
           paddingBottom: Math.max(insets.bottom, 12),
-          backgroundColor: colors.background,
         },
       ]}>
       <View
