@@ -7,10 +7,7 @@ import {
   RotateCw,
   BookOpen,
 } from 'lucide-react-native';
-import Animated, {
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import { MotiView, AnimatePresence } from 'moti';
 
 import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
@@ -53,21 +50,14 @@ export default function FlashcardsScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const flipRotation = useSharedValue(0);
-
   const currentCard = FLASHCARDS_DATA[currentIndex];
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
-    flipRotation.value = withSpring(isFlipped ? 0 : 180, {
-      damping: 14,
-      stiffness: 200,
-    });
   };
 
   const handleNext = () => {
     setIsFlipped(false);
-    flipRotation.value = 0;
     if (currentIndex < FLASHCARDS_DATA.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
@@ -77,7 +67,6 @@ export default function FlashcardsScreen() {
 
   const handlePrev = () => {
     setIsFlipped(false);
-    flipRotation.value = 0;
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     } else {
@@ -167,9 +156,18 @@ export default function FlashcardsScreen() {
               {isFlipped ? 'ANSWER / EXPLANATION' : 'QUESTION'}
             </Text>
 
-            <Text style={[styles.cardMainText, { color: theme.text }]}>
-              {isFlipped ? currentCard.answer : currentCard.question}
-            </Text>
+            <AnimatePresence exitBeforeEnter>
+              <MotiView
+                key={`${currentCard.id}-${isFlipped ? 'ans' : 'q'}`}
+                from={{ opacity: 0, translateY: 6 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                exit={{ opacity: 0, translateY: -6 }}
+                transition={{ type: 'timing', duration: 150 }}>
+                <Text style={[styles.cardMainText, { color: theme.text }]}>
+                  {isFlipped ? currentCard.answer : currentCard.question}
+                </Text>
+              </MotiView>
+            </AnimatePresence>
           </View>
 
           {/* Card Footer */}

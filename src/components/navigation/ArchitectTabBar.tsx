@@ -7,11 +7,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import { MotiView } from 'moti';
 import {
   BookOpen,
   FileEdit,
@@ -54,20 +50,7 @@ function TabItem({
   onPress: () => void;
   colors: ThemePalette;
 }) {
-  const scale = useSharedValue(1);
-
-  const animatedIconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.9, { damping: 14, stiffness: 350 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 14, stiffness: 350 });
-  };
-
+  const [isPressed, setIsPressed] = React.useState(false);
   const IconComponent = config.Icon;
   const iconColor = isFocused ? colors.tabActive : colors.tabInactive;
 
@@ -77,16 +60,19 @@ function TabItem({
       accessibilityState={{ selected: isFocused }}
       accessibilityLabel={config.label}
       onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
       style={styles.tabButton}>
-      <Animated.View style={[styles.iconContainer, animatedIconStyle]}>
+      <MotiView
+        animate={{ scale: isPressed ? 0.9 : 1 }}
+        transition={{ type: 'spring', damping: 14, stiffness: 350 }}
+        style={styles.iconContainer}>
         <IconComponent
           size={21}
           color={iconColor}
           strokeWidth={isFocused ? 2.2 : 1.6}
         />
-      </Animated.View>
+      </MotiView>
 
       <Text
         style={[
@@ -111,19 +97,7 @@ function CenterHomeButton({
   onPress: () => void;
   colors: ThemePalette;
 }) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    scale.value = withSpring(0.92, { damping: 12, stiffness: 350 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 12, stiffness: 350 });
-  };
+  const [isPressed, setIsPressed] = React.useState(false);
 
   return (
     <View style={styles.centerButtonWrapper}>
@@ -132,14 +106,15 @@ function CenterHomeButton({
         accessibilityState={{ selected: isFocused }}
         accessibilityLabel="Dashboard Home"
         onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
         style={styles.centerPressable}>
-        <Animated.View
+        <MotiView
+          animate={{ scale: isPressed ? 0.92 : 1 }}
+          transition={{ type: 'spring', damping: 12, stiffness: 350 }}
           style={[
             styles.centerButton,
             {
-              // Neutral background when not selected, Terracotta when selected
               backgroundColor: isFocused
                 ? colors.accent
                 : colors.backgroundElement,
@@ -147,14 +122,13 @@ function CenterHomeButton({
                 ? colors.accent
                 : colors.border,
             },
-            animatedStyle,
           ]}>
           <Building2
             size={23}
             color={isFocused ? '#FFFFFF' : colors.tabInactive}
             strokeWidth={isFocused ? 2.2 : 1.7}
           />
-        </Animated.View>
+        </MotiView>
 
         <Text
           style={[

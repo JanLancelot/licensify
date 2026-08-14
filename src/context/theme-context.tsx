@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useColorScheme as useDeviceColorScheme } from 'react-native';
 import { Colors, ThemePalette } from '@/constants/theme';
 

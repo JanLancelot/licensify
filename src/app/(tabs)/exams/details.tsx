@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Timer,
   FileCheck2,
-  AlertTriangle,
   CheckCircle,
   Play,
   ShieldCheck,

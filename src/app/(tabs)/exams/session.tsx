@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -93,6 +92,10 @@ export default function ExamSessionScreen() {
   const [secondsRemaining, setSecondsRemaining] = useState(1800); // 30 mins
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const handleSubmitExam = () => {
+    setIsSubmitted(true);
+  };
+
   // Timer countdown
   useEffect(() => {
     if (isSubmitted) return;
@@ -132,10 +135,6 @@ export default function ExamSessionScreen() {
       ...prev,
       [currentQ.id]: !prev[currentQ.id],
     }));
-  };
-
-  const handleSubmitExam = () => {
-    setIsSubmitted(true);
   };
 
   // Calculate score

@@ -7,8 +7,6 @@ import {
   AlertCircle,
   ChevronRight,
   Timer,
-  BookOpen,
-  Award,
 } from 'lucide-react-native';
 
 import { useTheme } from '@/hooks/use-theme';
