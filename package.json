@@ -43,9 +43,6 @@
     "convex-test": "^0.0.55",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.1",
-    "eslint-plugin-unused-imports": "^4.4.1",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.3.0",
     "typescript": "~6.0.3",
     "vitest": "^4.1.10"
   },
@@ -57,14 +54,7 @@
     "web": "expo start --web",
     "build:web": "expo export --platform web",
     "lint": "expo lint",
-    "lint:fix": "expo lint -- --fix",
-    "prepare": "husky",
     "test": "vitest run"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix"
-    ]
   },
   "private": true
 }
