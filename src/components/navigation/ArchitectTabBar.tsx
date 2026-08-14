@@ -139,15 +139,20 @@ function CenterHomeButton({
           style={[
             styles.centerButton,
             {
-              backgroundColor: colors.tabCenterBg,
-              borderColor: isFocused ? colors.text : colors.tabCenterBorder,
+              // Neutral background when not selected, Terracotta when selected
+              backgroundColor: isFocused
+                ? colors.accent
+                : colors.backgroundElement,
+              borderColor: isFocused
+                ? colors.accent
+                : colors.border,
             },
             animatedStyle,
           ]}>
           <Building2
-            size={24}
-            color={colors.tabCenterIcon}
-            strokeWidth={2.2}
+            size={23}
+            color={isFocused ? '#FFFFFF' : colors.tabInactive}
+            strokeWidth={isFocused ? 2.2 : 1.7}
           />
         </Animated.View>
 
@@ -156,7 +161,7 @@ function CenterHomeButton({
             styles.centerLabel,
             {
               color: isFocused ? colors.accent : colors.tabInactive,
-              fontWeight: isFocused ? '700' : '600',
+              fontWeight: isFocused ? '700' : '500',
             },
           ]}>
           Home
@@ -251,7 +256,7 @@ const styles = StyleSheet.create({
     width: '95%',
     maxWidth: 500,
     height: 60,
-    borderRadius: Radius.lg, // Sharper professional corners
+    borderRadius: Radius.lg,
     borderWidth: 1,
     paddingHorizontal: 6,
     ...Platform.select({
@@ -299,21 +304,21 @@ const styles = StyleSheet.create({
   centerButton: {
     width: 48,
     height: 48,
-    borderRadius: Radius.md, // Sharp professional architectural square
+    borderRadius: 24, // Retained circular shape
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     ...Platform.select({
       ios: {
         shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.18,
         shadowRadius: 6,
       },
       android: {
-        elevation: 8,
+        elevation: 6,
       },
       web: {
-        boxShadow: '0 4px 14px rgba(200, 90, 50, 0.35)',
+        boxShadow: '0 3px 12px rgba(0, 0, 0, 0.12)',
       },
     }),
   },

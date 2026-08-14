@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Pressable, Switch } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   User,
@@ -26,6 +26,10 @@ export default function ProfileScreen() {
     { mode: 'light', label: 'Light', icon: Sun },
     { mode: 'dark', label: 'Dark', icon: Moon },
   ];
+
+  const handleToggleDarkMode = (value: boolean) => {
+    setThemeMode(value ? 'dark' : 'light');
+  };
 
   return (
     <SafeAreaView
@@ -130,12 +134,41 @@ export default function ProfileScreen() {
             </Text>
           </View>
 
+          {/* Quick Dark Mode Toggle Card */}
+          <View
+            style={[
+              styles.switchRow,
+              {
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+              },
+            ]}>
+            <View style={styles.switchLabelGroup}>
+              {isDark ? (
+                <Moon size={18} color={colors.accent} />
+              ) : (
+                <Sun size={18} color={colors.accent} />
+              )}
+              <Text style={[styles.switchLabel, { color: colors.text }]}>
+                Dark Mode
+              </Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={handleToggleDarkMode}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor={isDark ? '#FFFFFF' : '#FFFFFF'}
+            />
+          </View>
+
+          {/* 3-Way Mode Segmented Selector */}
           <View
             style={[
               styles.themeSelectorContainer,
               {
                 backgroundColor: colors.backgroundElement,
                 borderColor: colors.border,
+                marginTop: 8,
               },
             ]}>
             {themeOptions.map((opt) => {
@@ -153,7 +186,7 @@ export default function ProfileScreen() {
                     },
                   ]}>
                   <Icon
-                    size={16}
+                    size={15}
                     color={isSelected ? '#FFFFFF' : colors.textSecondary}
                   />
                   <Text
@@ -248,7 +281,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: Radius.lg, // Sharp professional edges
+    borderRadius: Radius.lg,
     borderWidth: 1,
     gap: 14,
     marginBottom: 14,
@@ -256,7 +289,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: Radius.md, // Sharp square avatar
+    borderRadius: Radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -279,7 +312,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: 12,
-    borderRadius: Radius.md, // Sharp corners
+    borderRadius: Radius.md,
     borderWidth: 1,
     alignItems: 'center',
     gap: 2,
@@ -307,6 +340,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+  },
+  switchLabelGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  switchLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   themeSelectorContainer: {
     flexDirection: 'row',
     padding: 4,
@@ -320,8 +371,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
-    borderRadius: Radius.sm, // Crisp sharp button
+    paddingVertical: 9,
+    borderRadius: Radius.sm,
   },
   themeOptionText: {
     fontSize: 12,
