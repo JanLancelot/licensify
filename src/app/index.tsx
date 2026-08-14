@@ -1,18 +1,14 @@
-import React from 'react';
-import { StyleSheet, View, Text, ScrollView, Platform } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Compass,
   Award,
   BookOpen,
   CheckCircle2,
   Clock,
-  Sparkles,
+  Compass
 } from 'lucide-react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
-import { Spacing } from '@/constants/theme';
-import DebugSQLite from '@/components/DebugSQLite';
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -111,13 +107,13 @@ export default function HomeScreen() {
         </View>
 
         {/* Database Diagnostic & Sync Component */}
-        <View style={styles.sectionHeader}>
+        {/* <View style={styles.sectionHeader}>
           <Sparkles size={16} color={theme.accent} />
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             DATABASE & ENGINE STATUS
           </Text>
         </View>
-        <DebugSQLite />
+        <DebugSQLite /> */}
       </ScrollView>
     </SafeAreaView>
   );
