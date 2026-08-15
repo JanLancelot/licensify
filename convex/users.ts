@@ -18,17 +18,14 @@ export const storeUser = mutation({
       throw new Error("Unauthenticated call to storeUser");
     }
 
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
-      .first();
-
+    const existingUser = await getCurrentUser(ctx);
     const now = Date.now();
 
     if (existingUser !== null) {
       // Update existing user timestamp & optional fields
       await ctx.db.patch(existingUser._id, {
         updatedAt: now,
+        lastActiveAt: now,
         ...(args.username && { username: args.username }),
         ...(args.firstName && { firstName: args.firstName }),
         ...(args.lastName && { lastName: args.lastName }),
@@ -41,10 +38,11 @@ export const storeUser = mutation({
       args.username ??
       identity.nickname ??
       identity.name ??
-      `student_${identity.subject.slice(0, 6)}`;
+      (identity.email ? identity.email.split("@")[0] : `student_${identity.subject.slice(0, 6)}`);
 
     const newUserId = await ctx.db.insert("users", {
       userId: identity.subject,
+      email: identity.email,
       username: fallbackUsername,
       firstName: args.firstName ?? identity.givenName,
       lastName: args.lastName ?? identity.familyName,
@@ -52,9 +50,21 @@ export const storeUser = mutation({
       isActive: true,
       createdAt: now,
       updatedAt: now,
+      lastActiveAt: now,
     });
 
     return newUserId;
+  },
+});
+
+/**
+ * Query to fetch current authenticated user's role.
+ */
+export const getRole = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    return user ? user.role : null;
   },
 });
 

@@ -1,23 +1,23 @@
 import React from 'react';
 import {
-  View,
-  Text,
+  Platform,
   Pressable,
   StyleSheet,
-  Platform,
+  Text,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import {
   BookOpen,
-  FileEdit,
   Building2,
+  FileEdit,
   Target,
   User,
 } from 'lucide-react-native';
 import type { Tabs } from 'expo-router';
 
-import { Radius, ThemePalette } from '@/constants/theme';
+import { ThemePalette } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
 
 export type ArchitectTabBarProps = Parameters<
@@ -68,7 +68,7 @@ function TabItem({
         transition={{ type: 'spring', damping: 14, stiffness: 350 }}
         style={styles.iconContainer}>
         <IconComponent
-          size={21}
+          size={20}
           color={iconColor}
           strokeWidth={isFocused ? 2.2 : 1.6}
         />
@@ -124,7 +124,7 @@ function CenterHomeButton({
             },
           ]}>
           <Building2
-            size={23}
+            size={24}
             color={isFocused ? '#FFFFFF' : colors.tabInactive}
             strokeWidth={isFocused ? 2.2 : 1.7}
           />
@@ -152,7 +152,7 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
   const currentRoute = state.routes[state.index] as any;
   const activeRouteName = currentRoute?.name;
 
-  // Check if current tab is in a nested sub-screen (e.g. flashcards, session, details, [id])
+  // Check if current tab is in a nested sub-screen (e.g. flashcards, session, details, [id], quiz)
   const nestedState = currentRoute?.state;
   const isNestedSubScreen =
     nestedState &&
@@ -172,18 +172,13 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
       style={[
         styles.outerContainer,
         {
-          paddingBottom: Math.max(insets.bottom, 10),
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.tabBarBorder,
+          paddingBottom: Math.max(insets.bottom, 8),
+          shadowColor: isDark ? '#000000' : '#111827',
         },
       ]}>
-      <View
-        style={[
-          styles.barContainer,
-          {
-            backgroundColor: colors.tabBarBackground,
-            borderColor: colors.tabBarBorder,
-            shadowColor: isDark ? '#000000' : '#111827',
-          },
-        ]}>
+      <View style={styles.barContainer}>
         {TAB_CONFIGS.map((config) => {
           const isFocused =
             config.name === 'index'
@@ -234,34 +229,29 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-    pointerEvents: 'box-none',
+    width: '100%',
+    borderTopWidth: 1,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0 -2px 16px rgba(0, 0, 0, 0.05)',
+      },
+    }),
   },
   barContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    width: '95%',
-    maxWidth: 500,
-    height: 60,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 6,
-      },
-      web: {
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-      },
-    }),
+    width: '100%',
+    height: 56,
+    paddingHorizontal: 8,
   },
   tabButton: {
     flex: 1,
@@ -276,8 +266,8 @@ const styles = StyleSheet.create({
     height: 24,
   },
   tabLabel: {
-    fontSize: 10.5,
-    marginTop: 4,
+    fontSize: 10,
+    marginTop: 3,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
@@ -285,23 +275,23 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -20,
+    marginTop: -22,
   },
   centerPressable: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   centerButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24, // Retained circular shape
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     ...Platform.select({
       ios: {
         shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.18,
+        shadowOpacity: 0.16,
         shadowRadius: 6,
       },
       android: {
@@ -313,8 +303,8 @@ const styles = StyleSheet.create({
     }),
   },
   centerLabel: {
-    fontSize: 10.5,
-    marginTop: 4,
+    fontSize: 10,
+    marginTop: 3,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },

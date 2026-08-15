@@ -15,7 +15,7 @@ export default function PracticeLayout() {
         },
       }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="flashcards" options={{ headerShown: false }} />
+      <Stack.Screen name="quiz" options={{ headerShown: false }} />
     </Stack>
   );
 }
