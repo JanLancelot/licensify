@@ -1,13 +1,19 @@
 import React from 'react';
 import {
+  ArrowRight,
   Award,
   BookOpen,
   CheckCircle2,
+  ChevronRight,
   Clock,
-  Compass,
+  Play,
+  RotateCcw,
+  Sparkles,
+  Zap,
 } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
@@ -15,6 +21,7 @@ import { Radius } from '@/constants/theme';
 export default function HomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <SafeAreaView
@@ -22,97 +29,418 @@ export default function HomeScreen() {
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView
         style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* Header */}
+        {/* Clean Header */}
         <View style={styles.header}>
           <View>
             <Text style={[styles.kicker, { color: theme.accent }]}>
-              ARCHITECTURE LICENSURE EXAM
+              PRC LICENSURE EXAMINATION
             </Text>
             <Text style={[styles.title, { color: theme.text }]}>
-              Reviewer Dashboard
+              Dashboard
             </Text>
           </View>
           <View
             style={[
-              styles.badge,
+              styles.yearPill,
               {
                 backgroundColor: theme.backgroundElement,
                 borderColor: theme.border,
               },
             ]}>
-            <Compass size={16} color={theme.accent} />
-            <Text style={[styles.badgeText, { color: theme.text }]}>ALE 2026</Text>
+            <Text style={[styles.yearPillText, { color: theme.textSecondary }]}>
+              ALE 2026
+            </Text>
           </View>
         </View>
 
-        {/* Readiness Hero Card with Sharp Architectural Edges */}
-        <View
-          style={[
-            styles.heroCard,
-            {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
-            },
-          ]}>
-          <View style={styles.heroHeader}>
-            <View style={styles.heroTitleRow}>
-              <Award size={18} color={theme.accent} />
-              <Text style={[styles.heroSubtitle, { color: theme.textSecondary }]}>
-                Overall Readiness
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.tag,
-                { backgroundColor: theme.accentMuted, borderColor: theme.border },
-              ]}>
-              <Text style={[styles.tagText, { color: theme.accent }]}>
-                72% Prepared
-              </Text>
-            </View>
-          </View>
-
-          <Text style={[styles.heroHeading, { color: theme.text }]}>
-            Target: Topnotch Board Passer
+        {/* 1. OVERALL PROGRESS */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Overall Progress
           </Text>
 
-          {/* Quick Metrics */}
           <View
             style={[
-              styles.metricsRow,
-              { borderTopColor: theme.border },
+              styles.card,
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+              },
             ]}>
-            <View style={styles.metricItem}>
-              <Clock size={16} color={theme.textSecondary} />
-              <Text style={[styles.metricValue, { color: theme.text }]}>
-                128 hrs
+            {/* Top Score Summary */}
+            <View style={styles.progressHero}>
+              <View>
+                <Text style={[styles.progressBigNumber, { color: theme.accent }]}>
+                  74%
+                </Text>
+                <Text style={[styles.progressSubLabel, { color: theme.textSecondary }]}>
+                  Overall Readiness Score
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.statusPill,
+                  {
+                    backgroundColor: theme.accentMuted,
+                    borderColor: theme.border,
+                  },
+                ]}>
+                <Award size={13} color={theme.accent} />
+                <Text style={[styles.statusPillText, { color: theme.accent }]}>
+                  On Track
+                </Text>
+              </View>
+            </View>
+
+            {/* Clean Progress Bar */}
+            <View
+              style={[
+                styles.track,
+                { backgroundColor: theme.backgroundSelected },
+              ]}>
+              <View
+                style={[
+                  styles.fill,
+                  { width: '74%', backgroundColor: theme.accent },
+                ]}
+              />
+            </View>
+
+            {/* 3 Key Stats */}
+            <View
+              style={[styles.statsRow, { borderTopColor: theme.border }]}>
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: theme.text }]}>
+                  128h
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                  Study Time
+                </Text>
+              </View>
+
+              <View
+                style={[styles.statDivider, { backgroundColor: theme.border }]}
+              />
+
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: theme.text }]}>
+                  1,420
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                  Answered
+                </Text>
+              </View>
+
+              <View
+                style={[styles.statDivider, { backgroundColor: theme.border }]}
+              />
+
+              <View style={styles.statBox}>
+                <Text style={[styles.statValue, { color: theme.accent }]}>
+                  84%
+                </Text>
+                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                  Accuracy
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* 2. CONTINUE STUDYING */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Continue Studying
+          </Text>
+
+          <Pressable
+            onPress={() => router.push('/(tabs)/learn/practice-law' as any)}
+            style={({ pressed }) => [
+              styles.card,
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}>
+            <View style={styles.continueHeaderRow}>
+              <Text
+                style={[styles.continueTag, { color: theme.accent }]}>
+                MODULE 3 • PRACTICE & LAWS
               </Text>
-              <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>
-                Logged
+              <Text
+                style={[styles.continuePercent, { color: theme.textSecondary }]}>
+                65% Done
               </Text>
             </View>
-            <View style={[styles.metricDivider, { backgroundColor: theme.border }]} />
-            <View style={styles.metricItem}>
-              <BookOpen size={16} color={theme.textSecondary} />
-              <Text style={[styles.metricValue, { color: theme.text }]}>
-                1,420
+
+            <Text style={[styles.continueTitle, { color: theme.text }]}>
+              Rule 7 & 8: Classification of Occupancies
+            </Text>
+            <Text
+              style={[styles.continueSubtitle, { color: theme.textSecondary }]}>
+              Lesson 4 • NBCP PD 1096 Computations
+            </Text>
+
+            <View style={styles.continueFooter}>
+              <View
+                style={[
+                  styles.miniTrack,
+                  { backgroundColor: theme.backgroundSelected, flex: 1 },
+                ]}>
+                <View
+                  style={[
+                    styles.fill,
+                    { width: '65%', backgroundColor: theme.accent },
+                  ]}
+                />
+              </View>
+              <View
+                style={[
+                  styles.resumeButton,
+                  { backgroundColor: theme.accent },
+                ]}>
+                <Play size={11} color="#FFFFFF" fill="#FFFFFF" />
+                <Text style={styles.resumeButtonText}>Resume</Text>
+              </View>
+            </View>
+          </Pressable>
+        </View>
+
+        {/* 3. RECOMMENDED LESSONS */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Recommended Lessons
+            </Text>
+            <Pressable
+              onPress={() => router.push('/(tabs)/learn' as any)}
+              style={({ pressed }) => [
+                styles.seeAllBtn,
+                { opacity: pressed ? 0.6 : 1 },
+              ]}>
+              <Text style={[styles.seeAllText, { color: theme.accent }]}>
+                See all
               </Text>
-              <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>
-                Questions
+              <ArrowRight size={13} color={theme.accent} />
+            </Pressable>
+          </View>
+
+          <View
+            style={[
+              styles.groupedCard,
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+              },
+            ]}>
+            {/* Lesson 1 */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/learn/history' as any)}
+              style={({ pressed }) => [
+                styles.listItem,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}>
+              <View style={styles.listItemLeft}>
+                <Text style={[styles.listMeta, { color: theme.accent }]}>
+                  Area 1 • 15 min
+                </Text>
+                <Text style={[styles.listTitle, { color: theme.text }]}>
+                  Classical Greek & Roman Orders
+                </Text>
+              </View>
+              <ChevronRight size={16} color={theme.textSecondary} />
+            </Pressable>
+
+            <View
+              style={[styles.itemDivider, { backgroundColor: theme.border }]}
+            />
+
+            {/* Lesson 2 */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/learn/building-tech' as any)}
+              style={({ pressed }) => [
+                styles.listItem,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}>
+              <View style={styles.listItemLeft}>
+                <Text style={[styles.listMeta, { color: theme.accent }]}>
+                  Area 2 • 25 min
+                </Text>
+                <Text style={[styles.listTitle, { color: theme.text }]}>
+                  Sanitary & Storm Drainage Systems
+                </Text>
+              </View>
+              <ChevronRight size={16} color={theme.textSecondary} />
+            </Pressable>
+
+            <View
+              style={[styles.itemDivider, { backgroundColor: theme.border }]}
+            />
+
+            {/* Lesson 3 */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/learn/practice-law' as any)}
+              style={({ pressed }) => [
+                styles.listItem,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}>
+              <View style={styles.listItemLeft}>
+                <Text style={[styles.listMeta, { color: theme.accent }]}>
+                  Area 3 • 20 min
+                </Text>
+                <Text style={[styles.listTitle, { color: theme.text }]}>
+                  RA 9266 Architecture Act & SPP 200
+                </Text>
+              </View>
+              <ChevronRight size={16} color={theme.textSecondary} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* 4. WEAK SUBJECTS */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Weak Subjects
+          </Text>
+
+          <View
+            style={[
+              styles.groupedCard,
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+              },
+            ]}>
+            {/* Weak Subject 1 */}
+            <View style={styles.weakItem}>
+              <View style={styles.weakItemInfo}>
+                <Text style={[styles.listTitle, { color: theme.text }]}>
+                  Building Utilities & MEPFS
+                </Text>
+                <Text style={[styles.weakMeta, { color: theme.textSecondary }]}>
+                  Area 2 • 48% accuracy on drills
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => router.push('/(tabs)/practice' as any)}
+                style={({ pressed }) => [
+                  styles.compactPracticeBtn,
+                  {
+                    backgroundColor: theme.backgroundSelected,
+                    borderColor: theme.borderStrong,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}>
+                <Zap size={12} color={theme.accent} />
+                <Text style={[styles.compactPracticeText, { color: theme.text }]}>
+                  Practice
+                </Text>
+              </Pressable>
+            </View>
+
+            <View
+              style={[styles.itemDivider, { backgroundColor: theme.border }]}
+            />
+
+            {/* Weak Subject 2 */}
+            <View style={styles.weakItem}>
+              <View style={styles.weakItemInfo}>
+                <Text style={[styles.listTitle, { color: theme.text }]}>
+                  Structural Concepts & Trusses
+                </Text>
+                <Text style={[styles.weakMeta, { color: theme.textSecondary }]}>
+                  Area 2 • 55% accuracy on drills
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => router.push('/(tabs)/practice' as any)}
+                style={({ pressed }) => [
+                  styles.compactPracticeBtn,
+                  {
+                    backgroundColor: theme.backgroundSelected,
+                    borderColor: theme.borderStrong,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}>
+                <Zap size={12} color={theme.accent} />
+                <Text style={[styles.compactPracticeText, { color: theme.text }]}>
+                  Practice
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        {/* 5. RECENT ACTIVITY */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Recent Activity
+          </Text>
+
+          <View
+            style={[
+              styles.groupedCard,
+              {
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.border,
+              },
+            ]}>
+            {/* Activity 1 */}
+            <View style={styles.activityRow}>
+              <View style={styles.activityMain}>
+                <Text style={[styles.listTitle, { color: theme.text }]}>
+                  PRC ALE Area 1 Mock Simulation
+                </Text>
+                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
+                  Score: 86% • Passed
+                </Text>
+              </View>
+              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
+                2h ago
               </Text>
             </View>
-            <View style={[styles.metricDivider, { backgroundColor: theme.border }]} />
-            <View style={styles.metricItem}>
-              <CheckCircle2 size={16} color={theme.accent} />
-              <Text style={[styles.metricValue, { color: theme.accent }]}>
-                84%
+
+            <View
+              style={[styles.itemDivider, { backgroundColor: theme.border }]}
+            />
+
+            {/* Activity 2 */}
+            <View style={styles.activityRow}>
+              <View style={styles.activityMain}>
+                <Text style={[styles.listTitle, { color: theme.text }]}>
+                  Terms & Styles Flashcards
+                </Text>
+                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
+                  35 terms mastered
+                </Text>
+              </View>
+              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
+                Yesterday
               </Text>
-              <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>
-                Accuracy
+            </View>
+
+            <View
+              style={[styles.itemDivider, { backgroundColor: theme.border }]}
+            />
+
+            {/* Activity 3 */}
+            <View style={styles.activityRow}>
+              <View style={styles.activityMain}>
+                <Text style={[styles.listTitle, { color: theme.text }]}>
+                  Rule 7 & 8 NBCP Computation Drill
+                </Text>
+                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
+                  Score: 90% (18/20)
+                </Text>
+              </View>
+              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
+                2d ago
               </Text>
             </View>
           </View>
@@ -132,12 +460,15 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 12,
+    gap: 22,
   },
+
+  /* Header */
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: -4,
   },
   kicker: {
     fontSize: 10.5,
@@ -147,80 +478,242 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  yearPill: {
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: Radius.sm,
     borderWidth: 1,
   },
-  badgeText: {
+  yearPillText: {
     fontSize: 11,
     fontWeight: '700',
   },
-  heroCard: {
-    padding: 16,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    marginBottom: 24,
+
+  /* Section Structure */
+  section: {
+    gap: 10,
   },
-  heroHeader: {
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+  },
+  sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  heroTitleRow: {
+  seeAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 3,
   },
-  heroSubtitle: {
-    fontSize: 13,
-    fontWeight: '600',
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
-  tag: {
+
+  /* Clean Containers */
+  card: {
+    padding: 16,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    gap: 12,
+  },
+  groupedCard: {
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+
+  /* Progress Card */
+  progressHero: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  progressBigNumber: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -1,
+    lineHeight: 34,
+  },
+  progressSubLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: Radius.xs,
     borderWidth: 1,
   },
-  tagText: {
+  statusPillText: {
     fontSize: 11,
     fontWeight: '700',
   },
-  heroHeading: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 16,
+  track: {
+    height: 6,
+    borderRadius: Radius.xs,
+    overflow: 'hidden',
   },
-  metricsRow: {
+  fill: {
+    height: '100%',
+    borderRadius: Radius.xs,
+  },
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
   },
-  metricItem: {
+  statBox: {
     alignItems: 'center',
     flex: 1,
     gap: 2,
   },
-  metricValue: {
-    fontSize: 15,
+  statValue: {
+    fontSize: 14,
     fontWeight: '700',
   },
-  metricLabel: {
+  statLabel: {
     fontSize: 11,
   },
-  metricDivider: {
+  statDivider: {
     width: 1,
-    height: 24,
+    height: 20,
+  },
+
+  /* Continue Card */
+  continueHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  continueTag: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  continuePercent: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  continueTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: -4,
+  },
+  continueSubtitle: {
+    fontSize: 12,
+    marginTop: -8,
+  },
+  continueFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  miniTrack: {
+    height: 4,
+    borderRadius: Radius.xs,
+    overflow: 'hidden',
+  },
+  resumeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.xs,
+  },
+  resumeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+
+  /* Grouped List Items (Recommended, Weak, Activity) */
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  listItemLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  listMeta: {
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  listTitle: {
+    fontSize: 13.5,
+    fontWeight: '600',
+  },
+  itemDivider: {
+    height: 1,
+    marginHorizontal: 14,
+  },
+
+  /* Weak Subjects */
+  weakItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  weakItemInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  weakMeta: {
+    fontSize: 11.5,
+  },
+  compactPracticeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+  },
+  compactPracticeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  /* Recent Activity */
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  activityMain: {
+    flex: 1,
+    gap: 2,
+  },
+  activitySub: {
+    fontSize: 11.5,
+  },
+  activityTimestamp: {
+    fontSize: 11,
   },
 });
