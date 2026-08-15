@@ -1,16 +1,8 @@
 import React, { useState } from 'react';
 import {
   ArrowLeft,
-  BookOpen,
-  Building,
-  CheckCircle2,
   ChevronRight,
-  Clock,
-  FileText,
-  Layers,
-  Scale,
   Search,
-  TreePine,
   X,
 } from 'lucide-react-native';
 import {

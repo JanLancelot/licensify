@@ -1,16 +1,7 @@
 import React from 'react';
 import {
-  AlertTriangle,
   ArrowRight,
-  BookOpen,
-  Bookmark,
   ChevronRight,
-  Compass,
-  FileText,
-  Flame,
-  Layers,
-  Sparkles,
-  Zap,
 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';

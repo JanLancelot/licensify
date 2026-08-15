@@ -2,18 +2,10 @@ import React, { useState } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
-  BookOpen,
-  Bookmark,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Flame,
-  Layers,
   Play,
-  RotateCw,
-  Sparkles,
   Star,
-  Zap,
 } from 'lucide-react-native';
 import {
   Pressable,

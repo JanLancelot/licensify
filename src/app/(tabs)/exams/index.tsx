@@ -1,18 +1,5 @@
 import React from 'react';
-import {
-  ArrowRight,
-  Award,
-  BookOpen,
-  Calendar,
-  CheckCircle2,
-  ChevronRight,
-  Clock,
-  FileCheck2,
-  Layers,
-  Sparkles,
-  Timer,
-  Zap,
-} from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import {
   Pressable,
   ScrollView,

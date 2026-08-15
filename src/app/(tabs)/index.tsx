@@ -2,13 +2,8 @@ import React from 'react';
 import {
   ArrowRight,
   Award,
-  BookOpen,
-  CheckCircle2,
   ChevronRight,
-  Clock,
   Play,
-  RotateCcw,
-  Sparkles,
   Zap,
 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
