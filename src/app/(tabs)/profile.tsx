@@ -1,39 +1,29 @@
-import React, { useState } from 'react';
+import {
+  Cloud,
+  Flame,
+  Lock,
+  Moon,
+  RotateCcw,
+  Smartphone,
+  Sun,
+  Trophy,
+  User,
+  Zap
+} from 'lucide-react-native';
+import { useState } from 'react';
 import {
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  AlertTriangle,
-  Award,
-  Bell,
-  CheckCircle2,
-  ChevronRight,
-  Cloud,
-  Flame,
-  Lock,
-  LogOut,
-  Moon,
-  RotateCcw,
-  Shield,
-  Smartphone,
-  Sparkles,
-  Sun,
-  Trophy,
-  User,
-  Volume2,
-  Zap,
-} from 'lucide-react-native';
 
-import { ThemeMode, useAppTheme } from '@/context/theme-context';
 import { Radius } from '@/constants/theme';
+import { ThemeMode, useAppTheme } from '@/context/theme-context';
 
 export default function ProfileScreen() {
   const { colors, themeMode, setThemeMode, isDark } = useAppTheme();
@@ -131,25 +121,11 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.profileInfo}>
-            <View style={styles.nameRow}>
-              <Text style={[styles.name, { color: colors.text }]}>
-                Architect Aspirant
-              </Text>
-              <View
-                style={[
-                  styles.verifiedBadge,
-                  {
-                    backgroundColor: colors.accentMuted,
-                    borderColor: colors.border,
-                  },
-                ]}>
-                <Text style={[styles.verifiedText, { color: colors.accent }]}>
-                  Candidate
-                </Text>
-              </View>
-            </View>
+            <Text style={[styles.name, { color: colors.text }]}>
+              Engr. Eleazar James Gapole
+            </Text>
             <Text style={[styles.role, { color: colors.textSecondary }]}>
-              Target: Topnotch Board Passer • ALE 2026
+              ALE 2026 Board Examinee
             </Text>
           </View>
         </View>
@@ -687,26 +663,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 3,
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
   name: {
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: -0.3,
-  },
-  verifiedBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  verifiedText: {
-    fontSize: 10,
-    fontWeight: '700',
   },
   role: {
     fontSize: 11.5,
