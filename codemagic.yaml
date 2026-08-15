@@ -9,7 +9,7 @@ workflows:
       groups:
         - app_credentials
       vars:
-        PACKAGE_NAME: "com.anonymous.reactnativerepo"
+        PACKAGE_NAME: "com.amorrissey.reactnativerepo"
       node: 20.11.0
       java: 17
     scripts:
@@ -44,7 +44,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.anonymous.reactnativerepo
+        bundle_identifier: com.amorrissey.reactnativerepo
       groups:
         - app_credentials
         - app_store_credentials
