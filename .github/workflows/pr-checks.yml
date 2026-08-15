@@ -35,5 +35,8 @@ jobs:
       - name: Run Automated Unit Tests (Vitest)
         run: npx vitest run
 
+      - name: Expo Prebuild Dry Run Validation
+        run: npx expo prebuild --clean --no-install
+
       - name: Expo Web Build Export
         run: npm run build:web
