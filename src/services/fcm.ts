@@ -2,29 +2,40 @@ import { router } from 'expo-router';
 import { Platform } from 'react-native';
 
 export interface PushNotificationPayload {
-  type?: 'study_room' | 'exam' | 'reminder' | 'announcement';
+  type?: 'study_room' | 'exam' | 'reminder' | 'announcement' | 'flashcards' | 'topic';
   roomId?: string;
   quizId?: string;
+  topicId?: string;
+  subjectId?: string;
   title?: string;
   body?: string;
+  data?: Record<string, unknown>;
 }
 
 /**
  * Parses push notification payload data and handles deep-linking navigation.
  */
-export function handleNotificationDeepLink(data?: Record<string, unknown>) {
+export function handleNotificationDeepLink(data?: Record<string, unknown> | PushNotificationPayload) {
   if (!data) return;
 
-  const type = data.type as string | undefined;
-  const roomId = data.roomId as string | undefined;
-  const quizId = data.quizId as string | undefined;
+  const type = (data as any).type as string | undefined;
+  const roomId = (data as any).roomId as string | undefined;
+  const quizId = (data as any).quizId as string | undefined;
+  const topicId = (data as any).topicId as string | undefined;
+  const subjectId = (data as any).subjectId as string | undefined;
 
-  if (type === 'study_room' && roomId) {
-    // Deep link to study room
-    router.push(`/room/${roomId}` as any);
-  } else if (type === 'exam' && quizId) {
-    // Deep link to quiz/exam
-    router.push(`/explore` as any);
+  try {
+    if (type === 'study_room' && roomId) {
+      router.push(`/room/${roomId}` as any);
+    } else if (type === 'exam' && quizId) {
+      router.push(`/explore` as any);
+    } else if (type === 'flashcards' && (topicId || subjectId)) {
+      router.push(`/explore` as any);
+    } else if (type === 'reminder' || type === 'announcement') {
+      router.push(`/` as any);
+    }
+  } catch (error) {
+    console.warn('[FCM] Failed to navigate on deep link:', error);
   }
 }
 
@@ -59,4 +70,60 @@ export async function requestFcmToken(): Promise<string | null> {
     console.warn('[FCM] Error requesting FCM token:', error);
   }
   return null;
+}
+
+/**
+ * Sets up foreground and background notification interaction listeners.
+ */
+export function setupNotificationListeners(
+  onNotificationReceived?: (notification: PushNotificationPayload) => void
+): () => void {
+  if (Platform.OS === 'web') {
+    return () => {};
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const messaging = require('@react-native-firebase/messaging')?.default;
+    if (!messaging) {
+      return () => {};
+    }
+
+    // 1. Foreground message listener
+    const unsubscribeForeground = messaging().onMessage(async (remoteMessage: any) => {
+      console.log('[FCM] Foreground notification received:', remoteMessage);
+      if (onNotificationReceived && remoteMessage?.data) {
+        onNotificationReceived(remoteMessage.data as PushNotificationPayload);
+      }
+    });
+
+    // 2. Notification opened app from background state
+    const unsubscribeOpenedApp = messaging().onNotificationOpenedApp((remoteMessage: any) => {
+      console.log('[FCM] Notification opened app from background:', remoteMessage);
+      if (remoteMessage?.data) {
+        handleNotificationDeepLink(remoteMessage.data);
+      }
+    });
+
+    // 3. Notification opened app from completely quit state (cold start)
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage: any) => {
+        if (remoteMessage?.data) {
+          console.log('[FCM] Initial notification loaded from quit state:', remoteMessage);
+          handleNotificationDeepLink(remoteMessage.data);
+        }
+      })
+      .catch((err: any) => {
+        console.warn('[FCM] Error checking initial notification:', err);
+      });
+
+    return () => {
+      unsubscribeForeground();
+      unsubscribeOpenedApp();
+    };
+  } catch (error) {
+    console.warn('[FCM] Could not attach native notification listeners:', error);
+    return () => {};
+  }
 }
