@@ -20,5 +20,20 @@ config.server = {
   },
 };
 
+// Fix for tslib export mismatch during web static export (SSR/Node)
+const originalResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'tslib') {
+    return {
+      filePath: require.resolve('tslib/tslib.es6.js'),
+      type: 'sourceFile',
+    };
+  }
+  if (originalResolveRequest) {
+    return originalResolveRequest(context, moduleName, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;
 

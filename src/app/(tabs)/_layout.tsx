@@ -1,12 +1,21 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { ArchitectTabBar } from './navigation/ArchitectTabBar';
+import { ArchitectTabBar } from '@/components/navigation/ArchitectTabBar';
+import { useAppTheme } from '@/context/theme-context';
 
-export default function AppTabs() {
+export default function TabLayout() {
+  const { colors } = useAppTheme();
+
   return (
     <Tabs
+      initialRouteName="index"
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
+        lazy: false, // Pre-render all tab screens so returning to them is instant
+        sceneStyle: {
+          backgroundColor: colors.background,
+        },
       }}
       tabBar={(props) => <ArchitectTabBar {...props} />}>
       <Tabs.Screen
@@ -37,13 +46,6 @@ export default function AppTabs() {
         name="profile"
         options={{
           title: 'Profile',
-        }}
-      />
-      {/* Hide explore from tab list if still in directory */}
-      <Tabs.Screen
-        name="explore"
-        options={{
-          href: null,
         }}
       />
     </Tabs>

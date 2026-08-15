@@ -1,4 +1,25 @@
 :root {
+  /* Architecture Brand - Terracotta Accents */
+  --color-accent-terracotta: #C85A32;
+  --color-accent-terracotta-light: #E07A5F;
+  --color-accent-terracotta-dark: #A9431E;
+  --color-accent-terracotta-muted: rgba(200, 90, 50, 0.12);
+
+  /* Light Theme */
+  --color-bg-light: #FBFBFC;
+  --color-card-light: #FFFFFF;
+  --color-border-light: #E5E7EB;
+  --color-text-light: #111827;
+  --color-text-secondary-light: #6B7280;
+
+  /* Dark Theme */
+  --color-bg-dark: #121316;
+  --color-card-dark: #1A1C20;
+  --color-border-dark: #272A30;
+  --color-text-dark: #F9FAFB;
+  --color-text-secondary-dark: #9CA3AF;
+
+  /* Typography */
   --font-display:
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
     Segoe UI Symbol, Noto Color Emoji;
@@ -6,4 +27,18 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+html, body, #root {
+  background-color: var(--color-bg-light);
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  html, body, #root {
+    background-color: var(--color-bg-dark);
+  }
 }
