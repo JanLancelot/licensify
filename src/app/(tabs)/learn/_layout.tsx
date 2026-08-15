@@ -15,6 +15,8 @@ export default function LearnLayout() {
         },
       }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="notes/index" options={{ headerShown: false }} />
+      <Stack.Screen name="flashcards/index" options={{ headerShown: false }} />
       <Stack.Screen name="[id]" options={{ headerShown: false }} />
     </Stack>
   );
