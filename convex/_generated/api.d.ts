@@ -9,8 +9,11 @@
  */
 
 import type * as attempts from "../attempts.js";
+import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
+import type * as crons from "../crons.js";
 import type * as flashcards from "../flashcards.js";
+import type * as http from "../http.js";
 import type * as materials from "../materials.js";
 import type * as notifications from "../notifications.js";
 import type * as questions from "../questions.js";
@@ -29,8 +32,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   attempts: typeof attempts;
+  auth: typeof auth;
   authHelpers: typeof authHelpers;
+  crons: typeof crons;
   flashcards: typeof flashcards;
+  http: typeof http;
   materials: typeof materials;
   notifications: typeof notifications;
   questions: typeof questions;
@@ -68,4 +74,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+};

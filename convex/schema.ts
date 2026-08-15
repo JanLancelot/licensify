@@ -1,3 +1,4 @@
+import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -5,7 +6,7 @@ import { v } from "convex/values";
  * Architecture Board Exam Review Platform — MVP Convex Database Schema
  *
  * Core Domains:
- * 1. USERS & ACCESS (users)
+ * 1. USERS & ACCESS (users + authTables)
  * 2. LEARNING CONTENT (subjects, topics, materials, flashcards)
  * 3. ASSESSMENTS (questions, quizzes, quizAttempts, quizAnswers)
  * 4. COLLABORATION (studyRooms, studyRoomMembers)
@@ -13,13 +14,16 @@ import { v } from "convex/values";
  */
 
 export default defineSchema({
+  ...authTables,
+
   // ---------------------------------------------------------------------------
   // 1. USERS & ACCESS
   // ---------------------------------------------------------------------------
   users: defineTable({
     // Convex Auth identifier string (unique identity mapping)
-    userId: v.string(),
+    userId: v.optional(v.string()),
 
+    email: v.optional(v.string()),
     username: v.string(),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
@@ -41,6 +45,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"])
+    .index("by_email", ["email"])
     .index("by_role", ["role"]),
 
   // ---------------------------------------------------------------------------

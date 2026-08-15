@@ -15,13 +15,38 @@ export async function getCurrentUser(
     return null;
   }
 
-  // Look up user by Convex Auth userId string index
-  const user = await ctx.db
+  // 1. Look up user by Convex Auth userId string index
+  let user = await ctx.db
     .query("users")
     .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
     .first();
 
-  return user;
+  if (user) {
+    return user;
+  }
+
+  // 2. Direct document ID lookup if identity.subject is the user _id
+  try {
+    const candidate = await ctx.db.get(identity.subject as any);
+    if (candidate && "role" in candidate && "isActive" in candidate) {
+      return candidate as Doc<"users">;
+    }
+  } catch {
+    // Subject string might not be a valid Id<"users"> format
+  }
+
+  // 3. Lookup by email if available in identity token
+  if (identity.email) {
+    user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .first();
+    if (user) {
+      return user;
+    }
+  }
+
+  return null;
 }
 
 /**
