@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useRouter, Link } from 'expo-router';
+import { Link } from 'expo-router';
 import { Mail, Lock, UserPlus, AlertCircle, User } from 'lucide-react-native';
 
 import { useAppTheme } from '@/context/theme-context';
@@ -27,7 +27,6 @@ export default function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const { signIn } = useAuthActions();
-  const router = useRouter();
   const theme = useAppTheme();
   const { colors } = theme;
 

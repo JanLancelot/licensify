@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { useRouter, Link } from 'expo-router';
+import { Link } from 'expo-router';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react-native';
 
 import { useAppTheme } from '@/context/theme-context';
@@ -24,7 +24,6 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const { signIn } = useAuthActions();
-  const router = useRouter();
   const theme = useAppTheme();
   const { colors } = theme;
 
@@ -129,7 +128,7 @@ export default function LoginScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              Don't have an account?{' '}
+              Don{"'"}t have an account?{' '}
             </Text>
             <Link href="/(auth)/register" asChild>
               <Pressable>

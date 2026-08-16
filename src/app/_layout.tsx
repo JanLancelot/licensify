@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ConvexProvider, ConvexReactClient, useConvexAuth } from 'convex/react';
+import { ConvexReactClient, useConvexAuth } from 'convex/react';
 import { ConvexAuthProvider } from '@convex-dev/auth/react';
 import {
   DarkTheme,
@@ -36,20 +36,20 @@ const convex = new ConvexReactClient(convexUrl, {
 const secureStorage = {
   getItem: async (key: string) => {
     if (Platform.OS === 'web') {
-      try { return localStorage.getItem(key); } catch (e) { return null; }
+      try { return localStorage.getItem(key); } catch { return null; }
     }
     return SecureStore.getItemAsync(key);
   },
   setItem: async (key: string, value: string) => {
     if (Platform.OS === 'web') {
-      try { localStorage.setItem(key, value); } catch (e) {}
+      try { localStorage.setItem(key, value); } catch {}
       return;
     }
     return SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key: string) => {
     if (Platform.OS === 'web') {
-      try { localStorage.removeItem(key); } catch (e) {}
+      try { localStorage.removeItem(key); } catch {}
       return;
     }
     return SecureStore.deleteItemAsync(key);
@@ -81,7 +81,7 @@ function AppLayoutContent() {
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, segments, isLoading]);
+  }, [isAuthenticated, segments, isLoading, router]);
 
   const navigationTheme = {
     dark: isDark,
