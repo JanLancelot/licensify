@@ -1,6 +1,8 @@
 [build]
   command = "npm run build:web"
   publish = "dist"
+  # Trigger Netlify rebuild with updated Convex environment variables
+
 
 [build.environment]
   NODE_VERSION = "20"
