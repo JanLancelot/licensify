@@ -8,11 +8,14 @@ import {
   Sun,
   Trophy,
   User,
-  Zap
+  Zap,
+  LogOut
 } from 'lucide-react-native';
 import { useState } from 'react';
+import { useAuthActions } from '@convex-dev/auth/react';
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +24,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 import { Radius } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
@@ -28,6 +32,30 @@ import { ThemeMode, useAppTheme } from '@/context/theme-context';
 export default function ProfileScreen() {
   const { colors, themeMode, setThemeMode, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { signOut } = useAuthActions();
+
+  const handleSignOut = async () => {
+    const doSignOut = async () => {
+      try {
+        await signOut();
+        router.replace('/(auth)/login');
+      } catch (e) {
+        console.error('Sign out error:', e);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to sign out?')) {
+        await doSignOut();
+      }
+    } else {
+      Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: doSignOut },
+      ]);
+    }
+  };
 
   // Settings & Notifications State
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -591,6 +619,32 @@ export default function ProfileScreen() {
                 </Text>
               </View>
               <RotateCcw size={15} color="#EF4444" />
+            </Pressable>
+
+            <View
+              style={[styles.itemDivider, { backgroundColor: colors.border }]}
+            />
+
+            {/* Logout Option */}
+            <Pressable
+              onPress={handleSignOut}
+              style={({ pressed }) => [
+                styles.accountLinkRow,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}>
+              <View style={styles.accountLinkInfo}>
+                <Text style={[styles.resetText, { color: '#EF4444' }]}>
+                  Sign Out
+                </Text>
+                <Text
+                  style={[
+                    styles.accountSubtext,
+                    { color: colors.textSecondary },
+                  ]}>
+                  Log out of your ReApp account.
+                </Text>
+              </View>
+              <LogOut size={15} color="#EF4444" />
             </Pressable>
           </View>
         </View>
