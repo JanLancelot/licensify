@@ -79,7 +79,6 @@ export const Spacing = {
   six: 64,
 } as const;
 
-// Professional Sharp Edge Radii
 export const Radius = {
   none: 0,
   xs: 2,
@@ -87,6 +86,7 @@ export const Radius = {
   md: 8,
   lg: 10,
   xl: 12,
+  full: 9999,
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
