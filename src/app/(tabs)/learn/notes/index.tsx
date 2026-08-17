@@ -18,12 +18,15 @@ import {
   Zap,
 } from 'lucide-react-native';
 import {
+  LayoutAnimation,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +34,13 @@ import { useRouter } from 'expo-router';
 
 import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
+
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface Lesson {
   id: string;
@@ -639,14 +649,10 @@ export default function NotesScreen() {
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState('');
-  // Track which subjects are expanded (Level 1)
-  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({
-    s1: true, // Expand first subject by default
-  });
-  // Track which topics are expanded (Level 2)
-  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({
-    's1-t1': true, // Expand first topic by default
-  });
+  // Track which subjects are expanded (Level 1) - all closed initially
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
+  // Track which topics are expanded (Level 2) - all closed initially
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
   // Modal for reading lesson notes
   const [selectedLesson, setSelectedLesson] = useState<{
     subjectTitle: string;
@@ -655,6 +661,7 @@ export default function NotesScreen() {
   } | null>(null);
 
   const toggleSubject = (subjectId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedSubjects((prev) => ({
       ...prev,
       [subjectId]: !prev[subjectId],
@@ -662,6 +669,7 @@ export default function NotesScreen() {
   };
 
   const toggleTopic = (topicId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedTopics((prev) => ({
       ...prev,
       [topicId]: !prev[topicId],
@@ -672,9 +680,7 @@ export default function NotesScreen() {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return subject;
 
-    const matchesSubject =
-      subject.title.toLowerCase().includes(q) ||
-      subject.area.toLowerCase().includes(q);
+    const matchesSubject = subject.title.toLowerCase().includes(q);
 
     const filteredTopics = subject.topics.map((topic) => {
       const matchesTopic = topic.title.toLowerCase().includes(q);
@@ -744,7 +750,7 @@ export default function NotesScreen() {
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search 9 subjects, topics, lessons or laws..."
+            placeholder="Search subjects, topics, lessons or laws..."
             placeholderTextColor={theme.textSecondary}
             style={[styles.searchInput, { color: theme.text }]}
           />
@@ -788,33 +794,21 @@ export default function NotesScreen() {
                   onPress={() => toggleSubject(subject.id)}
                   style={({ pressed }) => [
                     styles.subjectHeader,
-                    { opacity: pressed ? 0.8 : 1 },
+                    { opacity: pressed ? 0.85 : 1 },
                   ]}>
-                  {/* Left Icon Handler */}
+                  {/* Left Circular Logo (matching learn page style) */}
                   <View
                     style={[
-                      styles.iconHandler,
+                      styles.circleLogo,
                       {
                         backgroundColor: theme.accentMuted,
-                        borderColor: theme.border,
                       },
                     ]}>
-                    <IconComponent size={20} color={theme.accent} strokeWidth={2} />
+                    <IconComponent size={24} color={theme.accent} strokeWidth={2.2} />
                   </View>
 
-                  {/* Subject Title & Meta Info */}
+                  {/* Subject Title & Topics/Lessons Count */}
                   <View style={styles.subjectHeaderInfo}>
-                    <View style={styles.subjectMetaRow}>
-                      <Text style={[styles.subjectAreaTag, { color: theme.accent }]}>
-                        {subject.area}
-                      </Text>
-                      <Text style={[styles.subjectDot, { color: theme.textSecondary }]}>
-                        •
-                      </Text>
-                      <Text style={[styles.subjectWeightTag, { color: theme.textSecondary }]}>
-                        {subject.weight}
-                      </Text>
-                    </View>
                     <Text style={[styles.subjectTitle, { color: theme.text }]}>
                       {subject.title}
                     </Text>
@@ -823,21 +817,12 @@ export default function NotesScreen() {
                     </Text>
                   </View>
 
-                  {/* Dropdown Indicator */}
-                  <View
-                    style={[
-                      styles.chevronHandler,
-                      {
-                        backgroundColor: isSubjectOpen
-                          ? theme.accentMuted
-                          : 'transparent',
-                        borderColor: isSubjectOpen ? theme.accent : theme.border,
-                      },
-                    ]}>
+                  {/* Borderless Dropdown Chevron */}
+                  <View style={styles.chevronWrapper}>
                     {isSubjectOpen ? (
-                      <ChevronDown size={18} color={theme.accent} />
+                      <ChevronDown size={18} color={theme.accent} strokeWidth={2.2} />
                     ) : (
-                      <ChevronRight size={18} color={theme.textSecondary} />
+                      <ChevronRight size={18} color={theme.accent} strokeWidth={2.2} />
                     )}
                   </View>
                 </Pressable>
@@ -852,7 +837,7 @@ export default function NotesScreen() {
                         backgroundColor: theme.backgroundSelected,
                       },
                     ]}>
-                    {subject.topics.map((topic, tIdx) => {
+                    {subject.topics.map((topic) => {
                       const isTopicOpen = !!expandedTopics[topic.id] || searchQuery.length > 0;
 
                       return (
@@ -878,7 +863,6 @@ export default function NotesScreen() {
                                   styles.topicNumberBadge,
                                   {
                                     backgroundColor: theme.accentMuted,
-                                    borderColor: theme.border,
                                   },
                                 ]}>
                                 <Text
@@ -906,9 +890,9 @@ export default function NotesScreen() {
 
                             <View style={styles.topicChevron}>
                               {isTopicOpen ? (
-                                <ChevronDown size={16} color={theme.accent} />
+                                <ChevronDown size={16} color={theme.accent} strokeWidth={2} />
                               ) : (
-                                <ChevronRight size={16} color={theme.textSecondary} />
+                                <ChevronRight size={16} color={theme.accent} strokeWidth={2} />
                               )}
                             </View>
                           </Pressable>
@@ -937,7 +921,7 @@ export default function NotesScreen() {
                                         lIdx < topic.lessons.length - 1
                                           ? theme.border
                                           : 'transparent',
-                                      opacity: pressed ? 0.7 : 1,
+                                      opacity: pressed ? 0.65 : 1,
                                     },
                                   ]}>
                                   <View style={styles.lessonRowLeft}>
@@ -945,14 +929,13 @@ export default function NotesScreen() {
                                       style={[
                                         styles.lessonNumCircle,
                                         {
-                                          borderColor: theme.border,
-                                          backgroundColor: theme.background,
+                                          backgroundColor: theme.accentMuted,
                                         },
                                       ]}>
                                       <Text
                                         style={[
                                           styles.lessonNumText,
-                                          { color: theme.textSecondary },
+                                          { color: theme.accent },
                                         ]}>
                                         {lesson.lessonNumber}
                                       </Text>
@@ -975,7 +958,7 @@ export default function NotesScreen() {
                                     </View>
                                   </View>
 
-                                  <ChevronRight size={14} color={theme.textSecondary} />
+                                  <ChevronRight size={15} color={theme.accent} strokeWidth={2} />
                                 </Pressable>
                               ))}
                             </View>
@@ -1173,51 +1156,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    gap: 12,
+    gap: 14,
   },
-  iconHandler: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+  circleLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   subjectHeaderInfo: {
     flex: 1,
-    gap: 2,
-  },
-  subjectMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  subjectAreaTag: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  subjectDot: {
-    fontSize: 10,
-  },
-  subjectWeightTag: {
-    fontSize: 10,
-    fontWeight: '600',
+    gap: 3,
   },
   subjectTitle: {
-    fontSize: 14.5,
-    fontWeight: '700',
+    fontSize: 15.5,
+    fontWeight: '800',
     letterSpacing: -0.2,
   },
   subjectSubtext: {
-    fontSize: 11.5,
+    fontSize: 12,
+    fontWeight: '500',
   },
-  chevronHandler: {
-    width: 30,
-    height: 30,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+  chevronWrapper: {
+    padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1246,10 +1208,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topicNumberBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: Radius.xs,
-    borderWidth: 1,
   },
   topicNumberText: {
     fontSize: 10,
@@ -1257,14 +1218,15 @@ const styles = StyleSheet.create({
   },
   topicTitleBox: {
     flex: 1,
-    gap: 1,
+    gap: 2,
   },
   topicTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
   },
   topicLessonCount: {
     fontSize: 11,
+    fontWeight: '500',
   },
   topicChevron: {
     paddingLeft: 8,
