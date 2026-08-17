@@ -2,8 +2,8 @@ import React from 'react';
 import {
   BookOpen,
   ChevronRight,
+  FileText,
   Layers,
-  Sparkles,
 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,7 +43,6 @@ export default function LearnScreen() {
               styles.yearPill,
               {
                 backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
               },
             ]}>
             <Text style={[styles.yearPillText, { color: theme.textSecondary }]}>
@@ -52,13 +51,13 @@ export default function LearnScreen() {
           </View>
         </View>
 
-        {/* Action Buttons Section */}
+        {/* 2 Main Action Blocks */}
         <View style={styles.blockContainer}>
           {/* BLOCK 1: COMPREHENSIVE NOTES */}
           <Pressable
             onPress={() => router.push('/(tabs)/learn/notes' as any)}
             style={({ pressed }) => [
-              styles.buttonBlock,
+              styles.cardBlock,
               {
                 backgroundColor: theme.backgroundElement,
                 borderColor: theme.border,
@@ -66,54 +65,50 @@ export default function LearnScreen() {
                 transform: [{ scale: pressed ? 0.99 : 1 }],
               },
             ]}>
-            <View style={styles.blockHeader}>
+            {/* Top Row: Large Circular Logo + (Title & Description) */}
+            <View style={styles.cardTopRow}>
+              {/* Extra Large Circular Logo */}
               <View
                 style={[
-                  styles.iconHandler,
+                  styles.circleLogo,
                   {
                     backgroundColor: theme.accentMuted,
-                    borderColor: theme.border,
                   },
                 ]}>
-                <BookOpen size={24} color={theme.accent} strokeWidth={2} />
+                <BookOpen size={30} color={theme.accent} strokeWidth={2.2} />
               </View>
 
-              <View style={styles.badgeRow}>
-                <View
-                  style={[
-                    styles.tagBadge,
-                    {
-                      backgroundColor: theme.accentMuted,
-                      borderColor: theme.accentLight,
-                    },
-                  ]}>
-                  <Text style={[styles.tagBadgeText, { color: theme.accent }]}>
-                    9 SUBJECTS
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.blockBody}>
-              <Text style={[styles.blockTitle, { color: theme.text }]}>
-                Comprehensive Notes
-              </Text>
-              <Text
-                style={[styles.blockDescription, { color: theme.textSecondary }]}>
-                In-depth curriculum notes, building laws, structural formulas, and step-by-step topic breakdowns.
-              </Text>
-            </View>
-
-            <View style={[styles.blockFooter, { borderTopColor: theme.border }]}>
-              <Text style={[styles.metaText, { color: theme.textSecondary }]}>
-                120+ Organized Lessons
-              </Text>
-              <View style={styles.actionArrow}>
-                <Text style={[styles.actionText, { color: theme.accent }]}>
-                  Browse Notes
+              {/* Title and Description */}
+              <View style={styles.cardTextBox}>
+                <Text style={[styles.cardTitle, { color: theme.text }]}>
+                  Comprehensive Notes
                 </Text>
-                <ChevronRight size={16} color={theme.accent} />
+                <Text
+                  style={[styles.cardDescription, { color: theme.textSecondary }]}>
+                  Organized curriculum notes, building laws, and formulas
+                </Text>
               </View>
+            </View>
+
+            {/* Horizontal Line */}
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+            {/* Bottom Row: [Icon] 9 Subjects                        > */}
+            <View style={styles.cardBottomRow}>
+              <View style={styles.bottomLeftRow}>
+                <FileText size={14} color={theme.textSecondary} strokeWidth={1.8} />
+                <Text style={[styles.bottomCountText, { color: theme.textSecondary }]}>
+                  9 Subjects
+                </Text>
+                <Text style={[styles.bottomDot, { color: theme.textSecondary }]}>
+                  •
+                </Text>
+                <Text style={[styles.bottomSubCount, { color: theme.textSecondary }]}>
+                  120+ Lessons
+                </Text>
+              </View>
+
+              <ChevronRight size={16} color={theme.accent} />
             </View>
           </Pressable>
 
@@ -121,7 +116,7 @@ export default function LearnScreen() {
           <Pressable
             onPress={() => router.push('/(tabs)/learn/flashcards' as any)}
             style={({ pressed }) => [
-              styles.buttonBlock,
+              styles.cardBlock,
               {
                 backgroundColor: theme.backgroundElement,
                 borderColor: theme.border,
@@ -129,54 +124,50 @@ export default function LearnScreen() {
                 transform: [{ scale: pressed ? 0.99 : 1 }],
               },
             ]}>
-            <View style={styles.blockHeader}>
+            {/* Top Row: Large Circular Logo + (Title & Description) */}
+            <View style={styles.cardTopRow}>
+              {/* Extra Large Circular Logo */}
               <View
                 style={[
-                  styles.iconHandler,
+                  styles.circleLogo,
                   {
                     backgroundColor: theme.accentMuted,
-                    borderColor: theme.border,
                   },
                 ]}>
-                <Layers size={24} color={theme.accent} strokeWidth={2} />
+                <Layers size={30} color={theme.accent} strokeWidth={2.2} />
               </View>
 
-              <View style={styles.badgeRow}>
-                <View
-                  style={[
-                    styles.tagBadge,
-                    {
-                      backgroundColor: theme.accentMuted,
-                      borderColor: theme.accentLight,
-                    },
-                  ]}>
-                  <Text style={[styles.tagBadgeText, { color: theme.accent }]}>
-                    SPACED RECALL
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.blockBody}>
-              <Text style={[styles.blockTitle, { color: theme.text }]}>
-                Review Flashcards
-              </Text>
-              <Text
-                style={[styles.blockDescription, { color: theme.textSecondary }]}>
-                Active recall flashcards for architectural styles, high-yield legal provisions, and visual recognition drills.
-              </Text>
-            </View>
-
-            <View style={[styles.blockFooter, { borderTopColor: theme.border }]}>
-              <Text style={[styles.metaText, { color: theme.textSecondary }]}>
-                24 Decks • 450+ Cards
-              </Text>
-              <View style={styles.actionArrow}>
-                <Text style={[styles.actionText, { color: theme.accent }]}>
-                  Start Practice
+              {/* Title and Description */}
+              <View style={styles.cardTextBox}>
+                <Text style={[styles.cardTitle, { color: theme.text }]}>
+                  Review Flashcards
                 </Text>
-                <ChevronRight size={16} color={theme.accent} />
+                <Text
+                  style={[styles.cardDescription, { color: theme.textSecondary }]}>
+                  Active recall drills, key provisions, and visual recognition
+                </Text>
               </View>
+            </View>
+
+            {/* Horizontal Line */}
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+            {/* Bottom Row: [Icon] 24 Decks                        > */}
+            <View style={styles.cardBottomRow}>
+              <View style={styles.bottomLeftRow}>
+                <Layers size={14} color={theme.textSecondary} strokeWidth={1.8} />
+                <Text style={[styles.bottomCountText, { color: theme.textSecondary }]}>
+                  24 Decks
+                </Text>
+                <Text style={[styles.bottomDot, { color: theme.textSecondary }]}>
+                  •
+                </Text>
+                <Text style={[styles.bottomSubCount, { color: theme.textSecondary }]}>
+                  450+ Cards
+                </Text>
+              </View>
+
+              <ChevronRight size={16} color={theme.accent} />
             </View>
           </Pressable>
         </View>
@@ -221,81 +212,77 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: Radius.sm,
-    borderWidth: 1,
   },
   yearPillText: {
     fontSize: 11,
     fontWeight: '700',
   },
 
-  /* Block Buttons */
+  /* Block Cards */
   blockContainer: {
     gap: 16,
   },
-  buttonBlock: {
-    borderRadius: Radius.lg,
+  cardBlock: {
+    borderRadius: Radius.md,
     borderWidth: 1,
     padding: 18,
     gap: 14,
   },
-  blockHeader: {
+
+  /* Top Row */
+  cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 16,
   },
-  iconHandler: {
-    width: 46,
-    height: 46,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+  circleLogo: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  cardTextBox: {
+    flex: 1,
+    gap: 4,
   },
-  tagBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  tagBadgeText: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  blockBody: {
-    gap: 6,
-  },
-  blockTitle: {
-    fontSize: 18,
+  cardTitle: {
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  blockDescription: {
-    fontSize: 13,
-    lineHeight: 18,
+  cardDescription: {
+    fontSize: 12.5,
+    lineHeight: 17,
   },
-  blockFooter: {
+
+  /* Horizontal Divider */
+  divider: {
+    height: 1,
+    width: '100%',
+  },
+
+  /* Bottom Row */
+  cardBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 12,
-    borderTopWidth: 1,
+    paddingTop: 2,
   },
-  metaText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionArrow: {
+  bottomLeftRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
-  actionText: {
+  bottomCountText: {
     fontSize: 12.5,
-    fontWeight: '700',
+    fontWeight: '600',
+  },
+  bottomDot: {
+    fontSize: 12,
+  },
+  bottomSubCount: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
