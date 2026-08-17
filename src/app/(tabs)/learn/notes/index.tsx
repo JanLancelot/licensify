@@ -148,32 +148,6 @@ export default function NotesScreen() {
 
                   {/* Subject Metadata */}
                   <View style={styles.subjectInfo}>
-                    <View style={styles.badgeRow}>
-                      <View
-                        style={[
-                          styles.areaPill,
-                          {
-                            backgroundColor: theme.backgroundSelected,
-                            borderColor: theme.border,
-                          },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.areaPillText,
-                            { color: theme.textSecondary },
-                          ]}>
-                          {subject.area}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.weightText,
-                          { color: theme.textSecondary },
-                        ]}>
-                        {subject.weight}
-                      </Text>
-                    </View>
-
                     <Text style={[styles.subjectTitle, { color: theme.text }]}>
                       {subject.title}
                     </Text>
@@ -291,25 +265,6 @@ const styles = StyleSheet.create({
   subjectInfo: {
     flex: 1,
     gap: 3,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  areaPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  areaPillText: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  weightText: {
-    fontSize: 10.5,
   },
   subjectTitle: {
     fontSize: 15,

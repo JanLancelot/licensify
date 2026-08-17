@@ -195,7 +195,7 @@ export function FlashcardPresetBuilderModal({
                             ]}>
                             {hasSubjectSelected
                               ? `${selectedInSubjectCount} of ${subjectLessonIds.length} Lessons Selected`
-                              : `${subject.area} • ${subject.topics.length} Topics • ${subjectLessonIds.length} Lessons`}
+                              : `${subject.topics.length} Topics • ${subjectLessonIds.length} Lessons`}
                           </Text>
                         </View>
                       </Pressable>
