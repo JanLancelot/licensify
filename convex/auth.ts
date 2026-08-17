@@ -1,7 +1,9 @@
 import { Password } from "@convex-dev/auth/providers/Password";
+import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
 import type { DataModel } from "./_generated/dataModel";
+import { ResendOTP } from "./ResendOTP";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -56,12 +58,24 @@ export function CustomPassword() {
         lastActiveAt: Date.now(),
       };
     },
+    reset: ResendOTP,
+    verify: ResendOTP,
   });
 }
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [CustomPassword()],
+  providers: [CustomPassword(), Google, ResendOTP],
   callbacks: {
+    async redirect({ redirectTo }) {
+      if (
+        redirectTo.startsWith("http://localhost:") ||
+        redirectTo.startsWith("reactnativerepo://") ||
+        redirectTo.startsWith("exp://")
+      ) {
+        return redirectTo;
+      }
+      return process.env.SITE_URL ?? redirectTo;
+    },
     async createOrUpdateUser(ctx, args) {
       const now = Date.now();
       const profile = args.profile as {
@@ -121,7 +135,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       // Insert brand new student user
       const newUserId = await ctx.db.insert("users", {
         email: profile.email,
-        username: profile.username,
+        username: profile.username ?? profile.email?.split('@')[0] ?? `user_${now}`,
         firstName: profile.firstName,
         lastName: profile.lastName,
         role: "student", // Strictly enforce student role on sign-up
