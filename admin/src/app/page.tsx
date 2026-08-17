@@ -22,13 +22,27 @@ export default function DashboardOverviewPage() {
   const stats = useQuery(api.admin.getDashboardStats);
   const user = useQuery(api.users.getCurrentUserProfile);
 
-  if (!stats) {
+  if (stats === undefined) {
     return (
-
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-blueprint-500 animate-spin" />
           <p className="text-sm text-studio-500">Loading curriculum metrics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (stats === null) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center p-8 glass-panel rounded-2xl border max-w-md">
+          <p className="text-sm font-semibold text-studio-700 dark:text-studio-300">
+            Unable to load dashboard telemetry.
+          </p>
+          <p className="text-xs text-studio-400 mt-1">
+            Please ensure you are signed in with an Administrator or Content Manager account.
+          </p>
         </div>
       </div>
     );
