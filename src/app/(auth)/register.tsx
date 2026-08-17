@@ -1,10 +1,11 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Link, router } from 'expo-router';
-import { AlertCircle, Lock, Mail, User, UserPlus, KeyRound } from 'lucide-react-native';
+import { AlertCircle, Lock, Mail, User, UserPlus, KeyRound, Eye, EyeOff } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Radius } from '@/constants/theme';
@@ -23,6 +25,7 @@ export default function RegisterScreen() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState('');
   const [step, setStep] = useState<1 | 2>(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -170,11 +173,21 @@ export default function RegisterScreen() {
                     style={[styles.input, { color: colors.text }]}
                     placeholder="Create a password"
                     placeholderTextColor={colors.textSecondary}
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
                     value={password}
                     onChangeText={setPassword}
                     editable={!isLoading}
                   />
+                  <Pressable
+                    onPress={() => setShowPassword(!showPassword)}
+                    hitSlop={8}
+                    style={styles.eyeBtn}>
+                    {showPassword ? (
+                      <EyeOff size={18} color={colors.textSecondary} />
+                    ) : (
+                      <Eye size={18} color={colors.textSecondary} />
+                    )}
+                  </Pressable>
                 </View>
               </View>
 
@@ -188,11 +201,7 @@ export default function RegisterScreen() {
                     opacity: pressed || isLoading ? 0.7 : 1,
                   },
                 ]}>
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Sign Up</Text>
-                )}
+                <Text style={styles.submitButtonText}>Sign Up</Text>
               </Pressable>
             </View>
           ) : (
@@ -223,11 +232,7 @@ export default function RegisterScreen() {
                     opacity: pressed || isLoading ? 0.7 : 1,
                   },
                 ]}>
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Verify & Complete Setup</Text>
-                )}
+                <Text style={styles.submitButtonText}>Verify & Complete Setup</Text>
               </Pressable>
             </View>
           )}
@@ -246,6 +251,47 @@ export default function RegisterScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Signing Up / Verifying Animated Loading Modal */}
+      <Modal
+        visible={isLoading}
+        transparent
+        animationType="fade"
+        statusBarTranslucent>
+        <View style={styles.signingInBackdrop}>
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(200)}
+            style={[
+              styles.signingInCard,
+              {
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+              },
+            ]}>
+            <View
+              style={[
+                styles.signingInIconCircle,
+                { backgroundColor: colors.accentMuted },
+              ]}>
+              <UserPlus size={26} color={colors.accent} strokeWidth={2.2} />
+            </View>
+
+            <View style={styles.signingInTextCol}>
+              <Text style={[styles.signingInTitle, { color: colors.text }]}>
+                {step === 1 ? 'Creating Account...' : 'Verifying Account...'}
+              </Text>
+              <Text style={[styles.signingInSubtitle, { color: colors.textSecondary }]}>
+                {step === 1
+                  ? 'Setting up your profile & study analytics'
+                  : 'Confirming your code and unlocking features'}
+              </Text>
+            </View>
+
+            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 2 }} />
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -344,6 +390,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  eyeBtn: {
+    padding: 6,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -356,5 +405,50 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+
+  /* Signing In / Up Animated Modal */
+  signingInBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  signingInCard: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 14,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  signingInIconCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signingInTextCol: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  signingInTitle: {
+    fontSize: 16.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  signingInSubtitle: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

@@ -8,23 +8,27 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Link } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
-import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react-native';
+import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react-native';
 
 import { useAppTheme } from '@/context/theme-context';
 import { Radius } from '@/constants/theme';
+import { GoogleLogo } from '@/components/ui/GoogleLogo';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,8 +100,9 @@ export default function LoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
-              <LogIn size={32} color={colors.accent} />
+              <LogIn size={30} color={colors.accent} />
             </View>
+            <Text style={[styles.brandName, { color: colors.accent }]}>LICENSIFY</Text>
             <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Sign in to continue your ALE preparation.
@@ -139,11 +144,21 @@ export default function LoginScreen() {
                   style={[styles.input, { color: colors.text }]}
                   placeholder="Enter your password"
                   placeholderTextColor={colors.textSecondary}
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
                   editable={!isLoading}
                 />
+                <Pressable
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={8}
+                  style={styles.eyeBtn}>
+                  {showPassword ? (
+                    <EyeOff size={18} color={colors.textSecondary} />
+                  ) : (
+                    <Eye size={18} color={colors.textSecondary} />
+                  )}
+                </Pressable>
               </View>
             </View>
 
@@ -157,26 +172,24 @@ export default function LoginScreen() {
                   opacity: pressed || isLoading ? 0.7 : 1,
                 },
               ]}>
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitButtonText}>Sign In</Text>
-              )}
+              <Text style={styles.submitButtonText}>Sign In</Text>
             </Pressable>
 
             <Pressable
               onPress={handleGoogleLogin}
               disabled={isLoading}
               style={({ pressed }) => [
-                styles.submitButton,
+                styles.googleButton,
                 {
-                  backgroundColor: 'transparent',
-                  borderWidth: 1,
+                  backgroundColor: colors.backgroundElement,
                   borderColor: colors.border,
                   opacity: pressed || isLoading ? 0.7 : 1,
                 },
               ]}>
-              <Text style={[styles.submitButtonText, { color: colors.text }]}>Sign In with Google</Text>
+              <GoogleLogo size={18} />
+              <Text style={[styles.googleButtonText, { color: colors.text }]}>
+                Sign In with Google
+              </Text>
             </Pressable>
 
             <Link href={"/forgot-password" as any} asChild>
@@ -200,6 +213,45 @@ export default function LoginScreen() {
 
         </View>
       </KeyboardAvoidingView>
+
+      {/* Signing In Animated Loading Modal */}
+      <Modal
+        visible={isLoading}
+        transparent
+        animationType="fade"
+        statusBarTranslucent>
+        <View style={styles.signingInBackdrop}>
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(200)}
+            style={[
+              styles.signingInCard,
+              {
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+              },
+            ]}>
+            <View
+              style={[
+                styles.signingInIconCircle,
+                { backgroundColor: colors.accentMuted },
+              ]}>
+              <LogIn size={26} color={colors.accent} strokeWidth={2.2} />
+            </View>
+
+            <View style={styles.signingInTextCol}>
+              <Text style={[styles.signingInTitle, { color: colors.text }]}>
+                Signing In...
+              </Text>
+              <Text style={[styles.signingInSubtitle, { color: colors.textSecondary }]}>
+                Authenticating account and preparing study hub
+              </Text>
+            </View>
+
+            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 2 }} />
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -226,7 +278,14 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  brandName: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 2.5,
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 28,
@@ -294,6 +353,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  googleButton: {
+    height: 52,
+    borderRadius: Radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    gap: 10,
+  },
+  googleButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  eyeBtn: {
+    padding: 6,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -305,5 +380,50 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+
+  /* Signing In Animated Modal */
+  signingInBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  signingInCard: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 14,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  signingInIconCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signingInTextCol: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  signingInTitle: {
+    fontSize: 16.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  signingInSubtitle: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });
