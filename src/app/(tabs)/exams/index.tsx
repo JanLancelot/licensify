@@ -107,26 +107,9 @@ export default function ExamsSelectionScreen() {
         ]}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={[styles.kicker, { color: theme.accent }]}>
-              PRC ALE SIMULATION
-            </Text>
-            <Text style={[styles.title, { color: theme.text }]}>
-              Exams
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.yearPill,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-              },
-            ]}>
-            <Text style={[styles.yearPillText, { color: theme.textSecondary }]}>
-              ALE 2026
-            </Text>
-          </View>
+          <Text style={[styles.title, { color: theme.text }]}>
+            Exams
+          </Text>
         </View>
 
         {/* BLOCK 1: PRACTICE TESTS */}
@@ -314,34 +297,13 @@ const styles = StyleSheet.create({
     gap: 24,
   },
 
-  /* Header */
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: -4,
-  },
-  kicker: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 2,
-    textTransform: 'uppercase',
   },
   title: {
     fontSize: 24,
     fontWeight: '800',
-    letterSpacing: -0.6,
-  },
-  yearPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-  },
-  yearPillText: {
-    fontSize: 11,
-    fontWeight: '700',
+    letterSpacing: -0.5,
   },
 
   /* Section Structure */

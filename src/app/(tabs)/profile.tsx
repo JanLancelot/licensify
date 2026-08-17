@@ -106,26 +106,9 @@ export default function ProfileScreen() {
         ]}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={[styles.kicker, { color: colors.accent }]}>
-              EXAMINEE PROFILE
-            </Text>
-            <Text style={[styles.title, { color: colors.text }]}>
-              Profile
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.yearPill,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
-            ]}>
-            <Text style={[styles.yearPillText, { color: colors.textSecondary }]}>
-              ALE 2026
-            </Text>
-          </View>
+          <Text style={[styles.title, { color: colors.text }]}>
+            Profile
+          </Text>
         </View>
 
         {/* 1. PROFILE CARD */}
@@ -668,32 +651,12 @@ const styles = StyleSheet.create({
 
   /* Header */
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: -4,
-  },
-  kicker: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 2,
-    textTransform: 'uppercase',
   },
   title: {
     fontSize: 24,
     fontWeight: '800',
-    letterSpacing: -0.6,
-  },
-  yearPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-  },
-  yearPillText: {
-    fontSize: 11,
-    fontWeight: '700',
+    letterSpacing: -0.5,
   },
 
   /* Profile Card */

@@ -31,9 +31,6 @@ export default function ModuleDetailScreen() {
         </Pressable>
 
         <View style={styles.headerTitles}>
-          <Text style={[styles.headerSubtitle, { color: theme.accent }]}>
-            CURRICULUM MODULE
-          </Text>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
             Module: {id ? String(id).toUpperCase() : 'DETAILS'}
           </Text>
@@ -82,14 +79,10 @@ const styles = StyleSheet.create({
   headerTitles: {
     flex: 1,
   },
-  headerSubtitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   content: {
     padding: 20,

@@ -936,9 +936,6 @@ export default function NotesScreen() {
         </Pressable>
 
         <View style={styles.topBarTitles}>
-          <Text style={[styles.topBarKicker, { color: theme.accent }]}>
-            CURRICULUM SYLLABUS
-          </Text>
           <Text style={[styles.topBarHeading, { color: theme.text }]}>
             Comprehensive Notes
           </Text>
@@ -1171,12 +1168,6 @@ const styles = StyleSheet.create({
   },
   topBarTitles: {
     flex: 1,
-  },
-  topBarKicker: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    letterSpacing: 1.1,
-    textTransform: 'uppercase',
   },
   topBarHeading: {
     fontSize: 18,

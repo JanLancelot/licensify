@@ -222,9 +222,6 @@ export default function FlashcardsHubScreen() {
         </Pressable>
 
         <View style={styles.topBarTitles}>
-          <Text style={[styles.topBarKicker, { color: theme.accent }]}>
-            ACTIVE RECALL & MEMORIZATION
-          </Text>
           <Text style={[styles.topBarHeading, { color: theme.text }]}>
             {activeStudyCards ? 'Flashcards Drill' : 'Flashcards Hub'}
           </Text>
@@ -787,13 +784,8 @@ const styles = StyleSheet.create({
   topBarTitles: {
     flex: 1,
   },
-  topBarKicker: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
   topBarHeading: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
