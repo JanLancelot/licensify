@@ -512,12 +512,8 @@ export default function FlashcardsHubScreen() {
 
   // Bottom Sheet Modal for Preset Creation
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({
-    s1: true,
-  });
-  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({
-    's1-t1': true,
-  });
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
   const [selectedLessonIds, setSelectedLessonIds] = useState<Set<string>>(new Set());
   const [isShuffled, setIsShuffled] = useState(true);
   const [isRandomized, setIsRandomized] = useState(false);
@@ -525,10 +521,25 @@ export default function FlashcardsHubScreen() {
 
   // ── Accordion Handlers ───────────────────────────────────────────────────
   const toggleSubject = (subjectId: string) => {
-    setExpandedSubjects((prev) => ({
-      ...prev,
-      [subjectId]: !prev[subjectId],
-    }));
+    setExpandedSubjects((prev) => {
+      const isCurrentlyOpen = !!prev[subjectId];
+      if (isCurrentlyOpen) {
+        const subject = SUBJECT_NOTES.find((s) => s.id === subjectId);
+        if (subject) {
+          setExpandedTopics((topicPrev) => {
+            const next = { ...topicPrev };
+            subject.topics.forEach((t) => {
+              delete next[t.id];
+            });
+            return next;
+          });
+        }
+      }
+      return {
+        ...prev,
+        [subjectId]: !isCurrentlyOpen,
+      };
+    });
   };
 
   const toggleTopic = (topicId: string) => {
@@ -581,8 +592,18 @@ export default function FlashcardsHubScreen() {
     });
   };
 
+  const handleCloseAddModal = () => {
+    setIsAddModalVisible(false);
+    setExpandedSubjects({});
+    setExpandedTopics({});
+    setSelectedLessonIds(new Set());
+    setCustomTitle('');
+  };
+
   const handleOpenAddModal = () => {
     setSelectedLessonIds(new Set());
+    setExpandedSubjects({});
+    setExpandedTopics({});
     setCustomTitle('');
     setIsShuffled(true);
     setIsRandomized(false);
@@ -639,7 +660,7 @@ export default function FlashcardsHubScreen() {
     };
 
     setPresets((prev) => [newPreset, ...prev]);
-    setIsAddModalVisible(false);
+    handleCloseAddModal();
   };
 
   // ── Drill Session Handlers ───────────────────────────────────────────────
@@ -1097,11 +1118,11 @@ export default function FlashcardsHubScreen() {
         visible={isAddModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsAddModalVisible(false)}>
+        onRequestClose={handleCloseAddModal}>
         <View style={styles.modalOverlay}>
           <Pressable
             style={styles.modalDismissArea}
-            onPress={() => setIsAddModalVisible(false)}
+            onPress={handleCloseAddModal}
           />
 
           <View
@@ -1137,7 +1158,7 @@ export default function FlashcardsHubScreen() {
               </View>
 
               <Pressable
-                onPress={() => setIsAddModalVisible(false)}
+                onPress={handleCloseAddModal}
                 style={styles.modalCloseBtn}>
                 <X size={20} color={theme.text} />
               </Pressable>
