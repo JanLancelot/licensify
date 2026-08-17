@@ -61,7 +61,10 @@
     "web": "expo start --web",
     "build:web": "expo export --platform web",
     "lint": "expo lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:admin": "npm run --prefix admin test",
+    "test:all": "vitest run && npm run --prefix admin test"
   },
+
   "private": true
 }
