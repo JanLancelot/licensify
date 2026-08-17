@@ -1,6 +1,6 @@
 import { useAuthActions } from '@convex-dev/auth/react';
-import { Link } from 'expo-router';
-import { AlertCircle, Lock, Mail, User, UserPlus } from 'lucide-react-native';
+import { Link, router } from 'expo-router';
+import { AlertCircle, Lock, Mail, User, UserPlus, KeyRound } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -23,6 +23,8 @@ export default function RegisterScreen() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [step, setStep] = useState<1 | 2>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,9 +54,28 @@ export default function RegisterScreen() {
         lastName,
         flow: 'signUp',
       });
-      // Router will automatically redirect to (tabs)
+      // Move to verification step
+      setStep(2);
     } catch (err: any) {
       setError(err.message || 'Failed to create account.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!code) {
+      setError('Please enter the verification code.');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signIn('password', { email, code, flow: 'email-verification' });
+      // Router will automatically redirect to (tabs) due to auth state change, or we can force it:
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      setError(err.message || 'Invalid verification code.');
     } finally {
       setIsLoading(false);
     }
@@ -70,11 +91,15 @@ export default function RegisterScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
-              <UserPlus size={32} color={colors.accent} />
+              {step === 1 ? <UserPlus size={32} color={colors.accent} /> : <KeyRound size={32} color={colors.accent} />}
             </View>
-            <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
+            <Text style={[styles.title, { color: colors.text }]}>
+              {step === 1 ? 'Create Account' : 'Verify Email'}
+            </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Join Licensify to track your ALE progress.
+              {step === 1 
+                ? 'Join Licensify to track your ALE progress.' 
+                : 'Enter the 6-digit code sent to your email.'}
             </Text>
           </View>
 
@@ -87,88 +112,125 @@ export default function RegisterScreen() {
           )}
 
           {/* Form */}
-          <View style={styles.form}>
-            <View style={styles.nameRow}>
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={[styles.label, { color: colors.text }]}>First Name</Text>
+          {step === 1 ? (
+            <View style={styles.form}>
+              <View style={styles.nameRow}>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: colors.text }]}>First Name</Text>
+                  <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+                    <User size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.input, { color: colors.text }]}
+                      placeholder="Jane"
+                      placeholderTextColor={colors.textSecondary}
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      editable={!isLoading}
+                    />
+                  </View>
+                </View>
+
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={[styles.label, { color: colors.text }]}>Last Name</Text>
+                  <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+                    <TextInput
+                      style={[styles.input, { color: colors.text, paddingLeft: 12 }]}
+                      placeholder="Doe"
+                      placeholderTextColor={colors.textSecondary}
+                      value={lastName}
+                      onChangeText={setLastName}
+                      editable={!isLoading}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Email Address</Text>
                 <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                  <User size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                  <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, { color: colors.text }]}
-                    placeholder="Jane"
+                    placeholder="you@example.com"
                     placeholderTextColor={colors.textSecondary}
-                    value={firstName}
-                    onChangeText={setFirstName}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={setEmail}
                     editable={!isLoading}
                   />
                 </View>
               </View>
 
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={[styles.label, { color: colors.text }]}>Last Name</Text>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Password</Text>
                 <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+                  <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.input, { color: colors.text, paddingLeft: 12 }]}
-                    placeholder="Doe"
+                    style={[styles.input, { color: colors.text }]}
+                    placeholder="Create a password"
                     placeholderTextColor={colors.textSecondary}
-                    value={lastName}
-                    onChangeText={setLastName}
+                    secureTextEntry
+                    value={password}
+                    onChangeText={setPassword}
                     editable={!isLoading}
                   />
                 </View>
               </View>
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Email Address</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="you@example.com"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                  editable={!isLoading}
-                />
+              <Pressable
+                onPress={handleRegister}
+                disabled={isLoading}
+                style={({ pressed }) => [
+                  styles.submitButton,
+                  {
+                    backgroundColor: colors.accent,
+                    opacity: pressed || isLoading ? 0.7 : 1,
+                  },
+                ]}>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Sign Up</Text>
+                )}
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Verification Code</Text>
+                <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+                  <KeyRound size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: colors.text }]}
+                    placeholder="6-digit code"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="number-pad"
+                    value={code}
+                    onChangeText={setCode}
+                    editable={!isLoading}
+                  />
+                </View>
               </View>
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Create a password"
-                  placeholderTextColor={colors.textSecondary}
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                  editable={!isLoading}
-                />
-              </View>
+              <Pressable
+                onPress={handleVerify}
+                disabled={isLoading}
+                style={({ pressed }) => [
+                  styles.submitButton,
+                  {
+                    backgroundColor: colors.accent,
+                    opacity: pressed || isLoading ? 0.7 : 1,
+                  },
+                ]}>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Verify & Complete Setup</Text>
+                )}
+              </Pressable>
             </View>
-
-            <Pressable
-              onPress={handleRegister}
-              disabled={isLoading}
-              style={({ pressed }) => [
-                styles.submitButton,
-                {
-                  backgroundColor: colors.accent,
-                  opacity: pressed || isLoading ? 0.7 : 1,
-                },
-              ]}>
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitButtonText}>Sign Up</Text>
-              )}
-            </Pressable>
-          </View>
+          )}
 
           {/* Footer */}
           <View style={styles.footer}>

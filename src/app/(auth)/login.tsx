@@ -12,10 +12,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Link } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import { makeRedirectUri } from 'expo-auth-session';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react-native';
 
 import { useAppTheme } from '@/context/theme-context';
 import { Radius } from '@/constants/theme';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -41,6 +46,41 @@ export default function LoginScreen() {
       // Router will automatically redirect to (tabs) due to _layout guard
     } catch (err: any) {
       setError(err.message || 'Failed to sign in. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      if (Platform.OS === 'web') {
+        // On web, redirect the whole page to Google instead of using a popup, avoiding browser popup blockers
+        await signIn('google');
+        return;
+      }
+
+      const redirectTo = makeRedirectUri();
+      const { redirect } = await signIn('google', { redirectTo });
+      
+      if (redirect) {
+        const result = await WebBrowser.openAuthSessionAsync(redirect.toString(), redirectTo);
+        if (result.type === 'success') {
+          const parsedUrl = Linking.parse(result.url);
+          const code = parsedUrl.queryParams?.code;
+          if (typeof code === 'string') {
+            await signIn('google', { code });
+            // Router will automatically redirect to (tabs) due to _layout guard
+          } else {
+            setError('Google sign in did not return an authorization code.');
+          }
+        }
+      } else {
+        setError('Google sign in did not return a redirect URL.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in with Google.');
     } finally {
       setIsLoading(false);
     }
@@ -123,6 +163,27 @@ export default function LoginScreen() {
                 <Text style={styles.submitButtonText}>Sign In</Text>
               )}
             </Pressable>
+
+            <Pressable
+              onPress={handleGoogleLogin}
+              disabled={isLoading}
+              style={({ pressed }) => [
+                styles.submitButton,
+                {
+                  backgroundColor: 'transparent',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  opacity: pressed || isLoading ? 0.7 : 1,
+                },
+              ]}>
+              <Text style={[styles.submitButtonText, { color: colors.text }]}>Sign In with Google</Text>
+            </Pressable>
+
+            <Link href="/forgot-password" asChild>
+              <Pressable style={{ alignItems: 'center', marginTop: 8 }}>
+                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Forgot Password?</Text>
+              </Pressable>
+            </Link>
           </View>
 
           {/* Footer */}
