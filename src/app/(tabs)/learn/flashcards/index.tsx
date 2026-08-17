@@ -593,14 +593,25 @@ export default function FlashcardsHubScreen() {
   };
 
   const handleCloseAddModal = () => {
-    setIsAddModalVisible(false);
-    setExpandedSubjects({});
-    setExpandedTopics({});
-    setSelectedLessonIds(new Set());
-    setCustomTitle('');
+    const hasOpenDropdowns =
+      Object.values(expandedSubjects).some(Boolean) ||
+      Object.values(expandedTopics).some(Boolean);
+
+    if (hasOpenDropdowns) {
+      // 1. Collapse open dropdowns inside modal first
+      setExpandedSubjects({});
+      setExpandedTopics({});
+      // 2. Slide down modal right after the collapse finishes
+      setTimeout(() => {
+        setIsAddModalVisible(false);
+      }, 180);
+    } else {
+      setIsAddModalVisible(false);
+    }
   };
 
   const handleOpenAddModal = () => {
+    // Reset selections and dropdowns when opening freshly
     setSelectedLessonIds(new Set());
     setExpandedSubjects({});
     setExpandedTopics({});
@@ -1185,7 +1196,7 @@ export default function FlashcardsHubScreen() {
                   return (
                     <Animated.View
                       key={subject.id}
-                      layout={LinearTransition.duration(220)}
+                      layout={LinearTransition.duration(200)}
                       style={[
                         styles.subjectCard,
                         {
