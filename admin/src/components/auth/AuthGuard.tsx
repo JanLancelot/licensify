@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useRouter, usePathname } from "next/navigation";
@@ -13,30 +13,16 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useAuthActions();
-  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
 
   const isLoginPage = pathname === "/login";
 
-  // Watchdog timer: If loading takes longer than 3.5s, give the user an escape action
-  useEffect(() => {
-    if (!authLoading && (isAuthenticated ? user !== undefined : true)) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setLoadingTimedOut(true);
-    }, 3500);
-
-    return () => clearTimeout(timer);
-  }, [authLoading, isAuthenticated, user]);
-
-  // Redirect unauthenticated or orphan sessions to login
+  // Redirect unauthenticated or orphan sessions to login immediately
   useEffect(() => {
     if (!authLoading && !isAuthenticated && !isLoginPage) {
-      router.push("/login");
+      router.replace("/login");
     } else if (!authLoading && isAuthenticated && user === null && !isLoginPage) {
       // Stale or deleted session in local storage
-      signOut().then(() => router.push("/login"));
+      signOut().then(() => router.replace("/login"));
     }
   }, [authLoading, isAuthenticated, user, isLoginPage, router, signOut]);
 
@@ -44,7 +30,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // 1. Session is loading
+  // 1. Session is loading or unauthenticated
   if (authLoading || (isAuthenticated && user === undefined)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-studio-50 dark:bg-studio-950 bg-blueprint-grid p-4">
@@ -61,20 +47,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             </p>
           </div>
 
-          {loadingTimedOut && (
-            <div className="pt-3 border-t border-studio-200 dark:border-studio-800 w-full space-y-2 animate-fade-in">
-              <p className="text-[11px] text-studio-400">
-                Session initialization is taking longer than expected.
-              </p>
-              <button
-                onClick={() => signOut().then(() => router.push("/login"))}
-                className="w-full py-2 px-3 rounded-xl bg-studio-200 dark:bg-studio-800 hover:bg-studio-300 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset & Go to Login</span>
-              </button>
-            </div>
-          )}
+          <div className="pt-3 border-t border-studio-200 dark:border-studio-800 w-full space-y-2">
+            <button
+              onClick={() => {
+                signOut().finally(() => router.replace("/login"));
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-studio-200 dark:bg-studio-800 hover:bg-studio-300 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Go to Staff Login</span>
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -5,6 +5,7 @@ import { AuthGuard } from "./AuthGuard";
 
 // Mocks
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 let mockPathname = "/";
 let mockAuthLoading = false;
 let mockIsAuthenticated = false;
@@ -13,6 +14,7 @@ let mockUser: any = null;
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
+    replace: mockReplace,
   }),
   usePathname: () => mockPathname,
 }));
@@ -63,7 +65,7 @@ describe("AuthGuard Component", () => {
       </AuthGuard>
     );
 
-    expect(mockPush).toHaveBeenCalledWith("/login");
+    expect(mockReplace).toHaveBeenCalledWith("/login");
     expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
   });
 
