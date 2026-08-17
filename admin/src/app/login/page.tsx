@@ -5,7 +5,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { Compass, KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, AlertCircle } from "lucide-react";
+import { Compass, KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, AlertCircle, UserPlus, LogIn } from "lucide-react";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
@@ -13,8 +13,10 @@ export default function LoginPage() {
   const user = useQuery(api.users.getCurrentUserProfile);
   const router = useRouter();
 
+  const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,22 +37,37 @@ export default function LoginPage() {
       return;
     }
 
+    if (mode === "signUp" && password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      await signIn("password", {
-        email: email.trim().toLowerCase(),
-        password,
-        flow: "signIn",
-      });
+      if (mode === "signUp") {
+        await signIn("password", {
+          email: email.trim().toLowerCase(),
+          password,
+          username: username.trim() || email.trim().split("@")[0],
+          flow: "signUp",
+        });
+      } else {
+
+        await signIn("password", {
+          email: email.trim().toLowerCase(),
+          password,
+          flow: "signIn",
+        });
+      }
       router.push("/");
     } catch (err: any) {
-      console.error("Sign-in error:", err);
+      console.error("Auth error:", err);
       setError(
         err?.message?.includes("Invalid")
           ? "Invalid email or password credentials."
-          : err?.message || "Failed to sign in. Please check your credentials."
+          : err?.message || `Failed to ${mode === "signUp" ? "register" : "sign in"}.`
       );
     } finally {
       setLoading(false);
@@ -73,13 +90,45 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Login Card */}
+        {/* Auth Card */}
         <div className="glass-modal rounded-3xl p-6 sm:p-8">
-          <div className="flex items-center gap-2 mb-6 pb-4 border-b border-studio-200 dark:border-studio-800">
-            <ShieldCheck className="w-5 h-5 text-blueprint-500" />
-            <h2 className="font-semibold text-base text-studio-900 dark:text-studio-100">
-              Staff Authentication
-            </h2>
+          <div className="flex items-center justify-between gap-2 mb-6 pb-4 border-b border-studio-200 dark:border-studio-800">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-blueprint-500" />
+              <h2 className="font-semibold text-base text-studio-900 dark:text-studio-100">
+                {mode === "signIn" ? "Staff Authentication" : "Register Staff Account"}
+              </h2>
+            </div>
+            <div className="flex bg-studio-100 dark:bg-studio-800 p-1 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signIn");
+                  setError(null);
+                }}
+                className={`px-3 py-1 rounded-lg transition-all ${
+                  mode === "signIn"
+                    ? "bg-white dark:bg-studio-700 text-studio-900 dark:text-white shadow-sm"
+                    : "text-studio-500 hover:text-studio-800 dark:hover:text-studio-200"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signUp");
+                  setError(null);
+                }}
+                className={`px-3 py-1 rounded-lg transition-all ${
+                  mode === "signUp"
+                    ? "bg-white dark:bg-studio-700 text-studio-900 dark:text-white shadow-sm"
+                    : "text-studio-500 hover:text-studio-800 dark:hover:text-studio-200"
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -90,6 +139,22 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signUp" && (
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Display Username
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g. arch_reviewer"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                 Email Address
@@ -133,6 +198,9 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {mode === "signUp" && (
+                <p className="text-[11px] text-studio-400 mt-1">Minimum 8 characters.</p>
+              )}
             </div>
 
             <button
@@ -143,10 +211,18 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Credentials...</span>
+                  <span>Processing...</span>
+                </>
+              ) : mode === "signIn" ? (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In to Studio</span>
                 </>
               ) : (
-                <span>Sign In to Studio</span>
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  <span>Create Account & Enter</span>
+                </>
               )}
             </button>
           </form>
