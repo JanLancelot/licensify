@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #3b82f6;
+  }
+
+  .dark {
+    --background: #090d16;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --border: #1e293b;
+    --input: #1e293b;
+    --ring: #60a5fa;
+  }
+
+  body {
+    @apply bg-studio-50 dark:bg-studio-950 text-studio-900 dark:text-studio-50 min-h-screen antialiased selection:bg-blueprint-500 selection:text-white transition-colors duration-200;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Blueprint subtle background pattern */
+.bg-blueprint-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+}
+
+.dark .bg-blueprint-grid {
+  background-image: 
+    linear-gradient(to right, rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
+}
+
+/* Glassmorphism surfaces */
+.glass-panel {
+  @apply bg-white/80 dark:bg-studio-900/80 backdrop-blur-md border border-studio-200/80 dark:border-studio-800/80 shadow-card dark:shadow-card-dark;
+}
+
+.glass-modal {
+  @apply bg-white/95 dark:bg-studio-900/95 backdrop-blur-xl border border-studio-200 dark:border-studio-700/60 shadow-2xl;
+}
+
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-studio-300 dark:bg-studio-700 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-studio-400 dark:bg-studio-600;
+}
+
+/* Flashcard 3D perspective flip styling */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
