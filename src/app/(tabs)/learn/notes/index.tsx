@@ -888,10 +888,26 @@ export default function NotesScreen() {
   } | null>(null);
 
   const toggleSubject = (subjectId: string) => {
-    setExpandedSubjects((prev) => ({
-      ...prev,
-      [subjectId]: !prev[subjectId],
-    }));
+    setExpandedSubjects((prev) => {
+      const isCurrentlyOpen = !!prev[subjectId];
+      if (isCurrentlyOpen) {
+        // Closing this subject: reset all inner topic dropdowns
+        const subject = SUBJECT_NOTES.find((s) => s.id === subjectId);
+        if (subject) {
+          setExpandedTopics((topicPrev) => {
+            const next = { ...topicPrev };
+            subject.topics.forEach((t) => {
+              delete next[t.id];
+            });
+            return next;
+          });
+        }
+      }
+      return {
+        ...prev,
+        [subjectId]: !isCurrentlyOpen,
+      };
+    });
   };
 
   const toggleTopic = (topicId: string) => {
