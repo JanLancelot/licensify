@@ -29,8 +29,10 @@ test("Admin Dashboard & Content Management API Tests", async () => {
     username: "student_test",
   });
 
-  // 2. Student cannot access admin endpoints
-  await expect(studentAuth.query(api.admin.getDashboardStats)).rejects.toThrow("Forbidden");
+  // 2. Student cannot access admin dashboard stats (returns null)
+  const studentStats = await studentAuth.query(api.admin.getDashboardStats);
+  expect(studentStats).toBeNull();
+
 
   // 3. Admin can retrieve dashboard stats
   const initialStats = await adminAuth.query(api.admin.getDashboardStats);

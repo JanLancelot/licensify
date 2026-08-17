@@ -1,5 +1,6 @@
 import { QueryCtx, MutationCtx } from "./_generated/server";
-import { Doc } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export type Role = "student" | "admin" | "content_manager";
 
@@ -10,12 +11,25 @@ export type Role = "student" | "admin" | "content_manager";
 export async function getCurrentUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<Doc<"users"> | null> {
+  // 1. Official Convex Auth user resolution
+  try {
+    const authUserId = await getAuthUserId(ctx);
+    if (authUserId) {
+      const user = await ctx.db.get(authUserId as Id<"users">);
+      if (user) {
+        return user;
+      }
+    }
+  } catch {
+    // Continue to fallback lookups
+  }
+
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     return null;
   }
 
-  // 1. Look up user by Convex Auth userId string index
+  // 2. Look up user by Convex Auth userId string index
   let user = await ctx.db
     .query("users")
     .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
@@ -25,7 +39,7 @@ export async function getCurrentUser(
     return user;
   }
 
-  // 2. Direct document ID lookup if identity.subject is the user _id
+  // 3. Direct document ID lookup if identity.subject is the user _id
   try {
     const candidate = await ctx.db.get(identity.subject as any);
     if (candidate && "role" in candidate && "isActive" in candidate) {
@@ -35,7 +49,7 @@ export async function getCurrentUser(
     // Subject string might not be a valid Id<"users"> format
   }
 
-  // 3. Lookup by email if available in identity token
+  // 4. Lookup by email if available in identity token
   if (identity.email) {
     user = await ctx.db
       .query("users")
@@ -48,6 +62,7 @@ export async function getCurrentUser(
 
   return null;
 }
+
 
 /**
  * Asserts that the caller is authenticated and exists in the database.

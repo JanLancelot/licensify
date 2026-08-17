@@ -1,5 +1,6 @@
 import { query } from "./_generated/server";
-import { requireContentManager } from "./authHelpers";
+import { getCurrentUser } from "./authHelpers";
+
 
 /**
  * Admin dashboard overview metrics and recent activity aggregator.
@@ -7,12 +8,11 @@ import { requireContentManager } from "./authHelpers";
 export const getDashboardStats = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
+    const user = await getCurrentUser(ctx);
+    if (!user || (user.role !== "admin" && user.role !== "content_manager")) {
       return null;
     }
 
-    await requireContentManager(ctx);
 
 
     const [
