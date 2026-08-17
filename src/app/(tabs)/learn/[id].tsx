@@ -20,15 +20,14 @@ export default function ModuleDetailScreen() {
       <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
         <Pressable
           onPress={() => router.back()}
+          hitSlop={12}
           style={({ pressed }) => [
             styles.backButton,
             {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
-              opacity: pressed ? 0.8 : 1,
+              opacity: pressed ? 0.5 : 1,
             },
           ]}>
-          <ArrowLeft size={18} color={theme.text} />
+          <ArrowLeft size={22} color={theme.text} strokeWidth={2.2} />
         </Pressable>
 
         <View style={styles.headerTitles}>
@@ -75,10 +74,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+    padding: 6,
+    marginLeft: -4,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -710,15 +710,14 @@ export default function NotesScreen() {
       <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
         <Pressable
           onPress={() => router.back()}
+          hitSlop={12}
           style={({ pressed }) => [
             styles.backBtn,
             {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
-              opacity: pressed ? 0.75 : 1,
+              opacity: pressed ? 0.5 : 1,
             },
           ]}>
-          <ArrowLeft size={18} color={theme.text} />
+          <ArrowLeft size={22} color={theme.text} strokeWidth={2.2} />
         </Pressable>
 
         <View style={styles.topBarTitles}>
@@ -1014,15 +1013,14 @@ export default function NotesScreen() {
             </View>
             <Pressable
               onPress={() => setSelectedLesson(null)}
+              hitSlop={12}
               style={({ pressed }) => [
                 styles.modalCloseBtn,
                 {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.border,
-                  opacity: pressed ? 0.7 : 1,
+                  opacity: pressed ? 0.5 : 1,
                 },
               ]}>
-              <X size={18} color={theme.text} />
+              <X size={20} color={theme.text} />
             </Pressable>
           </View>
 
@@ -1119,10 +1117,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+    padding: 6,
+    marginLeft: -4,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1347,10 +1343,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   modalCloseBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

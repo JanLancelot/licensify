@@ -211,15 +211,14 @@ export default function FlashcardsHubScreen() {
               router.back();
             }
           }}
+          hitSlop={12}
           style={({ pressed }) => [
             styles.backBtn,
             {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
-              opacity: pressed ? 0.75 : 1,
+              opacity: pressed ? 0.5 : 1,
             },
           ]}>
-          <ArrowLeft size={18} color={theme.text} />
+          <ArrowLeft size={22} color={theme.text} strokeWidth={2.2} />
         </Pressable>
 
         <View style={styles.topBarTitles}>
@@ -780,10 +779,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+    padding: 6,
+    marginLeft: -4,
     alignItems: 'center',
     justifyContent: 'center',
   },
