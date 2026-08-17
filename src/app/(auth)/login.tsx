@@ -100,8 +100,9 @@ export default function LoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
-              <LogIn size={32} color={colors.accent} />
+              <LogIn size={30} color={colors.accent} />
             </View>
+            <Text style={[styles.brandName, { color: colors.accent }]}>LICENSIFY</Text>
             <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Sign in to continue your ALE preparation.
@@ -277,7 +278,14 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  brandName: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 2.5,
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   title: {
     fontSize: 28,
