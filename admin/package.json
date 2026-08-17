@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "rm -rf .next && next dev --port 3001",
     "build": "next build",
+    "build:web": "next build",
     "start": "next start --port 3001",
-    "clean": "rm -rf .next",
+    "clean": "rm -rf .next out",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest"
