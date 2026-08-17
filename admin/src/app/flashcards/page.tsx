@@ -164,14 +164,14 @@ export default function FlashcardsPage() {
     );
   }
 
-  const filteredCards = flashcards.filter((c) => {
+  const filteredCards = flashcards.filter((c: any) => {
     if (selectedSubject !== "all" && c.subjectId !== selectedSubject) return false;
     if (selectedTopic !== "all" && c.topicId !== selectedTopic) return false;
     return true;
   });
 
-  const availableTopics = selectedSubject !== "all" ? topics.filter((t) => t.subjectId === selectedSubject) : topics;
-  const availableTopicsForForm = topics.filter((t) => t.subjectId === formSubjectId);
+  const availableTopics = selectedSubject !== "all" ? topics.filter((t: any) => t.subjectId === selectedSubject) : topics;
+  const availableTopicsForForm = topics.filter((t: any) => t.subjectId === formSubjectId);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -211,7 +211,7 @@ export default function FlashcardsPage() {
             className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
           >
             <option value="all">All Board Subjects ({flashcards.length})</option>
-            {subjects.map((s) => (
+            {subjects.map((s: any) => (
               <option key={s._id} value={s._id}>
                 {s.name}
               </option>
@@ -225,7 +225,7 @@ export default function FlashcardsPage() {
               className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
             >
               <option value="all">All Topics</option>
-              {availableTopics.map((t) => (
+              {availableTopics.map((t: any) => (
                 <option key={t._id} value={t._id}>
                   {t.name}
                 </option>
@@ -258,10 +258,10 @@ export default function FlashcardsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCards.map((card) => {
+          {filteredCards.map((card: any) => {
             const isFlipped = !!flippedCards[card._id];
-            const subj = subjects.find((s) => s._id === card.subjectId);
-            const top = topics.find((t) => t._id === card.topicId);
+            const subj = subjects.find((s: any) => s._id === card.subjectId);
+            const top = topics.find((t: any) => t._id === card.topicId);
 
             return (
               <div key={card._id} className="flex flex-col perspective-1000">
@@ -391,7 +391,7 @@ export default function FlashcardsPage() {
                 required
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
               >
-                {subjects.map((s) => (
+                {subjects.map((s: any) => (
                   <option key={s._id} value={s._id}>
                     {s.name}
                   </option>
@@ -409,7 +409,7 @@ export default function FlashcardsPage() {
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
               >
                 <option value="">-- General / Subject Level --</option>
-                {availableTopicsForForm.map((t) => (
+                {availableTopicsForForm.map((t: any) => (
                   <option key={t._id} value={t._id}>
                     {t.name}
                   </option>

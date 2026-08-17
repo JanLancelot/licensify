@@ -305,8 +305,8 @@ export default function QuestionsPage() {
     );
   }
 
-  const availableTopics = selectedSubject !== "all" ? topics.filter((t) => t.subjectId === selectedSubject) : topics;
-  const availableTopicsForForm = topics.filter((t) => t.subjectId === formSubjectId);
+  const availableTopics = selectedSubject !== "all" ? topics.filter((t: any) => t.subjectId === selectedSubject) : topics;
+  const availableTopicsForForm = topics.filter((t: any) => t.subjectId === formSubjectId);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -348,8 +348,8 @@ export default function QuestionsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search question text or explanations..."
-              className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              placeholder="Search question prompts, options, or explanations..."
+              className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-blueprint-500"
             />
           </div>
 
@@ -362,7 +362,7 @@ export default function QuestionsPage() {
             className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
           >
             <option value="all">All Subjects</option>
-            {subjects.map((s) => (
+            {subjects.map((s: any) => (
               <option key={s._id} value={s._id}>
                 {s.name}
               </option>
@@ -376,7 +376,7 @@ export default function QuestionsPage() {
               className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
             >
               <option value="all">All Topics</option>
-              {availableTopics.map((t) => (
+              {availableTopics.map((t: any) => (
                 <option key={t._id} value={t._id}>
                   {t.name}
                 </option>
@@ -420,9 +420,9 @@ export default function QuestionsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {questions.map((q, idx) => {
-            const subj = subjects.find((s) => s._id === q.subjectId);
-            const top = topics.find((t) => t._id === q.topicId);
+          {questions.map((q: any, idx: number) => {
+            const subj = subjects.find((s: any) => s._id === q.subjectId);
+            const top = topics.find((t: any) => t._id === q.topicId);
 
             return (
               <div

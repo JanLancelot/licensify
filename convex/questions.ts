@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 import { requireContentManager } from "./authHelpers";
 
 /**
@@ -256,7 +257,7 @@ export const bulkCreateQuestions = mutation({
     const user = await requireContentManager(ctx);
     const now = Date.now();
 
-    const createdIds = [];
+    const createdIds: Id<"questions">[] = [];
     for (const item of args.items) {
       const isValidChoice = item.choices.some((c) => c.id === item.correctChoiceId);
       if (!isValidChoice) {

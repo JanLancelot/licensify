@@ -214,7 +214,7 @@ export default function CurriculumPage() {
     );
   }
 
-  const sortedSubjects = [...subjects].sort((a, b) => a.order - b.order);
+  const sortedSubjects = [...subjects].sort((a: any, b: any) => a.order - b.order);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -249,13 +249,13 @@ export default function CurriculumPage() {
       {/* Subjects & Topics Accordion List */}
       <div className="space-y-4">
         {sortedSubjects.length === 0 ? (
-          <div className="glass-panel p-12 text-center rounded-3xl border">
-            <Layers className="w-12 h-12 text-studio-400 mx-auto mb-3 opacity-60" />
-            <h3 className="text-base font-semibold text-studio-900 dark:text-studio-100">
-              No Curriculum Subjects Found
+          <div className="text-center py-16 glass-panel rounded-2xl border">
+            <Layers className="w-10 h-10 text-studio-300 mx-auto mb-3" />
+            <h3 className="text-sm font-semibold text-studio-700 dark:text-studio-300">
+              No subjects registered in the syllabus yet.
             </h3>
-            <p className="text-xs text-studio-500 mt-1 mb-4">
-              Get started by creating your first Architecture Board Exam subject.
+            <p className="text-xs text-studio-400 mt-1 max-w-sm mx-auto mb-4">
+              Begin by creating the major Architecture Licensure Examination subject areas.
             </p>
             <button
               onClick={openCreateSubject}
@@ -265,11 +265,11 @@ export default function CurriculumPage() {
             </button>
           </div>
         ) : (
-          sortedSubjects.map((subj) => {
+          sortedSubjects.map((subj: any) => {
             const isExpanded = expandedSubjects[subj._id] !== false; // expanded by default
             const subjectTopics = topics
-              .filter((t) => t.subjectId === subj._id)
-              .sort((a, b) => a.order - b.order);
+              .filter((t: any) => t.subjectId === subj._id)
+              .sort((a: any, b: any) => a.order - b.order);
 
             return (
               <div
@@ -357,7 +357,7 @@ export default function CurriculumPage() {
                     ) : (
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {subjectTopics.map((topic) => (
+                        {subjectTopics.map((topic: any) => (
                           <div
                             key={topic._id}
                             className="p-3.5 rounded-xl bg-white dark:bg-studio-900 border border-studio-200/80 dark:border-studio-800/80 flex items-center justify-between gap-3 shadow-sm hover:border-blueprint-500/30 transition-colors"

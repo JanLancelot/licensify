@@ -171,13 +171,13 @@ export default function MaterialsPage() {
     );
   }
 
-  const filteredMaterials = materials.filter((m) => {
+  const filteredMaterials = materials.filter((m: any) => {
     if (selectedSubject !== "all" && m.subjectId !== selectedSubject) return false;
     if (selectedType !== "all" && m.type !== selectedType) return false;
     return true;
   });
 
-  const availableTopicsForForm = topics.filter((t) => t.subjectId === formSubjectId);
+  const availableTopicsForForm = topics.filter((t: any) => t.subjectId === formSubjectId);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -214,7 +214,7 @@ export default function MaterialsPage() {
             className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
           >
             <option value="all">All Board Subjects ({materials.length})</option>
-            {subjects.map((s) => (
+            {subjects.map((s: any) => (
               <option key={s._id} value={s._id}>
                 {s.name}
               </option>
@@ -258,9 +258,9 @@ export default function MaterialsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {filteredMaterials.map((mat) => {
-            const subj = subjects.find((s) => s._id === mat.subjectId);
-            const top = topics.find((t) => t._id === mat.topicId);
+          {filteredMaterials.map((mat: any) => {
+            const subj = subjects.find((s: any) => s._id === mat.subjectId);
+            const top = topics.find((t: any) => t._id === mat.topicId);
 
             return (
               <div
@@ -387,7 +387,7 @@ export default function MaterialsPage() {
                 required
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
               >
-                {subjects.map((s) => (
+                {subjects.map((s: any) => (
                   <option key={s._id} value={s._id}>
                     {s.name}
                   </option>
@@ -405,7 +405,7 @@ export default function MaterialsPage() {
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
               >
                 <option value="">-- General / Subject Level --</option>
-                {availableTopicsForForm.map((t) => (
+                {availableTopicsForForm.map((t: any) => (
                   <option key={t._id} value={t._id}>
                     {t.name}
                   </option>
