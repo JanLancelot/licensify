@@ -15,7 +15,9 @@ import {
 } from 'lucide-react-native';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -24,6 +26,7 @@ import {
   Text,
   View
 } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Radius } from '@/constants/theme';
@@ -34,20 +37,24 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { signOut } = useAuthActions();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     const doSignOut = async () => {
+      setIsSigningOut(true);
       try {
+        await new Promise((resolve) => setTimeout(resolve, 650));
         await signOut();
         router.replace('/(auth)/login' as any);
       } catch (e) {
         console.error('Sign out error:', e);
+        setIsSigningOut(false);
       }
     };
 
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.confirm('Are you sure you want to sign out?')) {
-        await doSignOut();
+        doSignOut();
       }
     } else {
       Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -609,6 +616,7 @@ export default function ProfileScreen() {
         {/* Standalone Rectangle Block Logout Button */}
         <Pressable
           onPress={handleSignOut}
+          disabled={isSigningOut}
           style={({ pressed }) => [
             styles.logoutBlockBtn,
             {
@@ -618,7 +626,7 @@ export default function ProfileScreen() {
               borderColor: isDark
                 ? 'rgba(239, 68, 68, 0.3)'
                 : 'rgba(239, 68, 68, 0.2)',
-              opacity: pressed ? 0.75 : 1,
+              opacity: pressed || isSigningOut ? 0.75 : 1,
               transform: [{ scale: pressed ? 0.99 : 1 }],
             },
           ]}>
@@ -628,6 +636,49 @@ export default function ProfileScreen() {
           </Text>
         </Pressable>
       </ScrollView>
+
+      {/* Signing Out Animated Loading Modal */}
+      <Modal
+        visible={isSigningOut}
+        transparent
+        animationType="fade"
+        statusBarTranslucent>
+        <View style={styles.signingOutBackdrop}>
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(200)}
+            style={[
+              styles.signingOutCard,
+              {
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+              },
+            ]}>
+            <View
+              style={[
+                styles.signingOutIconCircle,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(239, 68, 68, 0.15)'
+                    : 'rgba(239, 68, 68, 0.1)',
+                },
+              ]}>
+              <LogOut size={26} color="#EF4444" strokeWidth={2.2} />
+            </View>
+
+            <View style={styles.signingOutTextCol}>
+              <Text style={[styles.signingOutTitle, { color: colors.text }]}>
+                Signing Out...
+              </Text>
+              <Text style={[styles.signingOutSubtitle, { color: colors.textSecondary }]}>
+                Securing session and clearing account data
+              </Text>
+            </View>
+
+            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 2 }} />
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -914,5 +965,50 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#EF4444',
     letterSpacing: 0.2,
+  },
+
+  /* Signing Out Animated Modal */
+  signingOutBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  signingOutCard: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 14,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  signingOutIconCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signingOutTextCol: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  signingOutTitle: {
+    fontSize: 16.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  signingOutSubtitle: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });
