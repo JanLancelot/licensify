@@ -462,30 +462,32 @@ export default function QuestionsPage() {
                     </p>
 
                     {/* Choices Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                    {/* Choices Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
                       {q.choices.map((c) => {
                         const isCorrect = c.id === q.correctChoiceId;
+                        const choiceLabel = c.id.replace(/^choice_?/i, "").toUpperCase() || c.id.toUpperCase();
                         return (
                           <div
                             key={c.id}
-                            className={`p-2.5 rounded-xl border text-xs flex items-center gap-2.5 ${
+                            className={`p-2.5 rounded-xl border text-xs flex items-center gap-2.5 transition-colors ${
                               isCorrect
                                 ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold"
                                 : "bg-studio-100/50 dark:bg-studio-850/50 border-studio-200/60 dark:border-studio-800/60 text-studio-700 dark:text-studio-300"
                             }`}
                           >
                             <span
-                              className={`w-5 h-5 rounded-md flex items-center justify-center font-bold text-[10px] uppercase ${
+                              className={`min-w-[22px] h-5.5 px-1.5 rounded-md flex items-center justify-center font-bold text-[10px] uppercase shrink-0 ${
                                 isCorrect
-                                  ? "bg-emerald-500 text-white"
+                                  ? "bg-emerald-500 text-white shadow-sm"
                                   : "bg-studio-200 dark:bg-studio-700 text-studio-600 dark:text-studio-300"
                               }`}
                             >
-                              {c.id}
+                              {choiceLabel}
                             </span>
-                            <span className="truncate">{c.text}</span>
+                            <span className="truncate flex-1">{c.text}</span>
                             {isCorrect && (
-                              <CheckCircle2 className="w-3.5 h-3.5 ml-auto text-emerald-500 flex-shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 ml-auto text-emerald-500 shrink-0" />
                             )}
                           </div>
                         );
@@ -524,178 +526,188 @@ export default function QuestionsPage() {
 
       {/* Create / Edit Question Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="glass-modal max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-5 my-8">
-            <div className="flex items-center justify-between border-b border-studio-200 dark:border-studio-800 pb-4">
-              <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                {editingQuestion ? "Edit Board Exam Question" : "New Multiple Choice Question"}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="glass-modal max-w-2xl w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
+            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
+              <div>
+                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
+                  {editingQuestion ? "Edit Board Exam Question" : "New Multiple Choice Question"}
+                </h3>
+                <p className="text-xs text-studio-500 dark:text-studio-400">
+                  Configure question prompt, answer choices, explanation, and syllabus tags.
+                </p>
+              </div>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm"
+                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
               >
                 Cancel
               </button>
             </div>
 
-            <form onSubmit={handleSaveQuestion} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form onSubmit={handleSaveQuestion} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                      Board Exam Subject Area
+                    </label>
+                    <select
+                      value={formSubjectId}
+                      onChange={(e) => {
+                        setFormSubjectId(e.target.value as Id<"subjects">);
+                        setFormTopicId("");
+                      }}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                    >
+                      {subjects.map((s) => (
+                        <option key={s._id} value={s._id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                      Topic Tag (Optional)
+                    </label>
+                    <select
+                      value={formTopicId}
+                      onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                    >
+                      <option value="">-- General / Subject Level --</option>
+                      {availableTopicsForForm.map((t) => (
+                        <option key={t._id} value={t._id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Board Exam Subject Area
+                    Question Prompt
                   </label>
-                  <select
-                    value={formSubjectId}
-                    onChange={(e) => {
-                      setFormSubjectId(e.target.value as Id<"subjects">);
-                      setFormTopicId("");
-                    }}
+                  <textarea
+                    value={formQuestion}
+                    onChange={(e) => setFormQuestion(e.target.value)}
+                    placeholder="State the problem, architectural standard, or board exam question..."
+                    rows={3}
                     required
                     className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  >
-                    {subjects.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                </div>
+
+                {/* Multiple Choice Options Builder */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
+                      Answer Choices (Select radio button for Correct Answer)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addChoice}
+                      className="text-xs font-semibold text-blueprint-600 dark:text-blueprint-400 hover:underline flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Choice Option</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {formChoices.map((choice) => {
+                      const choiceLabel = choice.id.replace(/^choice_?/i, "").toUpperCase() || choice.id.toUpperCase();
+                      return (
+                        <div key={choice.id} className="flex items-center gap-2.5">
+                          <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                            <input
+                              type="radio"
+                              name="correctChoice"
+                              checked={formCorrectId === choice.id}
+                              onChange={() => setFormCorrectId(choice.id)}
+                              className="w-4 h-4 text-blueprint-600 focus:ring-blueprint-500"
+                            />
+                            <span className="w-6 h-6 rounded-lg bg-studio-200 dark:bg-studio-700 font-bold text-xs flex items-center justify-center uppercase">
+                              {choiceLabel}
+                            </span>
+                          </label>
+                          <input
+                            type="text"
+                            value={choice.text}
+                            onChange={(e) => handleChoiceTextChange(choice.id, e.target.value)}
+                            placeholder={`Option ${choiceLabel} text...`}
+                            required
+                            className="flex-1 px-4 py-2 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                          />
+                          {formChoices.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => removeChoice(choice.id)}
+                              className="p-1.5 rounded-lg text-studio-400 hover:text-rose-500"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Topic Tag (Optional)
+                    Explanation & Code Reference
                   </label>
-                  <select
-                    value={formTopicId}
-                    onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
+                  <textarea
+                    value={formExplanation}
+                    onChange={(e) => setFormExplanation(e.target.value)}
+                    placeholder="Explain why this choice is correct (e.g., BP 344 Rule II, Sec 3)..."
+                    rows={2}
                     className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  >
-                    <option value="">-- General / Subject Level --</option>
-                    {availableTopicsForForm.map((t) => (
-                      <option key={t._id} value={t._id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                      Difficulty Tier
+                    </label>
+                    <select
+                      value={formDifficulty}
+                      onChange={(e) => setFormDifficulty(e.target.value as any)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                    >
+                      <option value="easy">Easy (Definitions & Basic Terms)</option>
+                      <option value="medium">Medium (Code Clauses & Application)</option>
+                      <option value="hard">Hard (Complex Computations & Situational)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                      Publication Status
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setFormPublished(!formPublished)}
+                      className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                        formPublished
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
+                      }`}
+                    >
+                      {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      <span>{formPublished ? "Live / Active in Quizzes" : "Draft"}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                  Question Prompt
-                </label>
-                <textarea
-                  value={formQuestion}
-                  onChange={(e) => setFormQuestion(e.target.value)}
-                  placeholder="State the problem, architectural standard, or board exam question..."
-                  rows={3}
-                  required
-                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                />
-              </div>
-
-              {/* Multiple Choice Options Builder */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
-                    Answer Choices (Select radio button for Correct Answer)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addChoice}
-                    className="text-xs font-semibold text-blueprint-600 dark:text-blueprint-400 hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Choice Option</span>
-                  </button>
-                </div>
-
-                <div className="space-y-2.5">
-                  {formChoices.map((choice) => (
-                    <div key={choice.id} className="flex items-center gap-2.5">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="correctChoice"
-                          checked={formCorrectId === choice.id}
-                          onChange={() => setFormCorrectId(choice.id)}
-                          className="w-4 h-4 text-blueprint-600 focus:ring-blueprint-500"
-                        />
-                        <span className="w-6 h-6 rounded-lg bg-studio-200 dark:bg-studio-700 font-bold text-xs flex items-center justify-center uppercase">
-                          {choice.id}
-                        </span>
-                      </label>
-                      <input
-                        type="text"
-                        value={choice.text}
-                        onChange={(e) => handleChoiceTextChange(choice.id, e.target.value)}
-                        placeholder={`Option ${choice.id.toUpperCase()} text...`}
-                        required
-                        className="flex-1 px-4 py-2 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                      />
-                      {formChoices.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => removeChoice(choice.id)}
-                          className="p-1.5 rounded-lg text-studio-400 hover:text-rose-500"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                  Explanation & Code Reference
-                </label>
-                <textarea
-                  value={formExplanation}
-                  onChange={(e) => setFormExplanation(e.target.value)}
-                  placeholder="Explain why this choice is correct (e.g., BP 344 Rule II, Sec 3)..."
-                  rows={2}
-                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Difficulty Tier
-                  </label>
-                  <select
-                    value={formDifficulty}
-                    onChange={(e) => setFormDifficulty(e.target.value as any)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  >
-                    <option value="easy">Easy (Definitions & Basic Terms)</option>
-                    <option value="medium">Medium (Code Clauses & Application)</option>
-                    <option value="hard">Hard (Complex Computations & Situational)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Publication Status
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setFormPublished(!formPublished)}
-                    className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
-                      formPublished
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                        : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
-                    }`}
-                  >
-                    {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    <span>{formPublished ? "Live / Active in Quizzes" : "Draft"}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-studio-200 dark:border-studio-800">
+              <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
@@ -719,31 +731,38 @@ export default function QuestionsPage() {
 
       {/* Bulk Import Modal */}
       {bulkModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="glass-modal max-w-3xl w-full rounded-3xl p-6 sm:p-8 space-y-5 my-8">
-            <div className="flex items-center justify-between border-b border-studio-200 dark:border-studio-800 pb-4">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-blueprint-500" />
-                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                  Bulk Question Importer (JSON / CSV)
-                </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="glass-modal max-w-3xl w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
+            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 flex items-center justify-center">
+                  <FileSpreadsheet className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
+                    Bulk Question Importer (JSON / CSV)
+                  </h3>
+                  <p className="text-xs text-studio-500">
+                    Import multiple questions at once with automated validation.
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setBulkModalOpen(false)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm"
+                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
               >
                 Cancel
               </button>
             </div>
 
-            {bulkError && (
-              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span>{bulkError}</span>
-              </div>
-            )}
+            <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
+              {bulkError && (
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{bulkError}</span>
+                </div>
+              )}
 
-            <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                   Paste JSON Array or CSV Text
@@ -804,25 +823,25 @@ export default function QuestionsPage() {
                   ))}
                 </div>
               )}
+            </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-studio-200 dark:border-studio-800">
-                <button
-                  type="button"
-                  onClick={() => setBulkModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExecuteBulkImport}
-                  disabled={saving || bulkParsedItems.length === 0}
-                  className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
-                >
-                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Commit {bulkParsedItems.length} Questions to Database</span>
-                </button>
-              </div>
+            <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
+              <button
+                type="button"
+                onClick={() => setBulkModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteBulkImport}
+                disabled={saving || bulkParsedItems.length === 0}
+                className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              >
+                {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Commit {bulkParsedItems.length} Questions to Database</span>
+              </button>
             </div>
           </div>
         </div>
@@ -830,8 +849,8 @@ export default function QuestionsPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-4 border border-rose-500/20">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-4 border border-rose-500/20 shadow-2xl">
             <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
               Delete Question
             </h3>
@@ -859,3 +878,4 @@ export default function QuestionsPage() {
     </div>
   );
 }
+

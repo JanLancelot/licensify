@@ -347,133 +347,140 @@ export default function FlashcardsPage() {
 
       {/* Create / Edit Flashcard Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="glass-modal max-w-xl w-full rounded-3xl p-6 sm:p-8 space-y-5">
-            <div className="flex items-center justify-between border-b border-studio-200 dark:border-studio-800 pb-4">
-              <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                {editingCard ? "Edit Flashcard" : "New Flashcard"}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="glass-modal max-w-xl w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
+            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
+              <div>
+                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
+                  {editingCard ? "Edit Flashcard" : "New Flashcard"}
+                </h3>
+                <p className="text-xs text-studio-500 dark:text-studio-400">
+                  Author active-recall prompts and key architectural answers.
+                </p>
+              </div>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm"
+                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
               >
                 Cancel
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form onSubmit={handleSave} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                      Board Exam Subject
+                    </label>
+                    <select
+                      value={formSubjectId}
+                      onChange={(e) => {
+                        setFormSubjectId(e.target.value as Id<"subjects">);
+                        setFormTopicId("");
+                      }}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                    >
+                      {subjects.map((s) => (
+                        <option key={s._id} value={s._id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                      Topic Tag (Optional)
+                    </label>
+                    <select
+                      value={formTopicId}
+                      onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
+                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                    >
+                      <option value="">-- General / Subject Level --</option>
+                      {availableTopicsForForm.map((t) => (
+                        <option key={t._id} value={t._id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Board Exam Subject
+                    Front Side (Prompt / Question / Term)
                   </label>
-                  <select
-                    value={formSubjectId}
-                    onChange={(e) => {
-                      setFormSubjectId(e.target.value as Id<"subjects">);
-                      setFormTopicId("");
-                    }}
+                  <textarea
+                    value={formFront}
+                    onChange={(e) => setFormFront(e.target.value)}
+                    placeholder="e.g., Minimum width of a ramp for accessible access under BP 344?"
+                    rows={3}
                     required
                     className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  >
-                    {subjects.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Topic Tag (Optional)
+                    Back Side (Answer / Code Requirement / Key Details)
                   </label>
-                  <select
-                    value={formTopicId}
-                    onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
+                  <textarea
+                    value={formBack}
+                    onChange={(e) => setFormBack(e.target.value)}
+                    placeholder="e.g., 1200 mm clear width with 1:12 maximum gradient slope."
+                    rows={3}
+                    required
                     className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  >
-                    <option value="">-- General / Subject Level --</option>
-                    {availableTopicsForForm.map((t) => (
-                      <option key={t._id} value={t._id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                      Publication Status
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setFormPublished(!formPublished)}
+                      className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                        formPublished
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
+                      }`}
+                    >
+                      {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      <span>{formPublished ? "Live" : "Draft"}</span>
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                      Attach Diagram (Optional)
+                    </label>
+                    <label className="w-full py-2.5 px-3 rounded-xl bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-blueprint-500 text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                      {uploadingImage ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-blueprint-500" />
+                      ) : (
+                        <Upload className="w-4 h-4 text-studio-400" />
+                      )}
+                      <span className="truncate">
+                        {formImageId ? "Image Attached ✓" : "Upload Diagram"}
+                      </span>
+                      <input
+                        type="file"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        accept="image/*"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                  Front Side (Prompt / Question / Term)
-                </label>
-                <textarea
-                  value={formFront}
-                  onChange={(e) => setFormFront(e.target.value)}
-                  placeholder="e.g., Minimum width of a ramp for accessible access under BP 344?"
-                  rows={3}
-                  required
-                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                  Back Side (Answer / Code Requirement / Key Details)
-                </label>
-                <textarea
-                  value={formBack}
-                  onChange={(e) => setFormBack(e.target.value)}
-                  placeholder="e.g., 1200 mm clear width with 1:12 maximum gradient slope."
-                  rows={3}
-                  required
-                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Publication Status
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setFormPublished(!formPublished)}
-                    className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
-                      formPublished
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                        : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
-                    }`}
-                  >
-                    {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    <span>{formPublished ? "Live" : "Draft"}</span>
-                  </button>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Attach Diagram (Optional)
-                  </label>
-                  <label className="w-full py-2.5 px-3 rounded-xl bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-blueprint-500 text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors">
-                    {uploadingImage ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-blueprint-500" />
-                    ) : (
-                      <Upload className="w-4 h-4 text-studio-400" />
-                    )}
-                    <span className="truncate">
-                      {formImageId ? "Image Attached ✓" : "Upload Diagram"}
-                    </span>
-                    <input
-                      type="file"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      accept="image/*"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-studio-200 dark:border-studio-800">
+              <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
@@ -497,8 +504,8 @@ export default function FlashcardsPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-4 border border-rose-500/20">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-4 border border-rose-500/20 shadow-2xl">
             <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
               Delete Flashcard
             </h3>

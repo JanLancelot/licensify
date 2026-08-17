@@ -263,22 +263,27 @@ export default function UsersPage() {
 
       {/* Edit Role Modal */}
       {editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-5">
-            <div className="flex items-center justify-between border-b border-studio-200 dark:border-studio-800 pb-4">
-              <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                Modify User Role
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="glass-modal max-w-md w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
+            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
+              <div>
+                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
+                  Modify User Role
+                </h3>
+                <p className="text-xs text-studio-500">
+                  Adjust permission tier and studio access.
+                </p>
+              </div>
               <button
                 onClick={() => setEditingUser(null)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm"
+                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
               >
                 Cancel
               </button>
             </div>
 
-            <form onSubmit={handleSaveRole} className="space-y-4">
-              <div>
+            <form onSubmit={handleSaveRole} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
                 <p className="text-xs text-studio-500 mb-2">
                   Assign role privileges for <strong className="text-studio-900 dark:text-studio-100">{editingUser.username}</strong> ({editingUser.email || "No email"}):
                 </p>
@@ -327,7 +332,7 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-studio-200 dark:border-studio-800">
+              <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
