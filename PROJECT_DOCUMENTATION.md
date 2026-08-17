@@ -1,6 +1,6 @@
-# ReApp - ALE Reviewer Application 🏗️
+# Licensify - ALE Reviewer Application 🏗️
 
-Welcome to the **ReApp** documentation! ReApp is an offline-first, mobile Architectural Licensure Examination (ALE) Reviewer application built with React Native (Expo) and a robust sync-engine powered by Convex and SQLite.
+Welcome to the **Licensify** documentation! Licensify is an offline-first, mobile Architectural Licensure Examination (ALE) Reviewer application built with React Native (Expo) and a robust sync-engine powered by Convex and SQLite.
 
 ---
 
@@ -16,7 +16,7 @@ Welcome to the **ReApp** documentation! ReApp is an offline-first, mobile Archit
 ---
 
 ## 1. Overview
-ReApp aims to provide aspiring architects with a seamless studying experience. It features curriculum tracking, flashcards, and configurable practice quizzes. Its defining architectural trait is its **Offline-First Zero-Trust** capability, allowing users to study on the go without an internet connection, while securely syncing progress to the cloud when online.
+Licensify aims to provide aspiring architects with a seamless studying experience. It features curriculum tracking, flashcards, and configurable practice quizzes. Its defining architectural trait is its **Offline-First Zero-Trust** capability, allowing users to study on the go without an internet connection, while securely syncing progress to the cloud when online.
 
 ---
 
@@ -31,7 +31,7 @@ ReApp aims to provide aspiring architects with a seamless studying experience. I
 ---
 
 ## 3. System Architecture
-ReApp uses a **Local-First Data Flow**:
+Licensify uses a **Local-First Data Flow**:
 1. **Cloud Truth (Convex):** The central repository for all curriculum data (subjects, topics, questions) and global user data.
 2. **Local Cache (SQLite):** All curriculum data is synchronized down to the local device. The UI **only** reads from the local SQLite database.
 3. **Local Mutations:** When a user completes a quiz, the attempt is scored locally using cryptographic hashes (to prevent local cheating) and saved to SQLite with a `pending_sync` status.
@@ -98,7 +98,7 @@ Handled by `syncUp` in `useSyncService.ts`:
 3. Upon success, updates the local `syncStatus` to `synced`.
 
 ### Cryptographic Answer Verification
-To allow offline grading without exposing correct answers in the local database, ReApp uses **Zero-Trust Hashing**:
+To allow offline grading without exposing correct answers in the local database, Licensify uses **Zero-Trust Hashing**:
 - The backend stores the `SHA-256` hash of `questionId + correctChoiceId`.
 - When the user selects an answer offline, the app hashes the selection and compares it against the stored hash to calculate the local score.
 - The raw answers are eventually sent to Convex for authoritative server-side grading.

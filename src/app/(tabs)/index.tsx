@@ -1,4 +1,4 @@
-import React from 'react';
+import { useRouter } from 'expo-router';
 import {
   ArrowRight,
   Award,
@@ -8,10 +8,9 @@ import {
 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 
-import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function HomeScreen() {
   const theme = useTheme();
