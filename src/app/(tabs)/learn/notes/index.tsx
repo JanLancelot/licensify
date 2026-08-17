@@ -840,19 +840,10 @@ function TopicItem({
                           {lesson.lessonNumber}
                         </Text>
                       </View>
-                      <View style={styles.lessonTitleBox}>
-                        <Text
-                          style={[styles.lessonTitle, { color: theme.text }]}>
-                          {lesson.title}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.lessonDuration,
-                            { color: theme.textSecondary },
-                          ]}>
-                          {lesson.duration}
-                        </Text>
-                      </View>
+                      <Text
+                        style={[styles.lessonTitle, { color: theme.text }]}>
+                        {lesson.title}
+                      </Text>
                     </View>
 
                     <ChevronRight
@@ -1358,16 +1349,11 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '700',
   },
-  lessonTitleBox: {
-    flex: 1,
-    gap: 2,
-  },
   lessonTitle: {
-    fontSize: 12.5,
+    flex: 1,
+    fontSize: 13,
     fontWeight: '600',
-  },
-  lessonDuration: {
-    fontSize: 11,
+    lineHeight: 17,
   },
 
   /* Modal */
