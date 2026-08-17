@@ -26,7 +26,7 @@ function loadInitialStore(): TableStore {
         return { ...defaultStore, ...JSON.parse(saved) };
       }
     } catch (e) {
-      console.warn('[ReApp Web DB] Failed to load localStorage data:', e);
+      console.warn('[Licensify Web DB] Failed to load localStorage data:', e);
     }
   }
 
@@ -40,7 +40,7 @@ function saveStore() {
     try {
       localStorage.setItem(WEB_DB_STORAGE_KEY, JSON.stringify(memoryStore));
     } catch (e) {
-      console.warn('[ReApp Web DB] Failed to save localStorage data:', e);
+      console.warn('[Licensify Web DB] Failed to save localStorage data:', e);
     }
   }
 }
@@ -320,8 +320,8 @@ export const db = {
 };
 
 export const expoDb = {
-  execSync: () => {},
-  runSync: () => {},
+  execSync: () => { },
+  runSync: () => { },
   getAllSync: () => [],
   getFirstSync: () => null,
 };

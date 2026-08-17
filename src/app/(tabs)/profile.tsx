@@ -1,18 +1,19 @@
+import { useAuthActions } from '@convex-dev/auth/react';
+import { useRouter } from 'expo-router';
 import {
   Cloud,
   Flame,
   Lock,
+  LogOut,
   Moon,
   RotateCcw,
   Smartphone,
   Sun,
   Trophy,
   User,
-  Zap,
-  LogOut
+  Zap
 } from 'lucide-react-native';
 import { useState } from 'react';
-import { useAuthActions } from '@convex-dev/auth/react';
 import {
   Alert,
   Platform,
@@ -24,7 +25,6 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 
 import { Radius } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
@@ -150,10 +150,10 @@ export default function ProfileScreen() {
 
           <View style={styles.profileInfo}>
             <Text style={[styles.name, { color: colors.text }]}>
-              Engr. Eleazar James Gapole
+              Engr. Board Examinee
             </Text>
             <Text style={[styles.role, { color: colors.textSecondary }]}>
-              ALE 2026 Board Examinee
+              johndoe@gmail.com
             </Text>
           </View>
         </View>
@@ -641,7 +641,7 @@ export default function ProfileScreen() {
                     styles.accountSubtext,
                     { color: colors.textSecondary },
                   ]}>
-                  Log out of your ReApp account.
+                  Log out of your Licensify account.
                 </Text>
               </View>
               <LogOut size={15} color="#EF4444" />

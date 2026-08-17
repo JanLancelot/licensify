@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Link } from 'expo-router';
-import { Mail, Lock, UserPlus, AlertCircle, User } from 'lucide-react-native';
+import { AlertCircle, Lock, Mail, User, UserPlus } from 'lucide-react-native';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useAppTheme } from '@/context/theme-context';
 import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 
 export default function RegisterScreen() {
   const [firstName, setFirstName] = useState('');
@@ -66,7 +66,7 @@ export default function RegisterScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
+
           {/* Header */}
           <View style={styles.header}>
             <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
@@ -74,7 +74,7 @@ export default function RegisterScreen() {
             </View>
             <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Join ReApp to track your ALE progress.
+              Join Licensify to track your ALE progress.
             </Text>
           </View>
 
