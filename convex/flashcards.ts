@@ -94,3 +94,77 @@ export const deleteFlashcard = mutation({
     return { success: true };
   },
 });
+
+/**
+ * Admin query: Fetch all flashcards (drafts & published) with optional subject/topic filters.
+ */
+export const listAllFlashcardsAdmin = query({
+  args: {
+    subjectId: v.optional(v.id("subjects")),
+    topicId: v.optional(v.id("topics")),
+  },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+
+    let cards;
+    if (args.subjectId) {
+      cards = await ctx.db
+        .query("flashcards")
+        .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId!))
+        .collect();
+    } else if (args.topicId) {
+      cards = await ctx.db
+        .query("flashcards")
+        .withIndex("by_topic", (q) => q.eq("topicId", args.topicId!))
+        .collect();
+    } else {
+      cards = await ctx.db.query("flashcards").collect();
+    }
+
+    if (args.subjectId && args.topicId) {
+      cards = cards.filter((c) => c.topicId === args.topicId);
+    }
+
+    return await Promise.all(
+      cards.map(async (card) => {
+        let imageUrl: string | null = null;
+        if (card.imageId) {
+          imageUrl = await ctx.storage.getUrl(card.imageId);
+        }
+        return { ...card, imageUrl };
+      })
+    );
+  },
+});
+
+/**
+ * Admin mutation: Update flashcard.
+ */
+export const updateFlashcard = mutation({
+  args: {
+    flashcardId: v.id("flashcards"),
+    subjectId: v.optional(v.id("subjects")),
+    topicId: v.optional(v.id("topics")),
+    front: v.optional(v.string()),
+    back: v.optional(v.string()),
+    imageId: v.optional(v.id("_storage")),
+    isPublished: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    const now = Date.now();
+
+    await ctx.db.patch(args.flashcardId, {
+      ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
+      ...(args.topicId !== undefined && { topicId: args.topicId }),
+      ...(args.front !== undefined && { front: args.front }),
+      ...(args.back !== undefined && { back: args.back }),
+      ...(args.imageId !== undefined && { imageId: args.imageId }),
+      ...(args.isPublished !== undefined && { isPublished: args.isPublished }),
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+

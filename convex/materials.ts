@@ -102,3 +102,100 @@ export const createMaterial = mutation({
     return materialId;
   },
 });
+
+/**
+ * Admin query: Fetch all materials (including drafts), optionally filtered by subject or topic.
+ */
+export const listAllMaterialsAdmin = query({
+  args: {
+    subjectId: v.optional(v.id("subjects")),
+    topicId: v.optional(v.id("topics")),
+  },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+
+    let materials;
+    if (args.subjectId) {
+      materials = await ctx.db
+        .query("materials")
+        .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId!))
+        .collect();
+    } else if (args.topicId) {
+      materials = await ctx.db
+        .query("materials")
+        .withIndex("by_topic", (q) => q.eq("topicId", args.topicId!))
+        .collect();
+    } else {
+      materials = await ctx.db.query("materials").collect();
+    }
+
+    if (args.subjectId && args.topicId) {
+      materials = materials.filter((m) => m.topicId === args.topicId);
+    }
+
+    return await Promise.all(
+      materials.map(async (m) => {
+        let fileUrl: string | null = null;
+        if (m.storageId) {
+          fileUrl = await ctx.storage.getUrl(m.storageId);
+        }
+        return { ...m, fileUrl };
+      })
+    );
+  },
+});
+
+/**
+ * Admin mutation: Update material metadata or content.
+ */
+export const updateMaterial = mutation({
+  args: {
+    materialId: v.id("materials"),
+    subjectId: v.optional(v.id("subjects")),
+    topicId: v.optional(v.id("topics")),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    type: v.optional(
+      v.union(
+        v.literal("article"),
+        v.literal("pdf"),
+        v.literal("image"),
+        v.literal("document")
+      )
+    ),
+    content: v.optional(v.string()),
+    storageId: v.optional(v.id("_storage")),
+    isPublished: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    const now = Date.now();
+
+    await ctx.db.patch(args.materialId, {
+      ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
+      ...(args.topicId !== undefined && { topicId: args.topicId }),
+      ...(args.title !== undefined && { title: args.title }),
+      ...(args.description !== undefined && { description: args.description }),
+      ...(args.type !== undefined && { type: args.type }),
+      ...(args.content !== undefined && { content: args.content }),
+      ...(args.storageId !== undefined && { storageId: args.storageId }),
+      ...(args.isPublished !== undefined && { isPublished: args.isPublished }),
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Admin mutation: Delete a material document.
+ */
+export const deleteMaterial = mutation({
+  args: { materialId: v.id("materials") },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    await ctx.db.delete(args.materialId);
+    return { success: true };
+  },
+});
+

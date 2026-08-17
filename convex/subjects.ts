@@ -107,3 +107,28 @@ export const updateSubject = mutation({
     return { success: true };
   },
 });
+
+/**
+ * Mutation: Delete a Subject (Requires content_manager or admin).
+ */
+export const deleteSubject = mutation({
+  args: { subjectId: v.id("subjects") },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+
+    // Check for associated topics
+    const topics = await ctx.db
+      .query("topics")
+      .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId))
+      .collect();
+
+    // Delete associated topics
+    for (const topic of topics) {
+      await ctx.db.delete(topic._id);
+    }
+
+    await ctx.db.delete(args.subjectId);
+    return { success: true };
+  },
+});
+

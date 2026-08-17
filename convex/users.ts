@@ -162,3 +162,75 @@ export const updateFcmToken = mutation({
   },
 });
 
+/**
+ * Admin query: List all users with optional role filtering and search.
+ */
+export const listAllUsersAdmin = query({
+  args: {
+    role: v.optional(
+      v.union(
+        v.literal("student"),
+        v.literal("admin"),
+        v.literal("content_manager")
+      )
+    ),
+    search: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    let users;
+    if (args.role) {
+      users = await ctx.db
+        .query("users")
+        .withIndex("by_role", (q) => q.eq("role", args.role!))
+        .collect();
+    } else {
+      users = await ctx.db.query("users").collect();
+    }
+
+    if (args.search && args.search.trim().length > 0) {
+      const lower = args.search.trim().toLowerCase();
+      users = users.filter(
+        (u) =>
+          u.username.toLowerCase().includes(lower) ||
+          u.email?.toLowerCase().includes(lower) ||
+          u.firstName?.toLowerCase().includes(lower) ||
+          u.lastName?.toLowerCase().includes(lower)
+      );
+    }
+
+    return users.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
+/**
+ * Admin mutation: Toggle user active/suspended status.
+ */
+export const toggleUserActive = mutation({
+  args: {
+    targetUserId: v.id("users"),
+    isActive: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const currentUser = await requireAdmin(ctx);
+
+    if (currentUser._id === args.targetUserId && !args.isActive) {
+      throw new Error("Admins cannot suspend their own account.");
+    }
+
+    const target = await ctx.db.get(args.targetUserId);
+    if (!target) {
+      throw new Error("Target user not found.");
+    }
+
+    await ctx.db.patch(args.targetUserId, {
+      isActive: args.isActive,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, isActive: args.isActive };
+  },
+});
+
+

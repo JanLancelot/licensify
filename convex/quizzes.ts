@@ -147,3 +147,95 @@ export const generatePracticeQuiz = mutation({
     return quizId;
   },
 });
+
+/**
+ * Admin query: Fetch all quizzes (practice & mock exams, drafts & published).
+ */
+export const listAllQuizzesAdmin = query({
+  args: {
+    type: v.optional(v.union(v.literal("practice"), v.literal("mock_exam"))),
+  },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+
+    if (args.type) {
+      return await ctx.db
+        .query("quizzes")
+        .withIndex("by_type", (q) => q.eq("type", args.type!))
+        .collect();
+    }
+
+    return await ctx.db.query("quizzes").collect();
+  },
+});
+
+/**
+ * Admin query: Fetch a quiz with full question details including correctChoiceId & explanation for editing.
+ */
+export const getQuizWithQuestionsAdmin = query({
+  args: { quizId: v.id("quizzes") },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    const quiz = await ctx.db.get(args.quizId);
+    if (!quiz) return null;
+
+    const questions = await Promise.all(
+      quiz.questionIds.map(async (qId) => await ctx.db.get(qId))
+    );
+
+    return {
+      ...quiz,
+      questions: questions.filter((q) => q !== null),
+    };
+  },
+});
+
+/**
+ * Admin mutation: Update quiz.
+ */
+export const updateQuiz = mutation({
+  args: {
+    quizId: v.id("quizzes"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    type: v.optional(v.union(v.literal("practice"), v.literal("mock_exam"))),
+    subjectId: v.optional(v.id("subjects")),
+    topicId: v.optional(v.id("topics")),
+    questionIds: v.optional(v.array(v.id("questions"))),
+    timeLimitSeconds: v.optional(v.number()),
+    passingScore: v.optional(v.number()),
+    isPublished: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    const now = Date.now();
+
+    await ctx.db.patch(args.quizId, {
+      ...(args.title !== undefined && { title: args.title }),
+      ...(args.description !== undefined && { description: args.description }),
+      ...(args.type !== undefined && { type: args.type }),
+      ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
+      ...(args.topicId !== undefined && { topicId: args.topicId }),
+      ...(args.questionIds !== undefined && { questionIds: args.questionIds }),
+      ...(args.timeLimitSeconds !== undefined && { timeLimitSeconds: args.timeLimitSeconds }),
+      ...(args.passingScore !== undefined && { passingScore: args.passingScore }),
+      ...(args.isPublished !== undefined && { isPublished: args.isPublished }),
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Admin mutation: Delete a quiz.
+ */
+export const deleteQuiz = mutation({
+  args: { quizId: v.id("quizzes") },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    await ctx.db.delete(args.quizId);
+    return { success: true };
+  },
+});
+

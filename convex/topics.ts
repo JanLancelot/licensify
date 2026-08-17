@@ -81,3 +81,35 @@ export const updateTopic = mutation({
     return { success: true };
   },
 });
+
+/**
+ * Admin/Content Manager query: Fetches all topics, optionally filtered by subjectId.
+ */
+export const listAllTopicsAdmin = query({
+  args: { subjectId: v.optional(v.id("subjects")) },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+
+    if (args.subjectId) {
+      return await ctx.db
+        .query("topics")
+        .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId!))
+        .collect();
+    }
+
+    return await ctx.db.query("topics").collect();
+  },
+});
+
+/**
+ * Mutation: Delete a Topic (Requires content_manager or admin).
+ */
+export const deleteTopic = mutation({
+  args: { topicId: v.id("topics") },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    await ctx.db.delete(args.topicId);
+    return { success: true };
+  },
+});
+
