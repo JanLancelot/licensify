@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Play, Shuffle, Sparkles, Trash2 } from 'lucide-react-native';
+import { Pencil, Play, Shuffle, Trash2 } from 'lucide-react-native';
 
 import { Radius } from '@/constants/theme';
 import { FlashcardPreset } from '@/types/curriculum';
@@ -8,6 +8,7 @@ import { FlashcardPreset } from '@/types/curriculum';
 export interface FlashcardPresetCardProps {
   preset: FlashcardPreset;
   onStartDrill: (preset: FlashcardPreset) => void;
+  onEditPreset: (preset: FlashcardPreset) => void;
   onDeletePreset: (id: string) => void;
   theme: any;
 }
@@ -15,6 +16,7 @@ export interface FlashcardPresetCardProps {
 export function FlashcardPresetCard({
   preset,
   onStartDrill,
+  onEditPreset,
   onDeletePreset,
   theme,
 }: FlashcardPresetCardProps) {
@@ -27,7 +29,7 @@ export function FlashcardPresetCard({
           borderColor: theme.border,
         },
       ]}>
-      {/* Top Badges & Delete */}
+      {/* Top Badges & Actions */}
       <View style={styles.presetCardTop}>
         <View style={styles.presetBadgesRow}>
           <View
@@ -71,33 +73,29 @@ export function FlashcardPresetCard({
               </Text>
             </View>
           )}
-
-          {preset.isRandomized && (
-            <View
-              style={[
-                styles.presetPill,
-                {
-                  backgroundColor: theme.backgroundSelected,
-                  borderColor: theme.border,
-                },
-              ]}>
-              <Sparkles size={10} color={theme.textSecondary} />
-              <Text style={[styles.presetPillText, { color: theme.textSecondary }]}>
-                Random
-              </Text>
-            </View>
-          )}
         </View>
 
-        <Pressable
-          onPress={() => onDeletePreset(preset.id)}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.deleteBtn,
-            { opacity: pressed ? 0.6 : 1 },
-          ]}>
-          <Trash2 size={15} color={theme.textSecondary} />
-        </Pressable>
+        <View style={styles.topActionsRow}>
+          <Pressable
+            onPress={() => onEditPreset(preset)}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              { opacity: pressed ? 0.6 : 1 },
+            ]}>
+            <Pencil size={15} color={theme.textSecondary} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => onDeletePreset(preset.id)}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.iconBtn,
+              { opacity: pressed ? 0.6 : 1 },
+            ]}>
+            <Trash2 size={15} color={theme.textSecondary} />
+          </Pressable>
+        </View>
       </View>
 
       {/* Preset Title & Scope */}
@@ -112,24 +110,40 @@ export function FlashcardPresetCard({
         </Text>
       </View>
 
-      {/* Footer & Start Drill Button */}
+      {/* Footer & Actions */}
       <View style={[styles.presetCardFooter, { borderTopColor: theme.border }]}>
         <Text style={[styles.presetCardDate, { color: theme.textSecondary }]}>
           {preset.createdAt}
         </Text>
 
-        <Pressable
-          onPress={() => onStartDrill(preset)}
-          style={({ pressed }) => [
-            styles.startDrillBtn,
-            {
-              backgroundColor: theme.accent,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}>
-          <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
-          <Text style={styles.startDrillBtnText}>Start Flashcards</Text>
-        </Pressable>
+        <View style={styles.footerActions}>
+          <Pressable
+            onPress={() => onEditPreset(preset)}
+            style={({ pressed }) => [
+              styles.editBtn,
+              {
+                backgroundColor: theme.backgroundSelected,
+                borderColor: theme.border,
+                opacity: pressed ? 0.75 : 1,
+              },
+            ]}>
+            <Pencil size={11} color={theme.text} />
+            <Text style={[styles.editBtnText, { color: theme.text }]}>Edit</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => onStartDrill(preset)}
+            style={({ pressed }) => [
+              styles.startDrillBtn,
+              {
+                backgroundColor: theme.accent,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}>
+            <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
+            <Text style={styles.startDrillBtnText}>Start Flashcards</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -166,7 +180,12 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '700',
   },
-  deleteBtn: {
+  topActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconBtn: {
     padding: 4,
   },
   presetCardBody: {
@@ -189,6 +208,24 @@ const styles = StyleSheet.create({
   },
   presetCardDate: {
     fontSize: 11,
+  },
+  footerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+  },
+  editBtnText: {
+    fontSize: 11.5,
+    fontWeight: '600',
   },
   startDrillBtn: {
     flexDirection: 'row',

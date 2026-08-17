@@ -13,7 +13,7 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from 'react-native-reanimated';
-import { Check, Plus, Shuffle, Sparkles, X } from 'lucide-react-native';
+import { Check, Plus, Shuffle, X } from 'lucide-react-native';
 
 import { Radius } from '@/constants/theme';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
@@ -23,8 +23,9 @@ import { SubjectNote, Topic } from '@/types/curriculum';
 
 export interface FlashcardPresetBuilderModalProps {
   visible: boolean;
+  isEditing?: boolean;
   onClose: () => void;
-  onCreatePreset: () => void;
+  onSubmit: () => void;
   expandedSubjects: Record<string, boolean>;
   expandedTopics: Record<string, boolean>;
   selectedLessonIds: Set<string>;
@@ -35,8 +36,6 @@ export interface FlashcardPresetBuilderModalProps {
   toggleLessonSelection: (lessonId: string) => void;
   isShuffled: boolean;
   setIsShuffled: (val: boolean) => void;
-  isRandomized: boolean;
-  setIsRandomized: (val: boolean) => void;
   customTitle: string;
   setCustomTitle: (val: string) => void;
   bottomInset: number;
@@ -45,8 +44,9 @@ export interface FlashcardPresetBuilderModalProps {
 
 export function FlashcardPresetBuilderModal({
   visible,
+  isEditing = false,
   onClose,
-  onCreatePreset,
+  onSubmit,
   expandedSubjects,
   expandedTopics,
   selectedLessonIds,
@@ -57,8 +57,6 @@ export function FlashcardPresetBuilderModal({
   toggleLessonSelection,
   isShuffled,
   setIsShuffled,
-  isRandomized,
-  setIsRandomized,
   customTitle,
   setCustomTitle,
   bottomInset,
@@ -98,10 +96,10 @@ export function FlashcardPresetBuilderModal({
             ]}>
             <View style={styles.modalHeaderTitleBox}>
               <Text style={[styles.modalKicker, { color: theme.accent }]}>
-                FLASHCARD PRESET BUILDER
+                {isEditing ? 'EDIT FLASHCARD PRESET' : 'FLASHCARD PRESET BUILDER'}
               </Text>
               <Text style={[styles.modalTitle, { color: theme.text }]}>
-                Select from Notes
+                {isEditing ? 'Modify Selection & Settings' : 'Select from Notes'}
               </Text>
             </View>
 
@@ -282,7 +280,7 @@ export function FlashcardPresetBuilderModal({
                 borderTopColor: theme.border,
               },
             ]}>
-            {/* Selected Summary and Toggles */}
+            {/* Selected Summary and Shuffled Toggle */}
             <View style={styles.optionsRow}>
               <View style={styles.selectionCountBox}>
                 <Text style={[styles.selectionCountNumber, { color: theme.accent }]}>
@@ -317,31 +315,6 @@ export function FlashcardPresetBuilderModal({
                   Shuffled
                 </Text>
               </Pressable>
-
-              {/* Randomized Toggle */}
-              <Pressable
-                onPress={() => setIsRandomized(!isRandomized)}
-                style={[
-                  styles.toggleChip,
-                  {
-                    backgroundColor: isRandomized
-                      ? theme.accentMuted
-                      : theme.backgroundSelected,
-                    borderColor: isRandomized ? theme.accent : theme.border,
-                  },
-                ]}>
-                <Sparkles
-                  size={12}
-                  color={isRandomized ? theme.accent : theme.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.toggleChipText,
-                    { color: isRandomized ? theme.accent : theme.textSecondary },
-                  ]}>
-                  Randomized
-                </Text>
-              </Pressable>
             </View>
 
             {/* Custom Title Input */}
@@ -360,9 +333,9 @@ export function FlashcardPresetBuilderModal({
               ]}
             />
 
-            {/* Create Action Button */}
+            {/* Action Button (Add / Save) */}
             <Pressable
-              onPress={onCreatePreset}
+              onPress={onSubmit}
               style={({ pressed }) => [
                 styles.createPresetActionBtn,
                 {
@@ -370,9 +343,15 @@ export function FlashcardPresetBuilderModal({
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}>
-              <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
+              {isEditing ? (
+                <Check size={16} color="#FFFFFF" strokeWidth={2.5} />
+              ) : (
+                <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
+              )}
               <Text style={styles.createPresetActionBtnText}>
-                Add to Flashcards ({selectedLessonIds.size} Lessons)
+                {isEditing
+                  ? `Save Changes (${selectedLessonIds.size} Lessons)`
+                  : `Add to Flashcards (${selectedLessonIds.size} Lessons)`}
               </Text>
             </Pressable>
           </View>
@@ -522,13 +501,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: Radius.full,
     borderWidth: 1,
   },
   toggleChipText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
   },
   titleInput: {

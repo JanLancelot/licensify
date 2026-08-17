@@ -44,10 +44,10 @@ export interface FlashcardPreset {
   lessonCount: number;
   cardCount: number;
   isShuffled: boolean;
-  isRandomized: boolean;
   createdAt: string;
   subjectNames: string[];
   cards: FlashcardItem[];
+  selectedLessonIds?: string[];
 }
 
 export interface QuizQuestion {

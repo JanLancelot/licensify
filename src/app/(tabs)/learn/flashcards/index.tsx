@@ -30,7 +30,7 @@ export default function FlashcardsHubScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  // User-created Flashcard Presets (Empty initially as requested)
+  // User-created Flashcard Presets (Empty initially)
   const [presets, setPresets] = useState<FlashcardPreset[]>([]);
 
   // Active Session State
@@ -39,13 +39,13 @@ export default function FlashcardsHubScreen() {
   const [studyIndex, setStudyIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Bottom Sheet Modal for Preset Creation
+  // Bottom Sheet Modal for Preset Creation / Editing
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
   const [selectedLessonIds, setSelectedLessonIds] = useState<Set<string>>(new Set());
   const [isShuffled, setIsShuffled] = useState(true);
-  const [isRandomized, setIsRandomized] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
 
   // ── Accordion Handlers ───────────────────────────────────────────────────
@@ -115,29 +115,58 @@ export default function FlashcardsHubScreen() {
     });
   };
 
-  // ── Modal Actions ────────────────────────────────────────────────────────
+  // ── Modal Actions (Create / Edit) ────────────────────────────────────────
   const handleOpenAddModal = () => {
+    setEditingPresetId(null);
     setSelectedLessonIds(new Set());
     setExpandedSubjects({});
     setExpandedTopics({});
     setCustomTitle('');
+    setIsShuffled(true);
     setIsAddModalVisible(true);
   };
 
-  const handleCloseAddModal = () => {
-    setIsAddModalVisible(false);
+  const handleEditPreset = (preset: FlashcardPreset) => {
+    setEditingPresetId(preset.id);
+    const lessonIdSet = new Set(preset.selectedLessonIds || []);
+    setSelectedLessonIds(lessonIdSet);
+    setCustomTitle(preset.title);
+    setIsShuffled(preset.isShuffled);
+
+    // Expand subjects and topics that contain selected lessons
+    const subjectsToExpand: Record<string, boolean> = {};
+    const topicsToExpand: Record<string, boolean> = {};
+
+    SUBJECT_NOTES.forEach((sub) => {
+      sub.topics.forEach((top) => {
+        const hasMatch = top.lessons.some((l) => lessonIdSet.has(l.id));
+        if (hasMatch) {
+          subjectsToExpand[sub.id] = true;
+          topicsToExpand[top.id] = true;
+        }
+      });
+    });
+
+    setExpandedSubjects(subjectsToExpand);
+    setExpandedTopics(topicsToExpand);
+    setIsAddModalVisible(true);
   };
 
-  const handleCreatePreset = () => {
+  const handleCloseModal = () => {
+    setIsAddModalVisible(false);
+    setEditingPresetId(null);
+  };
+
+  const handleSubmitPreset = () => {
     if (selectedLessonIds.size === 0) {
       Alert.alert(
         'No Lessons Selected',
-        'Please select at least one lesson, topic, or subject to generate your flashcard preset.'
+        'Please select at least one lesson, topic, or subject to generate your flashcards.'
       );
       return;
     }
 
-    const cards = buildCardsForLessons(selectedLessonIds, isRandomized, isShuffled);
+    const cards = buildCardsForLessons(selectedLessonIds, isShuffled);
 
     if (cards.length === 0) {
       Alert.alert('Notice', 'No flashcards could be generated for the selected lessons.');
@@ -160,24 +189,47 @@ export default function FlashcardsHubScreen() {
         ? `Multi-Subject Preset (${selectedLessonIds.size} Lessons)`
         : `${Array.from(selectedSubjectsSet)[0] || 'Curriculum'} Preset (${selectedLessonIds.size} Lessons)`);
 
-    const newPreset: FlashcardPreset = {
-      id: `preset-${Date.now()}`,
-      title: finalTitle,
-      lessonCount: selectedLessonIds.size,
-      cardCount: cards.length,
-      isShuffled,
-      isRandomized,
-      createdAt: new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }),
-      subjectNames: Array.from(selectedSubjectsSet),
-      cards,
-    };
+    if (editingPresetId) {
+      // Update existing preset
+      setPresets((prev) =>
+        prev.map((preset) => {
+          if (preset.id === editingPresetId) {
+            return {
+              ...preset,
+              title: finalTitle,
+              lessonCount: selectedLessonIds.size,
+              cardCount: cards.length,
+              isShuffled,
+              subjectNames: Array.from(selectedSubjectsSet),
+              cards,
+              selectedLessonIds: Array.from(selectedLessonIds),
+            };
+          }
+          return preset;
+        })
+      );
+    } else {
+      // Create new preset
+      const newPreset: FlashcardPreset = {
+        id: `preset-${Date.now()}`,
+        title: finalTitle,
+        lessonCount: selectedLessonIds.size,
+        cardCount: cards.length,
+        isShuffled,
+        createdAt: new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+        subjectNames: Array.from(selectedSubjectsSet),
+        cards,
+        selectedLessonIds: Array.from(selectedLessonIds),
+      };
 
-    setPresets((prev) => [newPreset, ...prev]);
-    setIsAddModalVisible(false);
+      setPresets((prev) => [newPreset, ...prev]);
+    }
+
+    handleCloseModal();
   };
 
   // ── Study Session Actions ────────────────────────────────────────────────
@@ -335,6 +387,7 @@ export default function FlashcardsHubScreen() {
                   key={preset.id}
                   preset={preset}
                   onStartDrill={startPresetDrill}
+                  onEditPreset={handleEditPreset}
                   onDeletePreset={handleDeletePreset}
                   theme={theme}
                 />
@@ -344,11 +397,12 @@ export default function FlashcardsHubScreen() {
         </ScrollView>
       )}
 
-      {/* ── Add Preset Bottom Sheet Modal ──────────────────────────────────── */}
+      {/* ── Add / Edit Preset Bottom Sheet Modal ──────────────────────────── */}
       <FlashcardPresetBuilderModal
         visible={isAddModalVisible}
-        onClose={handleCloseAddModal}
-        onCreatePreset={handleCreatePreset}
+        isEditing={!!editingPresetId}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmitPreset}
         expandedSubjects={expandedSubjects}
         expandedTopics={expandedTopics}
         selectedLessonIds={selectedLessonIds}
@@ -359,8 +413,6 @@ export default function FlashcardsHubScreen() {
         toggleLessonSelection={toggleLessonSelection}
         isShuffled={isShuffled}
         setIsShuffled={setIsShuffled}
-        isRandomized={isRandomized}
-        setIsRandomized={setIsRandomized}
         customTitle={customTitle}
         setCustomTitle={setCustomTitle}
         bottomInset={insets.bottom}

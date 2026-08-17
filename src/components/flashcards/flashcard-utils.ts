@@ -3,7 +3,6 @@ import { SUBJECT_NOTES } from '@/data/curriculum';
 
 export function buildCardsForLessons(
   selectedLessonIds: Set<string>,
-  isRandomized: boolean = false,
   isShuffled: boolean = false
 ): FlashcardItem[] {
   const generated: FlashcardItem[] = [];
@@ -43,9 +42,6 @@ export function buildCardsForLessons(
   });
 
   let result = [...generated];
-  if (isRandomized) {
-    result = result.sort(() => Math.random() - 0.5);
-  }
   if (isShuffled) {
     result = result.sort(() => Math.random() - 0.5);
   }
