@@ -5,8 +5,8 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
-  title: "ReApp Curriculum Studio — Admin Portal",
-  description: "Architectural Licensure Examination (ALE) content management dashboard & question bank studio.",
+  title: "LICENSIFY Studio — Board Exam Admin Portal",
+  description: "Architecture Licensure Examination (ALE) content management dashboard & question bank studio.",
 };
 
 export default function RootLayout({

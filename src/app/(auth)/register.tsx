@@ -98,7 +98,7 @@ export default function RegisterScreen() {
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               {step === 1 
-                ? 'Join Licensify to track your ALE progress.' 
+                ? 'Join LICENSIFY to track your ALE progress.' 
                 : 'Enter the 6-digit code sent to your email.'}
             </Text>
           </View>

@@ -83,7 +83,7 @@ export default function LoginPage() {
             <Compass className="w-8 h-8" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-studio-900 dark:text-studio-50 tracking-tight">
-            Curriculum Studio
+            LICENSIFY Studio
           </h1>
           <p className="text-sm text-studio-500 dark:text-studio-400 mt-1.5">
             Architecture Licensure Exam (ALE) Admin Portal

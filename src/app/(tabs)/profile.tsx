@@ -641,7 +641,7 @@ export default function ProfileScreen() {
                     styles.accountSubtext,
                     { color: colors.textSecondary },
                   ]}>
-                  Log out of your Licensify account.
+                  Log out of your LICENSIFY account.
                 </Text>
               </View>
               <LogOut size={15} color="#EF4444" />

@@ -85,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-base tracking-tight text-studio-900 dark:text-white">
-                  ReApp
+                  LICENSIFY
                 </span>
                 <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 border border-blueprint-500/20">
                   Studio

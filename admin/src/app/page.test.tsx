@@ -77,7 +77,7 @@ describe("Dashboard Overview Page", () => {
   it("renders live KPI cards, syllabus progress, and recent questions", () => {
     render(<DashboardOverviewPage />);
 
-    expect(screen.getByText(/ALE Studio Management Hub/i)).toBeInTheDocument();
+    expect(screen.getByText(/LICENSIFY • ALE Studio Hub/i)).toBeInTheDocument();
     expect(screen.getByText(/Welcome back, ArchAdmin!/i)).toBeInTheDocument();
     expect(screen.getAllByText("150").length).toBeGreaterThan(0); // Question Bank total
     expect(screen.getByText("History & Theory of Architecture")).toBeInTheDocument();

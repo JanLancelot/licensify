@@ -40,7 +40,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           </div>
           <div>
             <h3 className="font-bold text-base text-studio-900 dark:text-studio-100">
-              ALE Curriculum Studio
+              LICENSIFY Studio
             </h3>
             <p className="text-xs text-studio-500 dark:text-studio-400 mt-1 flex items-center gap-1.5 justify-center">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Authenticating admin session...

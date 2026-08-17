@@ -4,43 +4,43 @@
 
 @layer base {
   :root {
-    --background: #f8fafc;
-    --foreground: #0f172a;
+    --background: #FBFBFC;
+    --foreground: #111827;
     --card: #ffffff;
-    --card-foreground: #0f172a;
-    --border: #e2e8f0;
-    --input: #e2e8f0;
-    --ring: #3b82f6;
+    --card-foreground: #111827;
+    --border: #E5E7EB;
+    --input: #E5E7EB;
+    --ring: #C85A32;
   }
 
   .dark {
-    --background: #090d16;
-    --foreground: #f8fafc;
-    --card: #0f172a;
-    --card-foreground: #f8fafc;
-    --border: #1e293b;
-    --input: #1e293b;
-    --ring: #60a5fa;
+    --background: #121316;
+    --foreground: #F9FAFB;
+    --card: #1A1C20;
+    --card-foreground: #F9FAFB;
+    --border: #272A30;
+    --input: #272A30;
+    --ring: #E07A5F;
   }
 
   body {
-    @apply bg-studio-50 dark:bg-studio-950 text-studio-900 dark:text-studio-50 min-h-screen antialiased selection:bg-blueprint-500 selection:text-white transition-colors duration-200;
+    @apply bg-studio-50 dark:bg-studio-950 text-studio-900 dark:text-studio-50 min-h-screen antialiased selection:bg-terracotta-500 selection:text-white transition-colors duration-200;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
-/* Blueprint subtle background pattern */
+/* Architectural grid subtle background pattern */
 .bg-blueprint-grid {
   background-size: 32px 32px;
   background-image: 
-    linear-gradient(to right, rgba(59, 130, 246, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(200, 90, 50, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(200, 90, 50, 0.04) 1px, transparent 1px);
 }
 
 .dark .bg-blueprint-grid {
   background-image: 
-    linear-gradient(to right, rgba(59, 130, 246, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
+    linear-gradient(to right, rgba(224, 122, 95, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(224, 122, 95, 0.06) 1px, transparent 1px);
 }
 
 /* Glassmorphism surfaces */

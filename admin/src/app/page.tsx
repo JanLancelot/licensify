@@ -60,7 +60,7 @@ export default function DashboardOverviewPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 text-xs font-semibold uppercase tracking-wider mb-3 border border-blueprint-500/20">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>ALE Studio Management Hub</span>
+              <span>LICENSIFY • ALE Studio Hub</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-studio-900 dark:text-studio-50 tracking-tight">
               Welcome back, {user?.firstName || user?.username || "Architect"}!
