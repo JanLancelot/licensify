@@ -20,11 +20,17 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@convex/*": ["./src/convex/*", "../convex/*"]
+      "@convex/*": ["../convex/*"]
     }
-
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "src/convex/**/*.test.ts", "src/convex/**/*.config.ts"]
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts",
+    "../convex/_generated/api.d.ts",
+    "../convex/_generated/dataModel.d.ts"
+  ],
+  "exclude": ["node_modules"]
 }
 
