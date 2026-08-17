@@ -13,33 +13,56 @@ import {
   Hammer,
   Layers,
   Scale,
-  Search,
   X,
   Zap,
 } from 'lucide-react-native';
 import {
-  LayoutAnimation,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  UIManager,
   View,
 } from 'react-native';
+import Animated, {
+  FadeInDown,
+  FadeOutUp,
+  LinearTransition,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
 
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
+function RotatingChevron({
+  isOpen,
+  color,
+  size = 18,
+}: {
+  isOpen: boolean;
+  color: string;
+  size?: number;
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          rotate: withTiming(isOpen ? '90deg' : '0deg', {
+            duration: 220,
+          }),
+        },
+      ],
+    };
+  }, [isOpen]);
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <ChevronRight size={size} color={color} strokeWidth={2.2} />
+    </Animated.View>
+  );
 }
 
 interface Lesson {
@@ -648,7 +671,6 @@ export default function NotesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const [searchQuery, setSearchQuery] = useState('');
   // Track which subjects are expanded (Level 1) - all closed initially
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   // Track which topics are expanded (Level 2) - all closed initially
@@ -661,7 +683,6 @@ export default function NotesScreen() {
   } | null>(null);
 
   const toggleSubject = (subjectId: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedSubjects((prev) => ({
       ...prev,
       [subjectId]: !prev[subjectId],
@@ -669,44 +690,11 @@ export default function NotesScreen() {
   };
 
   const toggleTopic = (topicId: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedTopics((prev) => ({
       ...prev,
       [topicId]: !prev[topicId],
     }));
   };
-
-  const filteredSubjects = SUBJECT_NOTES.map((subject) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return subject;
-
-    const matchesSubject = subject.title.toLowerCase().includes(q);
-
-    const filteredTopics = subject.topics.map((topic) => {
-      const matchesTopic = topic.title.toLowerCase().includes(q);
-      const filteredLessons = topic.lessons.filter(
-        (l) =>
-          l.title.toLowerCase().includes(q) ||
-          l.summary.toLowerCase().includes(q)
-      );
-
-      if (matchesTopic || filteredLessons.length > 0) {
-        return {
-          ...topic,
-          lessons: filteredLessons.length > 0 ? filteredLessons : topic.lessons,
-        };
-      }
-      return null;
-    }).filter(Boolean) as Topic[];
-
-    if (matchesSubject || filteredTopics.length > 0) {
-      return {
-        ...subject,
-        topics: filteredTopics.length > 0 ? filteredTopics : subject.topics,
-      };
-    }
-    return null;
-  }).filter(Boolean) as SubjectNote[];
 
   return (
     <SafeAreaView
@@ -736,32 +724,6 @@ export default function NotesScreen() {
         </View>
       </View>
 
-      {/* Search Input Box */}
-      <View style={styles.searchSection}>
-        <View
-          style={[
-            styles.searchBox,
-            {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
-            },
-          ]}>
-          <Search size={16} color={theme.textSecondary} />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search subjects, topics, lessons or laws..."
-            placeholderTextColor={theme.textSecondary}
-            style={[styles.searchInput, { color: theme.text }]}
-          />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')}>
-              <X size={16} color={theme.textSecondary} />
-            </Pressable>
-          )}
-        </View>
-      </View>
-
       {/* Subject List */}
       <ScrollView
         style={styles.scrollView}
@@ -771,8 +733,8 @@ export default function NotesScreen() {
           { paddingBottom: insets.bottom + 60 },
         ]}>
         <View style={styles.listContainer}>
-          {filteredSubjects.map((subject) => {
-            const isSubjectOpen = !!expandedSubjects[subject.id] || searchQuery.length > 0;
+          {SUBJECT_NOTES.map((subject) => {
+            const isSubjectOpen = !!expandedSubjects[subject.id];
             const IconComponent = subject.icon;
             const totalLessons = subject.topics.reduce(
               (acc, t) => acc + t.lessons.length,
@@ -780,8 +742,9 @@ export default function NotesScreen() {
             );
 
             return (
-              <View
+              <Animated.View
                 key={subject.id}
+                layout={LinearTransition.duration(240)}
                 style={[
                   styles.subjectCard,
                   {
@@ -817,19 +780,22 @@ export default function NotesScreen() {
                     </Text>
                   </View>
 
-                  {/* Borderless Dropdown Chevron */}
+                  {/* Rotating Dropdown Chevron */}
                   <View style={styles.chevronWrapper}>
-                    {isSubjectOpen ? (
-                      <ChevronDown size={18} color={theme.accent} strokeWidth={2.2} />
-                    ) : (
-                      <ChevronRight size={18} color={theme.accent} strokeWidth={2.2} />
-                    )}
+                    <RotatingChevron
+                      isOpen={isSubjectOpen}
+                      color={theme.accent}
+                      size={18}
+                    />
                   </View>
                 </Pressable>
 
                 {/* LEVEL 2: TOPICS DROPDOWN */}
                 {isSubjectOpen && (
-                  <View
+                  <Animated.View
+                    entering={FadeInDown.duration(220)}
+                    exiting={FadeOutUp.duration(180)}
+                    layout={LinearTransition.duration(240)}
                     style={[
                       styles.topicsWrapper,
                       {
@@ -838,11 +804,12 @@ export default function NotesScreen() {
                       },
                     ]}>
                     {subject.topics.map((topic) => {
-                      const isTopicOpen = !!expandedTopics[topic.id] || searchQuery.length > 0;
+                      const isTopicOpen = !!expandedTopics[topic.id];
 
                       return (
-                        <View
+                        <Animated.View
                           key={topic.id}
+                          layout={LinearTransition.duration(200)}
                           style={[
                             styles.topicCard,
                             {
@@ -889,17 +856,20 @@ export default function NotesScreen() {
                             </View>
 
                             <View style={styles.topicChevron}>
-                              {isTopicOpen ? (
-                                <ChevronDown size={16} color={theme.accent} strokeWidth={2} />
-                              ) : (
-                                <ChevronRight size={16} color={theme.accent} strokeWidth={2} />
-                              )}
+                              <RotatingChevron
+                                isOpen={isTopicOpen}
+                                color={theme.accent}
+                                size={16}
+                              />
                             </View>
                           </Pressable>
 
                           {/* LEVEL 3: LESSONS DROPDOWN */}
                           {isTopicOpen && (
-                            <View
+                            <Animated.View
+                              entering={FadeInDown.duration(200)}
+                              exiting={FadeOutUp.duration(160)}
+                              layout={LinearTransition.duration(200)}
                               style={[
                                 styles.lessonsContainer,
                                 { borderTopColor: theme.border },
@@ -961,14 +931,14 @@ export default function NotesScreen() {
                                   <ChevronRight size={15} color={theme.accent} strokeWidth={2} />
                                 </Pressable>
                               ))}
-                            </View>
+                            </Animated.View>
                           )}
-                        </View>
+                        </Animated.View>
                       );
                     })}
-                  </View>
+                  </Animated.View>
                 )}
-              </View>
+              </Animated.View>
             );
           })}
         </View>
@@ -1118,27 +1088,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
-  },
-
-  /* Search */
-  searchSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 42,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 13,
-    height: '100%',
   },
 
   /* List */
