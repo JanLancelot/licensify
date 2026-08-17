@@ -16,6 +16,8 @@ import {
   Filter,
   Search,
 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+
 
 
 export default function QuizzesPage() {
@@ -323,225 +325,215 @@ export default function QuizzesPage() {
       )}
 
       {/* Create / Edit Quiz Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div className="glass-modal max-w-3xl w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
-            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
-              <div>
-                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                  {editingQuiz ? "Edit Assessment" : "Build Mock Exam / Quiz"}
-                </h3>
-                <p className="text-xs text-studio-500 dark:text-studio-400">
-                  Curate timed exam sets, passing score threshold, and choose questions from pool.
-                </p>
-              </div>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
-              >
-                Cancel
-              </button>
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingQuiz ? "Edit Assessment" : "Build Mock Exam / Quiz"}
+        description="Curate timed exam sets, passing score threshold, and choose questions from pool."
+        icon={<Award className="w-5 h-5" />}
+        maxWidth="3xl"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="quiz-form"
+              disabled={saving}
+              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{editingQuiz ? "Save Changes" : "Create Exam"}</span>
+            </button>
+          </>
+        }
+      >
+        <form id="quiz-form" onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Exam Title
+              </label>
+              <input
+                type="text"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                placeholder="e.g., ALE Area 3 Comprehensive Mock Exam"
+                required
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              />
             </div>
 
-            <form onSubmit={handleSave} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Exam Title
-                    </label>
-                    <input
-                      type="text"
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      placeholder="e.g., ALE Area 3 Comprehensive Mock Exam"
-                      required
-                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    />
-                  </div>
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Exam Type
+              </label>
+              <select
+                value={formType}
+                onChange={(e) => setFormType(e.target.value as any)}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              >
+                <option value="mock_exam">Full Mock Exam</option>
+                <option value="practice">Custom Practice Drill</option>
+              </select>
+            </div>
+          </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Exam Type
-                    </label>
-                    <select
-                      value={formType}
-                      onChange={(e) => setFormType(e.target.value as any)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    >
-                      <option value="mock_exam">Full Mock Exam</option>
-                      <option value="practice">Custom Practice Drill</option>
-                    </select>
-                  </div>
-                </div>
+          <div>
+            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              Description / Instructions
+            </label>
+            <textarea
+              value={formDescription}
+              onChange={(e) => setFormDescription(e.target.value)}
+              placeholder="Exam scope, rules, allowed calculator standards, and target score..."
+              rows={2}
+              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            />
+          </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Description / Instructions
-                  </label>
-                  <textarea
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Exam scope, rules, allowed calculator standards, and target score..."
-                    rows={2}
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  />
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Time Limit (Minutes)
+              </label>
+              <input
+                type="number"
+                min={5}
+                max={480}
+                value={formTimeLimitMinutes}
+                onChange={(e) => setFormTimeLimitMinutes(Number(e.target.value))}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              />
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Time Limit (Minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min={5}
-                      max={480}
-                      value={formTimeLimitMinutes}
-                      onChange={(e) => setFormTimeLimitMinutes(Number(e.target.value))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    />
-                  </div>
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Passing Score (%)
+              </label>
+              <input
+                type="number"
+                min={50}
+                max={100}
+                value={formPassingScore}
+                onChange={(e) => setFormPassingScore(Number(e.target.value))}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              />
+            </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Passing Score (%)
-                    </label>
-                    <input
-                      type="number"
-                      min={50}
-                      max={100}
-                      value={formPassingScore}
-                      onChange={(e) => setFormPassingScore(Number(e.target.value))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    />
-                  </div>
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Publication Status
+              </label>
+              <button
+                type="button"
+                onClick={() => setFormPublished(!formPublished)}
+                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                  formPublished
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
+                }`}
+              >
+                {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                <span>{formPublished ? "Live" : "Draft"}</span>
+              </button>
+            </div>
+          </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Publication Status
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setFormPublished(!formPublished)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
-                        formPublished
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                          : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
-                      }`}
-                    >
-                      {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      <span>{formPublished ? "Live" : "Draft"}</span>
-                    </button>
-                  </div>
-                </div>
+          {/* Question Picker */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
+                Select Exam Questions ({formSelectedQuestionIds.length} chosen)
+              </label>
+              <span className="text-xs text-studio-400 font-medium">
+                Total pool: {allQuestions.length}
+              </span>
+            </div>
 
-                {/* Question Picker */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
-                      Select Exam Questions ({formSelectedQuestionIds.length} chosen)
-                    </label>
-                    <span className="text-xs text-studio-400 font-medium">
-                      Total pool: {allQuestions.length}
+            <div className="relative mb-2">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-studio-400" />
+              <input
+                type="text"
+                value={pickerSearch}
+                onChange={(e) => setPickerSearch(e.target.value)}
+                placeholder="Search question pool..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              />
+            </div>
+
+            <div className="max-h-52 overflow-y-auto rounded-xl border border-studio-200 dark:border-studio-700 divide-y divide-studio-200 dark:divide-studio-800">
+              {pickerQuestions.map((q) => {
+                const isSelected = formSelectedQuestionIds.includes(q._id);
+                return (
+                  <div
+                    key={q._id}
+                    onClick={() => toggleQuestionSelection(q._id)}
+                    className={`p-3 flex items-center justify-between gap-3 cursor-pointer text-xs transition-colors select-none ${
+                      isSelected
+                        ? "bg-blueprint-500/10 dark:bg-blueprint-900/30"
+                        : "bg-studio-50 dark:bg-studio-900/40 hover:bg-studio-100 dark:hover:bg-studio-800"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 truncate">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className="w-4 h-4 text-blueprint-600 rounded"
+                      />
+                      <p className="font-medium text-studio-800 dark:text-studio-200 truncate">
+                        {q.question}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-studio-200 dark:bg-studio-700 flex-shrink-0">
+                      {q.difficulty}
                     </span>
                   </div>
-
-                  <div className="relative mb-2">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-studio-400" />
-                    <input
-                      type="text"
-                      value={pickerSearch}
-                      onChange={(e) => setPickerSearch(e.target.value)}
-                      placeholder="Search question pool..."
-                      className="w-full pl-9 pr-4 py-2 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    />
-                  </div>
-
-                  <div className="max-h-52 overflow-y-auto rounded-xl border border-studio-200 dark:border-studio-700 divide-y divide-studio-200 dark:divide-studio-800">
-                    {pickerQuestions.map((q) => {
-                      const isSelected = formSelectedQuestionIds.includes(q._id);
-                      return (
-                        <div
-                          key={q._id}
-                          onClick={() => toggleQuestionSelection(q._id)}
-                          className={`p-3 flex items-center justify-between gap-3 cursor-pointer text-xs transition-colors select-none ${
-                            isSelected
-                              ? "bg-blueprint-500/10 dark:bg-blueprint-900/30"
-                              : "bg-studio-50 dark:bg-studio-900/40 hover:bg-studio-100 dark:hover:bg-studio-800"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 truncate">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              className="w-4 h-4 text-blueprint-600 rounded"
-                            />
-                            <p className="font-medium text-studio-800 dark:text-studio-200 truncate">
-                              {q.question}
-                            </p>
-                          </div>
-                          <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-studio-200 dark:bg-studio-700 flex-shrink-0">
-                            {q.difficulty}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
-                >
-                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{editingQuiz ? "Save Changes" : "Create Exam"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div className="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-4 border border-rose-500/20 shadow-2xl">
-            <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-              Delete Exam
-            </h3>
-            <p className="text-sm text-studio-600 dark:text-studio-400">
-              Are you sure you want to delete <strong className="text-studio-900 dark:text-studio-100">&quot;{deleteConfirm.title}&quot;</strong>?
-            </p>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-studio-200 dark:border-studio-800">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={saving}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
-              >
-                {saving ? "Deleting..." : "Delete Exam"}
-              </button>
+                );
+              })}
             </div>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Delete Exam"
+        maxWidth="md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(null)}
+              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={saving}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
+            >
+              {saving ? "Deleting..." : "Delete Exam"}
+            </button>
+          </>
+        }
+      >
+        {deleteConfirm && (
+          <p className="text-sm text-studio-600 dark:text-studio-400">
+            Are you sure you want to delete <strong className="text-studio-900 dark:text-studio-100">&quot;{deleteConfirm.title}&quot;</strong>?
+          </p>
+        )}
+      </Modal>
 
     </div>
   );

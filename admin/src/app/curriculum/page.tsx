@@ -16,6 +16,8 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+
 
 
 export default function CurriculumPage() {
@@ -411,269 +413,245 @@ export default function CurriculumPage() {
       </div>
 
       {/* Subject Create / Edit Modal */}
-      {subjectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div className="glass-modal max-w-lg w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
-            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
-              <div>
-                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                  {editingSubject ? "Edit Subject Area" : "New Board Exam Subject"}
-                </h3>
-                <p className="text-xs text-studio-500">
-                  Curate PRC Architecture Licensure syllabus area.
-                </p>
-              </div>
-              <button
-                onClick={() => setSubjectModalOpen(false)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
-              >
-                Cancel
-              </button>
+      <Modal
+        isOpen={subjectModalOpen}
+        onClose={() => setSubjectModalOpen(false)}
+        title={editingSubject ? "Edit Subject Area" : "New Board Exam Subject"}
+        description="Curate PRC Architecture Licensure syllabus area."
+        icon={<Layers className="w-5 h-5" />}
+        maxWidth="lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setSubjectModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="subject-form"
+              disabled={saving}
+              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{editingSubject ? "Save Changes" : "Create Subject"}</span>
+            </button>
+          </>
+        }
+      >
+        <form id="subject-form" onSubmit={handleSaveSubject} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              Subject Name
+            </label>
+            <input
+              type="text"
+              value={subjName}
+              onChange={(e) => setSubjName(e.target.value)}
+              placeholder="e.g., History of Architecture & Theory of Design"
+              required
+              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              Description / Syllabus Scope
+            </label>
+            <textarea
+              value={subjDesc}
+              onChange={(e) => setSubjDesc(e.target.value)}
+              placeholder="Summary of exam syllabus covered in this area..."
+              rows={3}
+              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Display Order
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={subjOrder}
+                onChange={(e) => setSubjOrder(Number(e.target.value))}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              />
             </div>
 
-            <form onSubmit={handleSaveSubject} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Subject Name
-                  </label>
-                  <input
-                    type="text"
-                    value={subjName}
-                    onChange={(e) => setSubjName(e.target.value)}
-                    placeholder="e.g., History of Architecture & Theory of Design"
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Description / Syllabus Scope
-                  </label>
-                  <textarea
-                    value={subjDesc}
-                    onChange={(e) => setSubjDesc(e.target.value)}
-                    placeholder="Summary of exam syllabus covered in this area..."
-                    rows={3}
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Display Order
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={subjOrder}
-                      onChange={(e) => setSubjOrder(Number(e.target.value))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Publication Status
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setSubjPublished(!subjPublished)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
-                        subjPublished
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                          : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
-                      }`}
-                    >
-                      {subjPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      <span>{subjPublished ? "Live / Published" : "Draft Only"}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
-                <button
-                  type="button"
-                  onClick={() => setSubjectModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
-                >
-                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{editingSubject ? "Save Changes" : "Create Subject"}</span>
-                </button>
-              </div>
-            </form>
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Publication Status
+              </label>
+              <button
+                type="button"
+                onClick={() => setSubjPublished(!subjPublished)}
+                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                  subjPublished
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
+                }`}
+              >
+                {subjPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                <span>{subjPublished ? "Live / Published" : "Draft Only"}</span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Topic Create / Edit Modal */}
-      {topicModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div className="glass-modal max-w-lg w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
-            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
-              <div>
-                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                  {editingTopic ? "Edit Topic" : "New Syllabus Topic"}
-                </h3>
-                <p className="text-xs text-studio-500">
-                  Define granular knowledge units and chapters.
-                </p>
-              </div>
-              <button
-                onClick={() => setTopicModalOpen(false)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
-              >
-                Cancel
-              </button>
+      <Modal
+        isOpen={topicModalOpen}
+        onClose={() => setTopicModalOpen(false)}
+        title={editingTopic ? "Edit Topic" : "New Syllabus Topic"}
+        description="Define granular knowledge units and chapters."
+        icon={<Layers className="w-5 h-5" />}
+        maxWidth="lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setTopicModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="topic-form"
+              disabled={saving}
+              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{editingTopic ? "Save Changes" : "Create Topic"}</span>
+            </button>
+          </>
+        }
+      >
+        <form id="topic-form" onSubmit={handleSaveTopic} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              Parent Subject Area
+            </label>
+            <select
+              value={topSubjectId}
+              onChange={(e) => setTopSubjectId(e.target.value as Id<"subjects">)}
+              disabled={!!editingTopic}
+              required
+              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            >
+              {sortedSubjects.map((s) => (
+                <option key={s._id} value={s._id}>
+                  Area {s.order}: {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              Topic Title
+            </label>
+            <input
+              type="text"
+              value={topName}
+              onChange={(e) => setTopName(e.target.value)}
+              placeholder="e.g., Classical Orders of Architecture"
+              required
+              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              Description / Key Topics
+            </label>
+            <textarea
+              value={topDesc}
+              onChange={(e) => setTopDesc(e.target.value)}
+              placeholder="Subtopics, key laws, formulas, or standard codes..."
+              rows={3}
+              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Order Sequencing
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={topOrder}
+                onChange={(e) => setTopOrder(Number(e.target.value))}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              />
             </div>
 
-            <form onSubmit={handleSaveTopic} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Parent Subject Area
-                  </label>
-                  <select
-                    value={topSubjectId}
-                    onChange={(e) => setTopSubjectId(e.target.value as Id<"subjects">)}
-                    disabled={!!editingTopic}
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  >
-                    {sortedSubjects.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        Area {s.order}: {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Topic Title
-                  </label>
-                  <input
-                    type="text"
-                    value={topName}
-                    onChange={(e) => setTopName(e.target.value)}
-                    placeholder="e.g., Classical Orders of Architecture"
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Description / Key Topics
-                  </label>
-                  <textarea
-                    value={topDesc}
-                    onChange={(e) => setTopDesc(e.target.value)}
-                    placeholder="Subtopics, key laws, formulas, or standard codes..."
-                    rows={3}
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Order Sequencing
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={topOrder}
-                      onChange={(e) => setTopOrder(Number(e.target.value))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Publication Status
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setTopPublished(!topPublished)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
-                        topPublished
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                          : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
-                      }`}
-                    >
-                      {topPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      <span>{topPublished ? "Live" : "Draft"}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
-                <button
-                  type="button"
-                  onClick={() => setTopicModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
-                >
-                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{editingTopic ? "Save Changes" : "Create Topic"}</span>
-                </button>
-              </div>
-            </form>
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Publication Status
+              </label>
+              <button
+                type="button"
+                onClick={() => setTopPublished(!topPublished)}
+                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                  topPublished
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
+                }`}
+              >
+                {topPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                <span>{topPublished ? "Live" : "Draft"}</span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div className="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-4 border border-rose-500/20 shadow-2xl">
-            <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-              Confirm Deletion
-            </h3>
-            <p className="text-sm text-studio-600 dark:text-studio-400">
-              Are you sure you want to delete {deleteConfirm.type} <strong className="text-studio-900 dark:text-studio-100">&quot;{deleteConfirm.name}&quot;</strong>?
-              {deleteConfirm.type === "subject" && (
-                <span className="block text-xs text-rose-500 mt-2 font-medium">
-                  Warning: All nested topics under this subject will also be deleted.
-                </span>
-              )}
-            </p>
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-studio-200 dark:border-studio-800">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleExecuteDelete}
-                disabled={saving}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
-              >
-                {saving ? "Deleting..." : "Delete Permanently"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Confirm Deletion"
+        maxWidth="md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(null)}
+              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleExecuteDelete}
+              disabled={saving}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
+            >
+              {saving ? "Deleting..." : "Delete Permanently"}
+            </button>
+          </>
+        }
+      >
+        {deleteConfirm && (
+          <p className="text-sm text-studio-600 dark:text-studio-400">
+            Are you sure you want to delete {deleteConfirm.type} <strong className="text-studio-900 dark:text-studio-100">&quot;{deleteConfirm.name}&quot;</strong>?
+            {deleteConfirm.type === "subject" && (
+              <span className="block text-xs text-rose-500 mt-2 font-medium">
+                Warning: All nested topics under this subject will also be deleted.
+              </span>
+            )}
+          </p>
+        )}
+      </Modal>
     </div>
   );
 }

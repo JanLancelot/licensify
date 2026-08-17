@@ -17,6 +17,8 @@ import {
   Filter,
   Upload,
 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+
 
 
 export default function FlashcardsPage() {
@@ -346,191 +348,180 @@ export default function FlashcardsPage() {
       )}
 
       {/* Create / Edit Flashcard Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div className="glass-modal max-w-xl w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
-            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
-              <div>
-                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                  {editingCard ? "Edit Flashcard" : "New Flashcard"}
-                </h3>
-                <p className="text-xs text-studio-500 dark:text-studio-400">
-                  Author active-recall prompts and key architectural answers.
-                </p>
-              </div>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingCard ? "Edit Flashcard" : "New Flashcard"}
+        description="Author active-recall prompts and key architectural answers."
+        icon={<GalleryVerticalEnd className="w-5 h-5" />}
+        maxWidth="xl"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="flashcard-form"
+              disabled={saving}
+              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{editingCard ? "Save Changes" : "Create Flashcard"}</span>
+            </button>
+          </>
+        }
+      >
+        <form id="flashcard-form" onSubmit={handleSave} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Board Exam Subject
+              </label>
+              <select
+                value={formSubjectId}
+                onChange={(e) => {
+                  setFormSubjectId(e.target.value as Id<"subjects">);
+                  setFormTopicId("");
+                }}
+                required
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
               >
-                Cancel
+                {subjects.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Topic Tag (Optional)
+              </label>
+              <select
+                value={formTopicId}
+                onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              >
+                <option value="">-- General / Subject Level --</option>
+                {availableTopicsForForm.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              Front Side (Prompt / Question / Term)
+            </label>
+            <textarea
+              value={formFront}
+              onChange={(e) => setFormFront(e.target.value)}
+              placeholder="e.g., Minimum width of a ramp for accessible access under BP 344?"
+              rows={3}
+              required
+              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              Back Side (Answer / Code Requirement / Key Details)
+            </label>
+            <textarea
+              value={formBack}
+              onChange={(e) => setFormBack(e.target.value)}
+              placeholder="e.g., 1200 mm clear width with 1:12 maximum gradient slope."
+              rows={3}
+              required
+              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Publication Status
+              </label>
+              <button
+                type="button"
+                onClick={() => setFormPublished(!formPublished)}
+                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                  formPublished
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
+                }`}
+              >
+                {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                <span>{formPublished ? "Live" : "Draft"}</span>
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Board Exam Subject
-                    </label>
-                    <select
-                      value={formSubjectId}
-                      onChange={(e) => {
-                        setFormSubjectId(e.target.value as Id<"subjects">);
-                        setFormTopicId("");
-                      }}
-                      required
-                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    >
-                      {subjects.map((s) => (
-                        <option key={s._id} value={s._id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Topic Tag (Optional)
-                    </label>
-                    <select
-                      value={formTopicId}
-                      onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                    >
-                      <option value="">-- General / Subject Level --</option>
-                      {availableTopicsForForm.map((t) => (
-                        <option key={t._id} value={t._id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Front Side (Prompt / Question / Term)
-                  </label>
-                  <textarea
-                    value={formFront}
-                    onChange={(e) => setFormFront(e.target.value)}
-                    placeholder="e.g., Minimum width of a ramp for accessible access under BP 344?"
-                    rows={3}
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Back Side (Answer / Code Requirement / Key Details)
-                  </label>
-                  <textarea
-                    value={formBack}
-                    onChange={(e) => setFormBack(e.target.value)}
-                    placeholder="e.g., 1200 mm clear width with 1:12 maximum gradient slope."
-                    rows={3}
-                    required
-                    className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Publication Status
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setFormPublished(!formPublished)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
-                        formPublished
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                          : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
-                      }`}
-                    >
-                      {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                      <span>{formPublished ? "Live" : "Draft"}</span>
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                      Attach Diagram (Optional)
-                    </label>
-                    <label className="w-full py-2.5 px-3 rounded-xl bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-blueprint-500 text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors">
-                      {uploadingImage ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-blueprint-500" />
-                      ) : (
-                        <Upload className="w-4 h-4 text-studio-400" />
-                      )}
-                      <span className="truncate">
-                        {formImageId ? "Image Attached ✓" : "Upload Diagram"}
-                      </span>
-                      <input
-                        type="file"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        accept="image/*"
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
-                >
-                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{editingCard ? "Save Changes" : "Create Flashcard"}</span>
-                </button>
-              </div>
-            </form>
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Attach Diagram (Optional)
+              </label>
+              <label className="w-full py-2.5 px-3 rounded-xl bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-blueprint-500 text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors">
+                {uploadingImage ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-blueprint-500" />
+                ) : (
+                  <Upload className="w-4 h-4 text-studio-400" />
+                )}
+                <span className="truncate">
+                  {formImageId ? "Image Attached ✓" : "Upload Diagram"}
+                </span>
+                <input
+                  type="file"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  accept="image/*"
+                />
+              </label>
+            </div>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div className="glass-modal max-w-md w-full rounded-3xl p-6 sm:p-8 space-y-4 border border-rose-500/20 shadow-2xl">
-            <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-              Delete Flashcard
-            </h3>
-            <p className="text-sm text-studio-600 dark:text-studio-400">
-              Are you sure you want to remove this flashcard (<strong className="text-studio-900 dark:text-studio-100">&quot;{deleteConfirm.front.slice(0, 50)}...&quot;</strong>)?
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-studio-200 dark:border-studio-800">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={saving}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
-              >
-                {saving ? "Deleting..." : "Delete Flashcard"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Delete Flashcard"
+        maxWidth="md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(null)}
+              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={saving}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
+            >
+              {saving ? "Deleting..." : "Delete Flashcard"}
+            </button>
+          </>
+        }
+      >
+        {deleteConfirm && (
+          <p className="text-sm text-studio-600 dark:text-studio-400">
+            Are you sure you want to remove this flashcard (<strong className="text-studio-900 dark:text-studio-100">&quot;{deleteConfirm.front.slice(0, 50)}...&quot;</strong>)?
+          </p>
+        )}
+      </Modal>
     </div>
   );
 }

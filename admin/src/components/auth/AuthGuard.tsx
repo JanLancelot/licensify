@@ -19,14 +19,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Watchdog timer: If loading takes longer than 3.5s, give the user an escape action
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (authLoading || (isAuthenticated && user === undefined)) {
-      timer = setTimeout(() => {
-        setLoadingTimedOut(true);
-      }, 3500);
-    } else {
-      setLoadingTimedOut(false);
+    if (!authLoading && (isAuthenticated ? user !== undefined : true)) {
+      return;
     }
+
+    const timer = setTimeout(() => {
+      setLoadingTimedOut(true);
+    }, 3500);
+
     return () => clearTimeout(timer);
   }, [authLoading, isAuthenticated, user]);
 
@@ -81,7 +81,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // 2. Unauthenticated or invalid user record
-  if (!isAuthenticated || user === null) {
+  if (!isAuthenticated || !user) {
     return null;
   }
 

@@ -13,6 +13,8 @@ import {
   UserCheck,
   UserX,
 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
+
 
 
 export default function UsersPage() {
@@ -262,97 +264,85 @@ export default function UsersPage() {
       </div>
 
       {/* Edit Role Modal */}
-      {editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md animate-fade-in">
-          <div className="glass-modal max-w-md w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-800/80">
-            <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/50 dark:bg-studio-900/50">
-              <div>
-                <h3 className="font-bold text-lg text-studio-900 dark:text-studio-50">
-                  Modify User Role
-                </h3>
-                <p className="text-xs text-studio-500">
-                  Adjust permission tier and studio access.
-                </p>
-              </div>
-              <button
-                onClick={() => setEditingUser(null)}
-                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 text-sm font-medium p-1 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800"
-              >
-                Cancel
-              </button>
+      <Modal
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        title="Modify User Role"
+        description="Adjust permission tier and studio access."
+        icon={<ShieldCheck className="w-5 h-5" />}
+        maxWidth="md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setEditingUser(null)}
+              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="role-form"
+              disabled={saving}
+              className="px-5 py-2 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>Save Role</span>
+            </button>
+          </>
+        }
+      >
+        {editingUser && (
+          <form id="role-form" onSubmit={handleSaveRole} className="space-y-4">
+            <p className="text-xs text-studio-500 mb-2">
+              Assign role privileges for <strong className="text-studio-900 dark:text-studio-100">{editingUser.username}</strong> ({editingUser.email || "No email"}):
+            </p>
+            <div className="space-y-2">
+              {[
+                {
+                  role: "student",
+                  label: "Candidate / Student",
+                  desc: "Can take practice quizzes, browse flashcards, and review notes.",
+                },
+                {
+                  role: "content_manager",
+                  label: "Content Manager",
+                  desc: "Can create and edit questions, subjects, study notes, and flashcards.",
+                },
+                {
+                  role: "admin",
+                  label: "System Administrator",
+                  desc: "Full permissions including role assignment, account moderation, and exams.",
+                },
+              ].map((r) => (
+                <label
+                  key={r.role}
+                  className={`p-3 rounded-2xl border flex items-start gap-3 cursor-pointer transition-all ${
+                    selectedRole === r.role
+                      ? "bg-blueprint-500/10 border-blueprint-500/40 text-blueprint-600 dark:text-blueprint-400"
+                      : "bg-studio-100/50 dark:bg-studio-850/50 border-studio-200/60 dark:border-studio-800/60 text-studio-700 dark:text-studio-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="roleSelect"
+                    value={r.role}
+                    checked={selectedRole === r.role}
+                    onChange={() => setSelectedRole(r.role as any)}
+                    className="mt-1 text-blueprint-600"
+                  />
+                  <div>
+                    <p className="font-bold text-xs text-studio-900 dark:text-studio-100">
+                      {r.label}
+                    </p>
+                    <p className="text-[11px] text-studio-500 mt-0.5">{r.desc}</p>
+                  </div>
+                </label>
+              ))}
             </div>
-
-            <form onSubmit={handleSaveRole} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1">
-                <p className="text-xs text-studio-500 mb-2">
-                  Assign role privileges for <strong className="text-studio-900 dark:text-studio-100">{editingUser.username}</strong> ({editingUser.email || "No email"}):
-                </p>
-                <div className="space-y-2">
-                  {[
-                    {
-                      role: "student",
-                      label: "Candidate / Student",
-                      desc: "Can take practice quizzes, browse flashcards, and review notes.",
-                    },
-                    {
-                      role: "content_manager",
-                      label: "Content Manager",
-                      desc: "Can create and edit questions, subjects, study notes, and flashcards.",
-                    },
-                    {
-                      role: "admin",
-                      label: "System Administrator",
-                      desc: "Full permissions including role assignment, account moderation, and exams.",
-                    },
-                  ].map((r) => (
-                    <label
-                      key={r.role}
-                      className={`p-3 rounded-2xl border flex items-start gap-3 cursor-pointer transition-all ${
-                        selectedRole === r.role
-                          ? "bg-blueprint-500/10 border-blueprint-500/40 text-blueprint-600 dark:text-blueprint-400"
-                          : "bg-studio-100/50 dark:bg-studio-850/50 border-studio-200/60 dark:border-studio-800/60 text-studio-700 dark:text-studio-300"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="roleSelect"
-                        value={r.role}
-                        checked={selectedRole === r.role}
-                        onChange={() => setSelectedRole(r.role as any)}
-                        className="mt-1 text-blueprint-600"
-                      />
-                      <div>
-                        <p className="font-bold text-xs text-studio-900 dark:text-studio-100">
-                          {r.label}
-                        </p>
-                        <p className="text-[11px] text-studio-500 mt-0.5">{r.desc}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
-                <button
-                  type="button"
-                  onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
-                >
-                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Save Role</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
