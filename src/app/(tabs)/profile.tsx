@@ -603,34 +603,30 @@ export default function ProfileScreen() {
               </View>
               <RotateCcw size={15} color="#EF4444" />
             </Pressable>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
-
-            {/* Logout Option */}
-            <Pressable
-              onPress={handleSignOut}
-              style={({ pressed }) => [
-                styles.accountLinkRow,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <View style={styles.accountLinkInfo}>
-                <Text style={[styles.resetText, { color: '#EF4444' }]}>
-                  Sign Out
-                </Text>
-                <Text
-                  style={[
-                    styles.accountSubtext,
-                    { color: colors.textSecondary },
-                  ]}>
-                  Log out of your LICENSIFY account.
-                </Text>
-              </View>
-              <LogOut size={15} color="#EF4444" />
-            </Pressable>
           </View>
         </View>
+
+        {/* Standalone Rectangle Block Logout Button */}
+        <Pressable
+          onPress={handleSignOut}
+          style={({ pressed }) => [
+            styles.logoutBlockBtn,
+            {
+              backgroundColor: isDark
+                ? 'rgba(239, 68, 68, 0.12)'
+                : 'rgba(239, 68, 68, 0.07)',
+              borderColor: isDark
+                ? 'rgba(239, 68, 68, 0.3)'
+                : 'rgba(239, 68, 68, 0.2)',
+              opacity: pressed ? 0.75 : 1,
+              transform: [{ scale: pressed ? 0.99 : 1 }],
+            },
+          ]}>
+          <LogOut size={17} color="#EF4444" strokeWidth={2.2} />
+          <Text style={styles.logoutBlockBtnText}>
+            Sign Out
+          </Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -902,5 +898,21 @@ const styles = StyleSheet.create({
   resetText: {
     fontSize: 13.5,
     fontWeight: '700',
+  },
+  logoutBlockBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  logoutBlockBtnText: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#EF4444',
+    letterSpacing: 0.2,
   },
 });
