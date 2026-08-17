@@ -1,4 +1,4 @@
-import React from 'react';
+import { useRouter } from 'expo-router';
 import {
   BookOpen,
   ChevronRight,
@@ -7,10 +7,9 @@ import {
 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 
-import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function LearnScreen() {
   const theme = useTheme();
@@ -21,6 +20,13 @@ export default function LearnScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Learn
+        </Text>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -28,13 +34,6 @@ export default function LearnScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            Learn
-          </Text>
-        </View>
-
         {/* 2 Main Action Blocks */}
         <View style={styles.blockContainer}>
           {/* BLOCK 1: COMPREHENSIVE NOTES */}
@@ -124,7 +123,7 @@ export default function LearnScreen() {
               {/* Title and Description */}
               <View style={styles.cardTextBox}>
                 <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  Review Flashcards
+                  Flashcard
                 </Text>
                 <Text
                   style={[styles.cardDescription, { color: theme.textSecondary }]}>
@@ -169,12 +168,14 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 8,
     gap: 20,
   },
 
   header: {
-    marginBottom: 4,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   title: {
     fontSize: 24,

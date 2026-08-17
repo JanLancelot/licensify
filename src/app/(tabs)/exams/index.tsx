@@ -98,6 +98,13 @@ export default function ExamsSelectionScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Exams
+        </Text>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -105,13 +112,6 @@ export default function ExamsSelectionScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            Exams
-          </Text>
-        </View>
-
         {/* BLOCK 1: PRACTICE TESTS */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
@@ -293,12 +293,14 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     gap: 24,
   },
 
   header: {
-    marginBottom: -4,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   title: {
     fontSize: 24,

@@ -21,6 +21,13 @@ export default function HomeScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
+      {/* Clean Header */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Dashboard
+        </Text>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -28,13 +35,6 @@ export default function HomeScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* Clean Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            Dashboard
-          </Text>
-        </View>
-
         {/* 1. OVERALL PROGRESS */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
@@ -436,13 +436,15 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     gap: 22,
   },
 
   /* Header */
   header: {
-    marginBottom: -4,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   title: {
     fontSize: 24,

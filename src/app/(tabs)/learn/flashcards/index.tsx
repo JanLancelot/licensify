@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -7,6 +7,7 @@ import {
   Play,
   Star,
 } from 'lucide-react-native';
+import React, { useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -15,10 +16,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 type FlashcardTab = 'decks' | 'difficult' | 'favorites';
 
@@ -223,7 +223,7 @@ export default function FlashcardsHubScreen() {
 
         <View style={styles.topBarTitles}>
           <Text style={[styles.topBarHeading, { color: theme.text }]}>
-            {activeStudyCards ? 'Flashcards Drill' : 'Flashcards Hub'}
+            Flashcard
           </Text>
         </View>
       </View>

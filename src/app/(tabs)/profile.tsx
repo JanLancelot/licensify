@@ -97,6 +97,13 @@ export default function ProfileScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>
+          Profile
+        </Text>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -104,13 +111,6 @@ export default function ProfileScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Profile
-          </Text>
-        </View>
-
         {/* 1. PROFILE CARD */}
         <View
           style={[
@@ -645,13 +645,15 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     gap: 22,
   },
 
   /* Header */
   header: {
-    marginBottom: -4,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   title: {
     fontSize: 24,
