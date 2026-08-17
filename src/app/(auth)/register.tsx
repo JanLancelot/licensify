@@ -237,7 +237,7 @@ export default function RegisterScreen() {
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
               Already have an account?{' '}
             </Text>
-            <Link href="/(auth)/login" asChild>
+            <Link href={"/(auth)/login" as any} asChild>
               <Pressable>
                 <Text style={[styles.linkText, { color: colors.accent }]}>Sign In</Text>
               </Pressable>

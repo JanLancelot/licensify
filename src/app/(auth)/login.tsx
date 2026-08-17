@@ -179,7 +179,7 @@ export default function LoginScreen() {
               <Text style={[styles.submitButtonText, { color: colors.text }]}>Sign In with Google</Text>
             </Pressable>
 
-            <Link href="/forgot-password" asChild>
+            <Link href={"/forgot-password" as any} asChild>
               <Pressable style={{ alignItems: 'center', marginTop: 8 }}>
                 <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Forgot Password?</Text>
               </Pressable>
@@ -191,7 +191,7 @@ export default function LoginScreen() {
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
               Don{"'"}t have an account?{' '}
             </Text>
-            <Link href="/(auth)/register" asChild>
+            <Link href={"/(auth)/register" as any} asChild>
               <Pressable>
                 <Text style={[styles.linkText, { color: colors.accent }]}>Sign Up</Text>
               </Pressable>
