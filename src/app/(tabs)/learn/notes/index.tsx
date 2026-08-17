@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
-  BookOpen,
   Box,
   Building2,
-  CheckCircle2,
-  ChevronDown,
   ChevronRight,
   Compass,
   Droplets,
@@ -14,8 +11,9 @@ import {
   Layers,
   Scale,
   X,
-  Zap,
+  Zap
 } from 'lucide-react-native';
+import React, { useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -32,10 +30,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 
-import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 function RotatingChevron({
   isOpen,
@@ -666,6 +663,214 @@ const SUBJECT_NOTES: SubjectNote[] = [
   },
 ];
 
+function TopicItem({
+  topic,
+  isLastTopic,
+  isTopicOpen,
+  toggleTopic,
+  subjectTitle,
+  setSelectedLesson,
+  theme,
+}: {
+  topic: Topic;
+  isLastTopic: boolean;
+  isTopicOpen: boolean;
+  toggleTopic: (id: string) => void;
+  subjectTitle: string;
+  setSelectedLesson: (lessonData: {
+    subjectTitle: string;
+    topicTitle: string;
+    lesson: Lesson;
+  }) => void;
+  theme: any;
+}) {
+  const [headerHeight, setHeaderHeight] = useState(56);
+  const center = headerHeight / 2;
+
+  return (
+    <Animated.View
+      layout={LinearTransition.duration(200)}
+      style={styles.topicRowWrapper}>
+      {/* Tree Branch Node for Topic */}
+      <View style={styles.topicBranchNode}>
+        {/* Top Vertical Segment */}
+        <View
+          style={[
+            styles.topicBranchTop,
+            { height: center, backgroundColor: theme.border },
+          ]}
+        />
+        {/* Bottom Vertical Segment (Only if NOT last topic) */}
+        {!isLastTopic && (
+          <View
+            style={[
+              styles.topicBranchBottom,
+              { top: center, backgroundColor: theme.border },
+            ]}
+          />
+        )}
+        {/* Horizontal Line into Topic Card */}
+        <View
+          style={[
+            styles.topicBranchHoriz,
+            { top: center - 1, backgroundColor: theme.border },
+          ]}
+        />
+      </View>
+
+      <View
+        style={[
+          styles.topicCard,
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: theme.border,
+          },
+        ]}>
+        {/* TOPIC HEADER ROW */}
+        <Pressable
+          onLayout={(e) => {
+            const h = e.nativeEvent.layout.height;
+            if (h > 0 && Math.abs(h - headerHeight) > 1) {
+              setHeaderHeight(h);
+            }
+          }}
+          onPress={() => toggleTopic(topic.id)}
+          style={({ pressed }) => [
+            styles.topicHeader,
+            { opacity: pressed ? 0.75 : 1 },
+          ]}>
+          <View style={styles.topicHeaderLeft}>
+            <View
+              style={[
+                styles.topicNumberBadge,
+                {
+                  backgroundColor: theme.accentMuted,
+                },
+              ]}>
+              <Text
+                style={[
+                  styles.topicNumberText,
+                  { color: theme.accent },
+                ]}>
+                T{topic.topicNumber}
+              </Text>
+            </View>
+            <View style={styles.topicTitleBox}>
+              <Text style={[styles.topicTitle, { color: theme.text }]}>
+                {topic.title}
+              </Text>
+              <Text
+                style={[
+                  styles.topicLessonCount,
+                  { color: theme.textSecondary },
+                ]}>
+                {topic.lessons.length} Lessons Available
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.topicChevron}>
+            <RotatingChevron
+              isOpen={isTopicOpen}
+              color={theme.accent}
+              size={16}
+            />
+          </View>
+        </Pressable>
+
+        {/* LEVEL 3: LESSONS DROPDOWN */}
+        {isTopicOpen && (
+          <Animated.View
+            entering={FadeInDown.duration(200)}
+            exiting={FadeOutUp.duration(160)}
+            layout={LinearTransition.duration(200)}
+            style={styles.lessonsContainer}>
+            {topic.lessons.map((lesson, lIdx) => {
+              const isLastLesson = lIdx === topic.lessons.length - 1;
+
+              return (
+                <View key={lesson.id} style={styles.lessonRowWrapper}>
+                  {/* Tree Branch Node for Lesson */}
+                  <View style={styles.lessonBranchNode}>
+                    <View
+                      style={[
+                        styles.lessonBranchTop,
+                        { backgroundColor: theme.border },
+                      ]}
+                    />
+                    {!isLastLesson && (
+                      <View
+                        style={[
+                          styles.lessonBranchBottom,
+                          { backgroundColor: theme.border },
+                        ]}
+                      />
+                    )}
+                    <View
+                      style={[
+                        styles.lessonBranchHoriz,
+                        { backgroundColor: theme.border },
+                      ]}
+                    />
+                  </View>
+
+                  <Pressable
+                    onPress={() =>
+                      setSelectedLesson({
+                        subjectTitle,
+                        topicTitle: topic.title,
+                        lesson,
+                      })
+                    }
+                    style={({ pressed }) => [
+                      styles.lessonRow,
+                      { opacity: pressed ? 0.65 : 1 },
+                    ]}>
+                    <View style={styles.lessonRowLeft}>
+                      <View
+                        style={[
+                          styles.lessonNumCircle,
+                          { backgroundColor: theme.accentMuted },
+                        ]}>
+                        <Text
+                          style={[
+                            styles.lessonNumText,
+                            { color: theme.accent },
+                          ]}>
+                          {lesson.lessonNumber}
+                        </Text>
+                      </View>
+                      <View style={styles.lessonTitleBox}>
+                        <Text
+                          style={[styles.lessonTitle, { color: theme.text }]}>
+                          {lesson.title}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.lessonDuration,
+                            { color: theme.textSecondary },
+                          ]}>
+                          {lesson.duration}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <ChevronRight
+                      size={15}
+                      color={theme.accent}
+                      strokeWidth={2}
+                    />
+                  </Pressable>
+                </View>
+              );
+            })}
+          </Animated.View>
+        )}
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function NotesScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -796,146 +1001,19 @@ export default function NotesScreen() {
                     entering={FadeInDown.duration(220)}
                     exiting={FadeOutUp.duration(180)}
                     layout={LinearTransition.duration(240)}
-                    style={[
-                      styles.topicsWrapper,
-                      {
-                        borderTopColor: theme.border,
-                        backgroundColor: theme.backgroundSelected,
-                      },
-                    ]}>
-                    {subject.topics.map((topic) => {
-                      const isTopicOpen = !!expandedTopics[topic.id];
-
-                      return (
-                        <Animated.View
-                          key={topic.id}
-                          layout={LinearTransition.duration(200)}
-                          style={[
-                            styles.topicCard,
-                            {
-                              backgroundColor: theme.backgroundElement,
-                              borderColor: theme.border,
-                            },
-                          ]}>
-                          {/* TOPIC HEADER ROW */}
-                          <Pressable
-                            onPress={() => toggleTopic(topic.id)}
-                            style={({ pressed }) => [
-                              styles.topicHeader,
-                              { opacity: pressed ? 0.75 : 1 },
-                            ]}>
-                            <View style={styles.topicHeaderLeft}>
-                              <View
-                                style={[
-                                  styles.topicNumberBadge,
-                                  {
-                                    backgroundColor: theme.accentMuted,
-                                  },
-                                ]}>
-                                <Text
-                                  style={[
-                                    styles.topicNumberText,
-                                    { color: theme.accent },
-                                  ]}>
-                                  T{topic.topicNumber}
-                                </Text>
-                              </View>
-                              <View style={styles.topicTitleBox}>
-                                <Text
-                                  style={[styles.topicTitle, { color: theme.text }]}>
-                                  {topic.title}
-                                </Text>
-                                <Text
-                                  style={[
-                                    styles.topicLessonCount,
-                                    { color: theme.textSecondary },
-                                  ]}>
-                                  {topic.lessons.length} Lessons Available
-                                </Text>
-                              </View>
-                            </View>
-
-                            <View style={styles.topicChevron}>
-                              <RotatingChevron
-                                isOpen={isTopicOpen}
-                                color={theme.accent}
-                                size={16}
-                              />
-                            </View>
-                          </Pressable>
-
-                          {/* LEVEL 3: LESSONS DROPDOWN */}
-                          {isTopicOpen && (
-                            <Animated.View
-                              entering={FadeInDown.duration(200)}
-                              exiting={FadeOutUp.duration(160)}
-                              layout={LinearTransition.duration(200)}
-                              style={[
-                                styles.lessonsContainer,
-                                { borderTopColor: theme.border },
-                              ]}>
-                              {topic.lessons.map((lesson, lIdx) => (
-                                <Pressable
-                                  key={lesson.id}
-                                  onPress={() =>
-                                    setSelectedLesson({
-                                      subjectTitle: subject.title,
-                                      topicTitle: topic.title,
-                                      lesson,
-                                    })
-                                  }
-                                  style={({ pressed }) => [
-                                    styles.lessonRow,
-                                    {
-                                      borderBottomColor:
-                                        lIdx < topic.lessons.length - 1
-                                          ? theme.border
-                                          : 'transparent',
-                                      opacity: pressed ? 0.65 : 1,
-                                    },
-                                  ]}>
-                                  <View style={styles.lessonRowLeft}>
-                                    <View
-                                      style={[
-                                        styles.lessonNumCircle,
-                                        {
-                                          backgroundColor: theme.accentMuted,
-                                        },
-                                      ]}>
-                                      <Text
-                                        style={[
-                                          styles.lessonNumText,
-                                          { color: theme.accent },
-                                        ]}>
-                                        {lesson.lessonNumber}
-                                      </Text>
-                                    </View>
-                                    <View style={styles.lessonTitleBox}>
-                                      <Text
-                                        style={[
-                                          styles.lessonTitle,
-                                          { color: theme.text },
-                                        ]}>
-                                        {lesson.title}
-                                      </Text>
-                                      <Text
-                                        style={[
-                                          styles.lessonDuration,
-                                          { color: theme.textSecondary },
-                                        ]}>
-                                        {lesson.duration}
-                                      </Text>
-                                    </View>
-                                  </View>
-
-                                  <ChevronRight size={15} color={theme.accent} strokeWidth={2} />
-                                </Pressable>
-                              ))}
-                            </Animated.View>
-                          )}
-                        </Animated.View>
-                      );
-                    })}
+                    style={styles.topicsWrapper}>
+                    {subject.topics.map((topic, tIdx) => (
+                      <TopicItem
+                        key={topic.id}
+                        topic={topic}
+                        isLastTopic={tIdx === subject.topics.length - 1}
+                        isTopicOpen={!!expandedTopics[topic.id]}
+                        toggleTopic={toggleTopic}
+                        subjectTitle={subject.title}
+                        setSelectedLesson={setSelectedLesson}
+                        theme={theme}
+                      />
+                    ))}
                   </Animated.View>
                 )}
               </Animated.View>
@@ -1133,14 +1211,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  /* LEVEL 2: Topics Wrapper */
+  /* LEVEL 2: Topics Wrapper (Threaded vertical line tree) */
   topicsWrapper: {
-    borderTopWidth: 1,
-    padding: 10,
-    gap: 8,
+    marginLeft: 24,
+    marginRight: 14,
+    marginBottom: 14,
+    paddingTop: 4,
+  },
+  topicRowWrapper: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginBottom: 10,
+  },
+  topicBranchNode: {
+    width: 16,
+    position: 'relative',
+  },
+  topicBranchTop: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 2,
+  },
+  topicBranchBottom: {
+    position: 'absolute',
+    left: 0,
+    bottom: -10, // bridges the marginBottom to the next topic
+    width: 2,
+  },
+  topicBranchHoriz: {
+    position: 'absolute',
+    left: 0,
+    width: 16,
+    height: 2,
   },
   topicCard: {
-    borderRadius: Radius.sm,
+    flex: 1,
+    borderRadius: Radius.md,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -1181,31 +1288,62 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
 
-  /* LEVEL 3: Lessons Container */
+  /* LEVEL 3: Lessons Container (Nested branch tree) */
   lessonsContainer: {
-    borderTopWidth: 1,
-    paddingLeft: 12,
+    marginLeft: 16,
+    marginRight: 10,
+    marginBottom: 10,
+    paddingTop: 4,
+  },
+  lessonRowWrapper: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  lessonBranchNode: {
+    width: 14,
+    position: 'relative',
+  },
+  lessonBranchTop: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    height: '50%',
+    width: 2,
+  },
+  lessonBranchBottom: {
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    bottom: 0,
+    width: 2,
+  },
+  lessonBranchHoriz: {
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    marginTop: -1,
+    width: 14,
+    height: 2,
   },
   lessonRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingRight: 12,
-    borderBottomWidth: 1,
+    paddingVertical: 8,
+    paddingRight: 6,
     gap: 8,
   },
   lessonRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flex: 1,
   },
   lessonNumCircle: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
