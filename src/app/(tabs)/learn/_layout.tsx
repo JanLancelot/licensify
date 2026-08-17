@@ -1,4 +1,4 @@
-﻿import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/hooks/use-theme';
 import { Stack } from 'expo-router';
 
 export default function LearnLayout() {
