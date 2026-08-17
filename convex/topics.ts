@@ -88,6 +88,9 @@ export const updateTopic = mutation({
 export const listAllTopicsAdmin = query({
   args: { subjectId: v.optional(v.id("subjects")) },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
     await requireContentManager(ctx);
 
     if (args.subjectId) {
@@ -100,6 +103,7 @@ export const listAllTopicsAdmin = query({
     return await ctx.db.query("topics").collect();
   },
 });
+
 
 /**
  * Mutation: Delete a Topic (Requires content_manager or admin).

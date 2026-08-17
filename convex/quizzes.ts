@@ -156,7 +156,11 @@ export const listAllQuizzesAdmin = query({
     type: v.optional(v.union(v.literal("practice"), v.literal("mock_exam"))),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
     await requireContentManager(ctx);
+
 
     if (args.type) {
       return await ctx.db

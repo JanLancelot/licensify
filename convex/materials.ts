@@ -112,7 +112,11 @@ export const listAllMaterialsAdmin = query({
     topicId: v.optional(v.id("topics")),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
     await requireContentManager(ctx);
+
 
     let materials;
     if (args.subjectId) {

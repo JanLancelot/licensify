@@ -95,7 +95,11 @@ export const listAllQuestionsAdmin = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
     await requireContentManager(ctx);
+
 
     let questionsQuery = ctx.db.query("questions");
 

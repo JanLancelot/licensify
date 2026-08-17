@@ -7,7 +7,13 @@ import { requireContentManager } from "./authHelpers";
 export const getDashboardStats = query({
   args: {},
   handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+
     await requireContentManager(ctx);
+
 
     const [
       subjects,

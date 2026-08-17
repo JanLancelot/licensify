@@ -177,7 +177,11 @@ export const listAllUsersAdmin = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
     await requireAdmin(ctx);
+
 
     let users;
     if (args.role) {
