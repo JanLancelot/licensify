@@ -1,7 +1,9 @@
 import React from 'react';
 import {
-  ArrowRight,
+  BookOpen,
   ChevronRight,
+  Layers,
+  Sparkles,
 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -50,300 +52,133 @@ export default function LearnScreen() {
           </View>
         </View>
 
-        {/* BLOCK 1: NOTES */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Study Notes
-            </Text>
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/notes' as any)}
-              style={({ pressed }) => [
-                styles.openLink,
-                { opacity: pressed ? 0.6 : 1 },
-              ]}>
-              <Text style={[styles.openLinkText, { color: theme.accent }]}>
-                Open Notes
-              </Text>
-              <ArrowRight size={13} color={theme.accent} />
-            </Pressable>
-          </View>
-
-          <View
-            style={[
-              styles.blockCard,
+        {/* Action Buttons Section */}
+        <View style={styles.blockContainer}>
+          {/* BLOCK 1: COMPREHENSIVE NOTES */}
+          <Pressable
+            onPress={() => router.push('/(tabs)/learn/notes' as any)}
+            style={({ pressed }) => [
+              styles.buttonBlock,
               {
                 backgroundColor: theme.backgroundElement,
                 borderColor: theme.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.99 : 1 }],
               },
             ]}>
             <View style={styles.blockHeader}>
-              <View style={styles.blockTitleBox}>
-                <Text style={[styles.blockKicker, { color: theme.accent }]}>
-                  SYLLABUS & DOCUMENTATION
-                </Text>
-                <Text style={[styles.blockHeading, { color: theme.text }]}>
-                  Comprehensive Notes
-                </Text>
-                <Text
-                  style={[styles.blockSubtext, { color: theme.textSecondary }]}>
-                  Organized curriculum notes covering all board exam areas, building laws, and structural fundamentals.
-                </Text>
+              <View
+                style={[
+                  styles.iconHandler,
+                  {
+                    backgroundColor: theme.accentMuted,
+                    borderColor: theme.border,
+                  },
+                ]}>
+                <BookOpen size={24} color={theme.accent} strokeWidth={2} />
+              </View>
+
+              <View style={styles.badgeRow}>
+                <View
+                  style={[
+                    styles.tagBadge,
+                    {
+                      backgroundColor: theme.accentMuted,
+                      borderColor: theme.accentLight,
+                    },
+                  ]}>
+                  <Text style={[styles.tagBadgeText, { color: theme.accent }]}>
+                    9 SUBJECTS
+                  </Text>
+                </View>
               </View>
             </View>
 
-            {/* Sub-block Items */}
-            <View
-              style={[
-                styles.subListContainer,
-                { borderTopColor: theme.border },
-              ]}>
-              {/* Subjects */}
-              <Pressable
-                onPress={() => router.push({ pathname: '/(tabs)/learn/notes', params: { tab: 'subjects' } } as any)}
-                style={({ pressed }) => [
-                  styles.subItem,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <View style={styles.subItemLeft}>
-                  <Text style={[styles.subItemTitle, { color: theme.text }]}>
-                    Subjects
-                  </Text>
-                  <Text
-                    style={[styles.subItemDesc, { color: theme.textSecondary }]}>
-                    Area 1, Area 2, and Area 3 board subjects
-                  </Text>
-                </View>
-                <View style={styles.subItemRight}>
-                  <Text
-                    style={[styles.countBadge, { color: theme.textSecondary }]}>
-                    3 Areas
-                  </Text>
-                  <ChevronRight size={15} color={theme.textSecondary} />
-                </View>
-              </Pressable>
-
-              <View
-                style={[styles.itemDivider, { backgroundColor: theme.border }]}
-              />
-
-              {/* Modules */}
-              <Pressable
-                onPress={() => router.push({ pathname: '/(tabs)/learn/notes', params: { tab: 'modules' } } as any)}
-                style={({ pressed }) => [
-                  styles.subItem,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <View style={styles.subItemLeft}>
-                  <Text style={[styles.subItemTitle, { color: theme.text }]}>
-                    Modules
-                  </Text>
-                  <Text
-                    style={[styles.subItemDesc, { color: theme.textSecondary }]}>
-                    History, Building Tech, Laws & Planning
-                  </Text>
-                </View>
-                <View style={styles.subItemRight}>
-                  <Text
-                    style={[styles.countBadge, { color: theme.textSecondary }]}>
-                    4 Modules
-                  </Text>
-                  <ChevronRight size={15} color={theme.textSecondary} />
-                </View>
-              </Pressable>
-
-              <View
-                style={[styles.itemDivider, { backgroundColor: theme.border }]}
-              />
-
-              {/* Lessons */}
-              <Pressable
-                onPress={() => router.push({ pathname: '/(tabs)/learn/notes', params: { tab: 'lessons' } } as any)}
-                style={({ pressed }) => [
-                  styles.subItem,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <View style={styles.subItemLeft}>
-                  <Text style={[styles.subItemTitle, { color: theme.text }]}>
-                    Lessons
-                  </Text>
-                  <Text
-                    style={[styles.subItemDesc, { color: theme.textSecondary }]}>
-                    Detailed study guides and formula breakdowns
-                  </Text>
-                </View>
-                <View style={styles.subItemRight}>
-                  <Text
-                    style={[styles.countBadge, { color: theme.textSecondary }]}>
-                    127 Lessons
-                  </Text>
-                  <ChevronRight size={15} color={theme.textSecondary} />
-                </View>
-              </Pressable>
+            <View style={styles.blockBody}>
+              <Text style={[styles.blockTitle, { color: theme.text }]}>
+                Comprehensive Notes
+              </Text>
+              <Text
+                style={[styles.blockDescription, { color: theme.textSecondary }]}>
+                In-depth curriculum notes, building laws, structural formulas, and step-by-step topic breakdowns.
+              </Text>
             </View>
 
-            {/* Bottom CTA */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/notes' as any)}
-              style={({ pressed }) => [
-                styles.primaryBtn,
-                {
-                  backgroundColor: theme.accent,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}>
-              <Text style={styles.primaryBtnText}>Browse All Notes</Text>
-              <ArrowRight size={14} color="#FFFFFF" />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* BLOCK 2: FLASHCARDS */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Flashcards
-            </Text>
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/flashcards' as any)}
-              style={({ pressed }) => [
-                styles.openLink,
-                { opacity: pressed ? 0.6 : 1 },
-              ]}>
-              <Text style={[styles.openLinkText, { color: theme.accent }]}>
-                Open Decks
+            <View style={[styles.blockFooter, { borderTopColor: theme.border }]}>
+              <Text style={[styles.metaText, { color: theme.textSecondary }]}>
+                120+ Organized Lessons
               </Text>
-              <ArrowRight size={13} color={theme.accent} />
-            </Pressable>
-          </View>
+              <View style={styles.actionArrow}>
+                <Text style={[styles.actionText, { color: theme.accent }]}>
+                  Browse Notes
+                </Text>
+                <ChevronRight size={16} color={theme.accent} />
+              </View>
+            </View>
+          </Pressable>
 
-          <View
-            style={[
-              styles.blockCard,
+          {/* BLOCK 2: FLASHCARDS */}
+          <Pressable
+            onPress={() => router.push('/(tabs)/learn/flashcards' as any)}
+            style={({ pressed }) => [
+              styles.buttonBlock,
               {
                 backgroundColor: theme.backgroundElement,
                 borderColor: theme.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.99 : 1 }],
               },
             ]}>
             <View style={styles.blockHeader}>
-              <View style={styles.blockTitleBox}>
-                <Text style={[styles.blockKicker, { color: theme.accent }]}>
-                  SPACED REPETITION
-                </Text>
-                <Text style={[styles.blockHeading, { color: theme.text }]}>
-                  Review Flashcards
-                </Text>
-                <Text
-                  style={[styles.blockSubtext, { color: theme.textSecondary }]}>
-                  Master architectural styles, legal provisions, and high-yield terms through quick active recall drills.
-                </Text>
+              <View
+                style={[
+                  styles.iconHandler,
+                  {
+                    backgroundColor: theme.accentMuted,
+                    borderColor: theme.border,
+                  },
+                ]}>
+                <Layers size={24} color={theme.accent} strokeWidth={2} />
+              </View>
+
+              <View style={styles.badgeRow}>
+                <View
+                  style={[
+                    styles.tagBadge,
+                    {
+                      backgroundColor: theme.accentMuted,
+                      borderColor: theme.accentLight,
+                    },
+                  ]}>
+                  <Text style={[styles.tagBadgeText, { color: theme.accent }]}>
+                    SPACED RECALL
+                  </Text>
+                </View>
               </View>
             </View>
 
-            {/* Sub-block Items */}
-            <View
-              style={[
-                styles.subListContainer,
-                { borderTopColor: theme.border },
-              ]}>
-              {/* Subject Decks */}
-              <Pressable
-                onPress={() => router.push({ pathname: '/(tabs)/learn/flashcards', params: { tab: 'decks' } } as any)}
-                style={({ pressed }) => [
-                  styles.subItem,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <View style={styles.subItemLeft}>
-                  <Text style={[styles.subItemTitle, { color: theme.text }]}>
-                    Subject Decks
-                  </Text>
-                  <Text
-                    style={[styles.subItemDesc, { color: theme.textSecondary }]}>
-                    Organized decks for History, Laws & Technology
-                  </Text>
-                </View>
-                <View style={styles.subItemRight}>
-                  <Text
-                    style={[styles.countBadge, { color: theme.textSecondary }]}>
-                    24 Decks
-                  </Text>
-                  <ChevronRight size={15} color={theme.textSecondary} />
-                </View>
-              </Pressable>
-
-              <View
-                style={[styles.itemDivider, { backgroundColor: theme.border }]}
-              />
-
-              {/* Difficult Cards */}
-              <Pressable
-                onPress={() => router.push({ pathname: '/(tabs)/learn/flashcards', params: { tab: 'difficult' } } as any)}
-                style={({ pressed }) => [
-                  styles.subItem,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <View style={styles.subItemLeft}>
-                  <Text style={[styles.subItemTitle, { color: theme.text }]}>
-                    Difficult Cards
-                  </Text>
-                  <Text
-                    style={[styles.subItemDesc, { color: theme.textSecondary }]}>
-                    Flagged and low-retention terms needing review
-                  </Text>
-                </View>
-                <View style={styles.subItemRight}>
-                  <Text
-                    style={[styles.alertCountBadge, { color: theme.accent }]}>
-                    18 Due
-                  </Text>
-                  <ChevronRight size={15} color={theme.textSecondary} />
-                </View>
-              </Pressable>
-
-              <View
-                style={[styles.itemDivider, { backgroundColor: theme.border }]}
-              />
-
-              {/* Favorites */}
-              <Pressable
-                onPress={() => router.push({ pathname: '/(tabs)/learn/flashcards', params: { tab: 'favorites' } } as any)}
-                style={({ pressed }) => [
-                  styles.subItem,
-                  { opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <View style={styles.subItemLeft}>
-                  <Text style={[styles.subItemTitle, { color: theme.text }]}>
-                    Favorites
-                  </Text>
-                  <Text
-                    style={[styles.subItemDesc, { color: theme.textSecondary }]}>
-                    Bookmarked high-yield terms for quick review
-                  </Text>
-                </View>
-                <View style={styles.subItemRight}>
-                  <Text
-                    style={[styles.countBadge, { color: theme.textSecondary }]}>
-                    32 Saved
-                  </Text>
-                  <ChevronRight size={15} color={theme.textSecondary} />
-                </View>
-              </Pressable>
+            <View style={styles.blockBody}>
+              <Text style={[styles.blockTitle, { color: theme.text }]}>
+                Review Flashcards
+              </Text>
+              <Text
+                style={[styles.blockDescription, { color: theme.textSecondary }]}>
+                Active recall flashcards for architectural styles, high-yield legal provisions, and visual recognition drills.
+              </Text>
             </View>
 
-            {/* Bottom CTA */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/flashcards' as any)}
-              style={({ pressed }) => [
-                styles.primaryBtn,
-                {
-                  backgroundColor: theme.accent,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}>
-              <Text style={styles.primaryBtnText}>Start Flashcards Drill</Text>
-              <ArrowRight size={14} color="#FFFFFF" />
-            </Pressable>
-          </View>
+            <View style={[styles.blockFooter, { borderTopColor: theme.border }]}>
+              <Text style={[styles.metaText, { color: theme.textSecondary }]}>
+                24 Decks • 450+ Cards
+              </Text>
+              <View style={styles.actionArrow}>
+                <Text style={[styles.actionText, { color: theme.accent }]}>
+                  Start Practice
+                </Text>
+                <ChevronRight size={16} color={theme.accent} />
+              </View>
+            </View>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -359,8 +194,8 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    gap: 22,
+    paddingTop: 16,
+    gap: 20,
   },
 
   /* Header */
@@ -368,7 +203,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: -4,
+    marginBottom: 4,
   },
   kicker: {
     fontSize: 10.5,
@@ -378,7 +213,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.6,
   },
@@ -393,115 +228,74 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  /* Section Structure */
-  section: {
-    gap: 10,
+  /* Block Buttons */
+  blockContainer: {
+    gap: 16,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  openLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  openLinkText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  /* Block Cards */
-  blockCard: {
-    borderRadius: Radius.md,
+  buttonBlock: {
+    borderRadius: Radius.lg,
     borderWidth: 1,
-    overflow: 'hidden',
+    padding: 18,
+    gap: 14,
   },
   blockHeader: {
-    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  blockTitleBox: {
-    gap: 3,
+  iconHandler: {
+    width: 46,
+    height: 46,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  blockKicker: {
-    fontSize: 10,
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tagBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.xs,
+    borderWidth: 1,
+  },
+  tagBadgeText: {
+    fontSize: 9.5,
     fontWeight: '700',
-    letterSpacing: 0.9,
-    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
-  blockHeading: {
-    fontSize: 16,
+  blockBody: {
+    gap: 6,
+  },
+  blockTitle: {
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  blockSubtext: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 2,
+  blockDescription: {
+    fontSize: 13,
+    lineHeight: 18,
   },
-
-  /* Sub List */
-  subListContainer: {
-    borderTopWidth: 1,
-  },
-  subItem: {
+  blockFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
   },
-  subItemLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  subItemTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  subItemDesc: {
-    fontSize: 11.5,
-  },
-  subItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  countBadge: {
-    fontSize: 11.5,
+  metaText: {
+    fontSize: 12,
     fontWeight: '600',
   },
-  alertCountBadge: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  itemDivider: {
-    height: 1,
-    marginHorizontal: 16,
-  },
-
-  /* Action Button */
-  primaryBtn: {
+  actionArrow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    marginTop: 6,
-    borderRadius: Radius.sm,
+    gap: 4,
   },
-  primaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+  actionText: {
+    fontSize: 12.5,
     fontWeight: '700',
   },
 });

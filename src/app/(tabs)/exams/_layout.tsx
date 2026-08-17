@@ -1,6 +1,5 @@
-import React from 'react';
-import { Stack } from 'expo-router';
 import { useTheme } from '@/hooks/use-theme';
+import { Stack } from 'expo-router';
 
 export default function ExamsLayout() {
   const theme = useTheme();
