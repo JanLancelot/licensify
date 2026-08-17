@@ -34,8 +34,9 @@ test("Admin Dashboard & Content Management API Tests", async () => {
 
   // 3. Admin can retrieve dashboard stats
   const initialStats = await adminAuth.query(api.admin.getDashboardStats);
-  expect(initialStats.totals.subjects).toBe(0);
-  expect(initialStats.totals.questions).toBe(0);
+  expect(initialStats!.totals.subjects).toBe(0);
+  expect(initialStats!.totals.questions).toBe(0);
+
 
   // 4. Admin Subject & Topic CRUD
   const subjectId = await adminAuth.mutation(api.subjects.createSubject, {
@@ -157,10 +158,11 @@ test("Admin Dashboard & Content Management API Tests", async () => {
 
   // 8. Re-check dashboard stats
   const finalStats = await adminAuth.query(api.admin.getDashboardStats);
-  expect(finalStats.totals.subjects).toBe(1);
-  expect(finalStats.totals.topics).toBe(1);
-  expect(finalStats.totals.questions).toBe(3);
-  expect(finalStats.totals.materials).toBe(1);
-  expect(finalStats.totals.flashcards).toBe(1);
-  expect(finalStats.totals.quizzes).toBe(1);
+  expect(finalStats!.totals.subjects).toBe(1);
+  expect(finalStats!.totals.topics).toBe(1);
+  expect(finalStats!.totals.questions).toBe(3);
+  expect(finalStats!.totals.materials).toBe(1);
+  expect(finalStats!.totals.flashcards).toBe(1);
+  expect(finalStats!.totals.quizzes).toBe(1);
 });
+
