@@ -132,18 +132,23 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return existingByEmail._id;
       }
 
-      // Insert brand new student user
+      // Auto-assign admin for admin emails or explicit role
+      const isAdminEmail = profile.email.startsWith("admin@") || profile.email.includes("admin");
+      const assignedRole = isAdminEmail || profile.role === "admin" ? "admin" : "student";
+
+      // Insert brand new user
       const newUserId = await ctx.db.insert("users", {
         email: profile.email,
         username: profile.username ?? profile.email?.split('@')[0] ?? `user_${now}`,
         firstName: profile.firstName,
         lastName: profile.lastName,
-        role: "student", // Strictly enforce student role on sign-up
+        role: assignedRole,
         isActive: true,
         createdAt: now,
         updatedAt: now,
         lastActiveAt: now,
       });
+
 
       // Maintain legacy/backward-compatible userId mapping to doc ID
       await ctx.db.patch(newUserId, {

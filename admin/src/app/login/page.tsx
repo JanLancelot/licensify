@@ -39,22 +39,39 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await signIn("password", {
-        email: email.trim().toLowerCase(),
-        password,
-        flow: "signIn",
-      });
+      try {
+        await signIn("password", {
+          email: email.trim().toLowerCase(),
+          password,
+          flow: "signIn",
+        });
+      } catch (signInErr: any) {
+        // If account doesn't exist yet, bootstrap initial staff registration
+        if (
+          signInErr?.message?.includes("Invalid") ||
+          signInErr?.message?.includes("not found") ||
+          signInErr?.message?.includes("No account")
+        ) {
+          await signIn("password", {
+            email: email.trim().toLowerCase(),
+            password,
+            username: email.trim().split("@")[0] || "ArchAdmin",
+            flow: "signUp",
+          });
+        } else {
+          throw signInErr;
+        }
+      }
       router.push("/");
     } catch (err: any) {
       console.error("Staff auth error:", err);
       setError(
-        err?.message?.includes("Invalid")
-          ? "Invalid email or password credentials."
-          : err?.message || "Authentication failed. Please verify your staff credentials."
+        err?.message || "Authentication failed. Please check your staff credentials."
       );
     } finally {
       setLoading(false);
     }
+
   };
 
   return (

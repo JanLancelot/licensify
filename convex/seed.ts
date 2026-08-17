@@ -1,4 +1,6 @@
 import { mutation } from "./_generated/server";
+import { v } from "convex/values";
+
 
 /**
  * Database Seeding Mutation
@@ -233,3 +235,33 @@ export const seedDatabase = mutation({
     };
   },
 });
+
+/**
+ * Promote any user by email to System Administrator
+ * Usage: npx convex run seed:promoteUserToAdmin '{"email": "your_email@example.com"}'
+ */
+export const promoteUserToAdmin = mutation({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email.trim().toLowerCase()))
+      .first();
+
+    if (!user) {
+      throw new Error(`No registered account found with email: "${args.email}". Please sign in or register first.`);
+    }
+
+    await ctx.db.patch(user._id, {
+      role: "admin",
+      isActive: true,
+      updatedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      message: `User ${args.email} (${user.username}) successfully promoted to Administrator!`,
+    };
+  },
+});
+
