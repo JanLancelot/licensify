@@ -2,27 +2,22 @@ import { useRouter } from 'expo-router';
 import {
   AlertTriangle,
   ArrowLeft,
-  BookOpen,
   Box,
   Building2,
   Check,
   ChevronLeft,
   ChevronRight,
   Compass,
-  Droplets,
-  FileText,
   Hammer,
   Layers,
   Play,
   Plus,
-  RotateCcw,
   Scale,
   Shuffle,
   Sparkles,
   Star,
   Trash2,
-  X,
-  Zap,
+  X
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -31,10 +26,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
-  View,
+  View
 } from 'react-native';
 import Animated, {
   FadeInDown,
@@ -494,6 +488,332 @@ function generateCardsFromLessons(
   }
 
   return result;
+}
+
+// ── Preset Builder Topic Item Component ─────────────────────────────────────
+function PresetTopicItem({
+  topic,
+  tIdx,
+  isLastTopic,
+  selectedLessonIds,
+  expandedTopics,
+  toggleTopic,
+  toggleTopicSelection,
+  toggleLessonSelection,
+  lastSelectedTopicIndex,
+  theme,
+}: {
+  topic: Topic;
+  tIdx: number;
+  isLastTopic: boolean;
+  selectedLessonIds: Set<string>;
+  expandedTopics: Record<string, boolean>;
+  toggleTopic: (id: string) => void;
+  toggleTopicSelection: (topic: Topic) => void;
+  toggleLessonSelection: (lessonId: string) => void;
+  lastSelectedTopicIndex: number;
+  theme: any;
+}) {
+  const [headerHeight, setHeaderHeight] = useState(48);
+  const center = Math.round(headerHeight / 2);
+
+  const isTopicOpen = !!expandedTopics[topic.id];
+  const topicLessonIds = topic.lessons.map((l) => l.id);
+  const selectedInTopicCount = topicLessonIds.filter((id) =>
+    selectedLessonIds.has(id)
+  ).length;
+  const isAllTopicSelected =
+    topicLessonIds.length > 0 &&
+    selectedInTopicCount === topicLessonIds.length;
+  const isSomeTopicSelected =
+    selectedInTopicCount > 0 && !isAllTopicSelected;
+  const hasTopicSelected = selectedInTopicCount > 0;
+
+  const isVerticalTopHighlighted =
+    lastSelectedTopicIndex >= 0 &&
+    tIdx <= lastSelectedTopicIndex;
+  const isVerticalBottomHighlighted =
+    lastSelectedTopicIndex >= 0 &&
+    tIdx < lastSelectedTopicIndex;
+
+  const lastSelectedLessonIndex = topic.lessons.reduce(
+    (lastIdx, l, idx) =>
+      selectedLessonIds.has(l.id) ? idx : lastIdx,
+    -1
+  );
+
+  return (
+    <View key={topic.id} style={styles.topicItemWrapper}>
+      <View style={styles.treeBranchNode}>
+        <View
+          style={[
+            styles.treeBranchTop,
+            {
+              height: center,
+              backgroundColor: isVerticalTopHighlighted
+                ? theme.accent
+                : theme.border,
+            },
+          ]}
+        />
+        {!isLastTopic && (
+          <View
+            style={[
+              styles.treeBranchBottom,
+              {
+                top: center,
+                backgroundColor: isVerticalBottomHighlighted
+                  ? theme.accent
+                  : theme.border,
+              },
+            ]}
+          />
+        )}
+        <View
+          style={[
+            styles.treeBranchHoriz,
+            {
+              top: center - 1,
+              backgroundColor: hasTopicSelected
+                ? theme.accent
+                : theme.border,
+            },
+          ]}
+        />
+      </View>
+
+      <View style={styles.topicMainColumn}>
+        {/* Topic Header Row */}
+        <View
+          onLayout={(e) => {
+            const h = e.nativeEvent.layout.height;
+            if (h > 0 && Math.abs(h - headerHeight) > 1) {
+              setHeaderHeight(h);
+            }
+          }}
+          style={[
+            styles.topicHeader,
+            {
+              backgroundColor: hasTopicSelected
+                ? theme.accentMuted
+                : theme.backgroundSelected,
+              borderColor: hasTopicSelected
+                ? theme.accent
+                : theme.border,
+              borderWidth: hasTopicSelected ? 1.5 : 1,
+            },
+          ]}>
+          <Pressable
+            onPress={() => toggleTopic(topic.id)}
+            style={styles.topicHeaderLeft}>
+            <Text
+              style={[
+                styles.topicTitle,
+                { color: theme.text },
+              ]}>
+              {topic.title}
+            </Text>
+            <Text
+              style={[
+                styles.topicSubtext,
+                {
+                  color: hasTopicSelected
+                    ? theme.accent
+                    : theme.textSecondary,
+                  fontWeight: hasTopicSelected ? '700' : '400',
+                },
+              ]}>
+              {hasTopicSelected
+                ? `${selectedInTopicCount}/${topic.lessons.length} Selected`
+                : `${topic.lessons.length} Lessons`}
+            </Text>
+          </Pressable>
+
+          {/* + Add Topic Button */}
+          <Pressable
+            onPress={() => toggleTopicSelection(topic)}
+            style={({ pressed }) => [
+              styles.addSmallBtn,
+              {
+                backgroundColor: isAllTopicSelected
+                  ? theme.accent
+                  : isSomeTopicSelected
+                  ? theme.accentMuted
+                  : theme.backgroundElement,
+                borderColor: isAllTopicSelected || isSomeTopicSelected
+                  ? theme.accent
+                  : theme.border,
+                opacity: pressed ? 0.75 : 1,
+              },
+            ]}>
+            {isAllTopicSelected ? (
+              <Check size={12} color="#FFFFFF" strokeWidth={3} />
+            ) : (
+              <Plus
+                size={12}
+                color={isSomeTopicSelected ? theme.accent : theme.text}
+                strokeWidth={2.5}
+              />
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={() => toggleTopic(topic.id)}
+            style={styles.chevronPressableSmall}>
+            <RotatingChevron
+              isOpen={isTopicOpen}
+              color={hasTopicSelected ? theme.accent : theme.textSecondary}
+              size={15}
+            />
+          </Pressable>
+        </View>
+
+        {/* Lesson Level Accordion */}
+        {isTopicOpen && (
+          <Animated.View
+            entering={FadeInDown.duration(180)}
+            exiting={FadeOutUp.duration(150)}
+            layout={LinearTransition.duration(180)}
+            style={styles.lessonsContainer}>
+            {topic.lessons.map((lesson, lIdx) => {
+              const isLessonSelected = selectedLessonIds.has(
+                lesson.id
+              );
+              const isLastLesson =
+                lIdx === topic.lessons.length - 1;
+              const isLessonTopHighlighted =
+                lastSelectedLessonIndex >= 0 &&
+                lIdx <= lastSelectedLessonIndex;
+              const isLessonBottomHighlighted =
+                lastSelectedLessonIndex >= 0 &&
+                lIdx < lastSelectedLessonIndex;
+
+              return (
+                <View
+                  key={lesson.id}
+                  style={styles.lessonRowWrapper}>
+                  {/* Tree Branch Node for Lesson */}
+                  <View style={styles.lessonBranchNode}>
+                    <View
+                      style={[
+                        styles.lessonBranchTop,
+                        {
+                          backgroundColor: isLessonTopHighlighted
+                            ? theme.accent
+                            : theme.border,
+                        },
+                      ]}
+                    />
+                    {!isLastLesson && (
+                      <View
+                        style={[
+                          styles.lessonBranchBottom,
+                          {
+                            backgroundColor: isLessonBottomHighlighted
+                              ? theme.accent
+                              : theme.border,
+                          },
+                        ]}
+                      />
+                    )}
+                    <View
+                      style={[
+                        styles.lessonBranchHoriz,
+                        {
+                          backgroundColor: isLessonSelected
+                            ? theme.accent
+                            : theme.border,
+                        },
+                      ]}
+                    />
+                  </View>
+
+                  <Pressable
+                    onPress={() =>
+                      toggleLessonSelection(lesson.id)
+                    }
+                    style={({ pressed }) => [
+                      styles.lessonRow,
+                      {
+                        backgroundColor: isLessonSelected
+                          ? theme.accentMuted
+                          : theme.backgroundElement,
+                        borderColor: isLessonSelected
+                          ? theme.accent
+                          : theme.border,
+                        borderWidth: isLessonSelected ? 1.5 : 1,
+                        opacity: pressed ? 0.8 : 1,
+                      },
+                    ]}>
+                    <View style={styles.lessonRowLeft}>
+                      <View
+                        style={[
+                          styles.lessonNumCircle,
+                          {
+                            backgroundColor: isLessonSelected
+                              ? theme.accent
+                              : theme.backgroundSelected,
+                          },
+                        ]}>
+                        <Text
+                          style={[
+                            styles.lessonNumText,
+                            {
+                              color: isLessonSelected
+                                ? '#FFFFFF'
+                                : theme.accent,
+                            },
+                          ]}>
+                          {lesson.lessonNumber}
+                        </Text>
+                      </View>
+                      <View style={styles.lessonTextCol}>
+                        <Text
+                          style={[
+                            styles.lessonTitle,
+                            { color: theme.text },
+                          ]}>
+                          {lesson.title}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* + Add Lesson Button */}
+                    <View
+                      style={[
+                        styles.addSmallBtn,
+                        {
+                          backgroundColor: isLessonSelected
+                            ? theme.accent
+                            : theme.backgroundSelected,
+                          borderColor: isLessonSelected
+                            ? theme.accent
+                            : theme.border,
+                        },
+                      ]}>
+                      {isLessonSelected ? (
+                        <Check
+                          size={12}
+                          color="#FFFFFF"
+                          strokeWidth={3}
+                        />
+                      ) : (
+                        <Plus
+                          size={12}
+                          color={theme.text}
+                          strokeWidth={2.5}
+                        />
+                      )}
+                    </View>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </Animated.View>
+        )}
+      </View>
+    </View>
+  );
 }
 
 export default function FlashcardsHubScreen() {
@@ -1186,12 +1506,26 @@ export default function FlashcardsHubScreen() {
                   const subjectLessonIds = subject.topics.flatMap((t) =>
                     t.lessons.map((l) => l.id)
                   );
+                  const selectedInSubjectCount = subjectLessonIds.filter((id) =>
+                    selectedLessonIds.has(id)
+                  ).length;
                   const isAllSubjectSelected =
                     subjectLessonIds.length > 0 &&
-                    subjectLessonIds.every((id) => selectedLessonIds.has(id));
+                    selectedInSubjectCount === subjectLessonIds.length;
                   const isSomeSubjectSelected =
-                    subjectLessonIds.some((id) => selectedLessonIds.has(id)) &&
-                    !isAllSubjectSelected;
+                    selectedInSubjectCount > 0 && !isAllSubjectSelected;
+                  const hasSubjectSelected = selectedInSubjectCount > 0;
+
+                  // Find index of the last topic in this subject that has selected lessons
+                  const lastSelectedTopicIndex = subject.topics.reduce(
+                    (lastIdx, topic, idx) => {
+                      const hasSelected = topic.lessons.some((l) =>
+                        selectedLessonIds.has(l.id)
+                      );
+                      return hasSelected ? idx : lastIdx;
+                    },
+                    -1
+                  );
 
                   return (
                     <Animated.View
@@ -1200,10 +1534,13 @@ export default function FlashcardsHubScreen() {
                       style={[
                         styles.subjectCard,
                         {
-                          backgroundColor: theme.backgroundElement,
-                          borderColor: isAllSubjectSelected
+                          backgroundColor: hasSubjectSelected
+                            ? theme.backgroundSelected
+                            : theme.backgroundElement,
+                          borderColor: hasSubjectSelected
                             ? theme.accent
                             : theme.border,
+                          borderWidth: hasSubjectSelected ? 1.5 : 1,
                         },
                       ]}>
                       {/* Subject Level Header */}
@@ -1214,11 +1551,15 @@ export default function FlashcardsHubScreen() {
                           <View
                             style={[
                               styles.circleLogo,
-                              { backgroundColor: theme.accentMuted },
+                              {
+                                backgroundColor: hasSubjectSelected
+                                  ? theme.accent
+                                  : theme.accentMuted,
+                              },
                             ]}>
                             <IconComponent
                               size={20}
-                              color={theme.accent}
+                              color={hasSubjectSelected ? '#FFFFFF' : theme.accent}
                               strokeWidth={2.2}
                             />
                           </View>
@@ -1230,10 +1571,16 @@ export default function FlashcardsHubScreen() {
                             <Text
                               style={[
                                 styles.subjectSubtext,
-                                { color: theme.textSecondary },
+                                {
+                                  color: hasSubjectSelected
+                                    ? theme.accent
+                                    : theme.textSecondary,
+                                  fontWeight: hasSubjectSelected ? '700' : '400',
+                                },
                               ]}>
-                              {subject.area} • {subject.topics.length} Topics •{' '}
-                              {subjectLessonIds.length} Lessons
+                              {hasSubjectSelected
+                                ? `${selectedInSubjectCount} of ${subjectLessonIds.length} Lessons Selected`
+                                : `${subject.area} • ${subject.topics.length} Topics • ${subjectLessonIds.length} Lessons`}
                             </Text>
                           </View>
                         </Pressable>
@@ -1249,7 +1596,7 @@ export default function FlashcardsHubScreen() {
                                 : isSomeSubjectSelected
                                 ? theme.accentMuted
                                 : theme.backgroundSelected,
-                              borderColor: isAllSubjectSelected
+                              borderColor: isAllSubjectSelected || isSomeSubjectSelected
                                 ? theme.accent
                                 : theme.border,
                               opacity: pressed ? 0.75 : 1,
@@ -1272,7 +1619,7 @@ export default function FlashcardsHubScreen() {
                           style={styles.chevronPressable}>
                           <RotatingChevron
                             isOpen={isSubjectOpen}
-                            color={theme.accent}
+                            color={hasSubjectSelected ? theme.accent : theme.textSecondary}
                             size={18}
                           />
                         </Pressable>
@@ -1286,218 +1633,21 @@ export default function FlashcardsHubScreen() {
                           layout={LinearTransition.duration(200)}
                           style={styles.topicsContainer}>
                           {subject.topics.map((topic, tIdx) => {
-                            const isTopicOpen = !!expandedTopics[topic.id];
                             const isLastTopic = tIdx === subject.topics.length - 1;
-                            const topicLessonIds = topic.lessons.map((l) => l.id);
-                            const isAllTopicSelected =
-                              topicLessonIds.length > 0 &&
-                              topicLessonIds.every((id) => selectedLessonIds.has(id));
-                            const isSomeTopicSelected =
-                              topicLessonIds.some((id) => selectedLessonIds.has(id)) &&
-                              !isAllTopicSelected;
-
                             return (
-                              <View key={topic.id} style={styles.topicItemWrapper}>
-                                <View style={styles.treeBranchNode}>
-                                  <View
-                                    style={[
-                                      styles.treeBranchTop,
-                                      { backgroundColor: theme.border },
-                                    ]}
-                                  />
-                                  {!isLastTopic && (
-                                    <View
-                                      style={[
-                                        styles.treeBranchBottom,
-                                        { backgroundColor: theme.border },
-                                      ]}
-                                    />
-                                  )}
-                                  <View
-                                    style={[
-                                      styles.treeBranchHoriz,
-                                      { backgroundColor: theme.border },
-                                    ]}
-                                  />
-                                </View>
-
-                                <View style={styles.topicMainColumn}>
-                                  {/* Topic Header Row */}
-                                  <View
-                                    style={[
-                                      styles.topicHeader,
-                                      {
-                                        backgroundColor: isAllTopicSelected
-                                          ? theme.accentMuted
-                                          : theme.backgroundSelected,
-                                        borderColor: isAllTopicSelected
-                                          ? theme.accent
-                                          : theme.border,
-                                      },
-                                    ]}>
-                                    <Pressable
-                                      onPress={() => toggleTopic(topic.id)}
-                                      style={styles.topicHeaderLeft}>
-                                      <Text
-                                        style={[
-                                          styles.topicTitle,
-                                          { color: theme.text },
-                                        ]}>
-                                        {topic.title}
-                                      </Text>
-                                      <Text
-                                        style={[
-                                          styles.topicSubtext,
-                                          { color: theme.textSecondary },
-                                        ]}>
-                                        {topic.lessons.length} Lessons
-                                      </Text>
-                                    </Pressable>
-
-                                    {/* + Add Topic Button */}
-                                    <Pressable
-                                      onPress={() => toggleTopicSelection(topic)}
-                                      style={({ pressed }) => [
-                                        styles.addSmallBtn,
-                                        {
-                                          backgroundColor: isAllTopicSelected
-                                            ? theme.accent
-                                            : isSomeTopicSelected
-                                            ? theme.accentMuted
-                                            : theme.backgroundElement,
-                                          borderColor: isAllTopicSelected
-                                            ? theme.accent
-                                            : theme.border,
-                                          opacity: pressed ? 0.75 : 1,
-                                        },
-                                      ]}>
-                                      {isAllTopicSelected ? (
-                                        <Check size={12} color="#FFFFFF" strokeWidth={3} />
-                                      ) : (
-                                        <Plus
-                                          size={12}
-                                          color={isSomeTopicSelected ? theme.accent : theme.text}
-                                          strokeWidth={2.5}
-                                        />
-                                      )}
-                                    </Pressable>
-
-                                    <Pressable
-                                      onPress={() => toggleTopic(topic.id)}
-                                      style={styles.chevronPressableSmall}>
-                                      <RotatingChevron
-                                        isOpen={isTopicOpen}
-                                        color={theme.textSecondary}
-                                        size={15}
-                                      />
-                                    </Pressable>
-                                  </View>
-
-                                  {/* Lesson Level Accordion */}
-                                  {isTopicOpen && (
-                                    <Animated.View
-                                      entering={FadeInDown.duration(180)}
-                                      exiting={FadeOutUp.duration(150)}
-                                      layout={LinearTransition.duration(180)}
-                                      style={styles.lessonsContainer}>
-                                      {topic.lessons.map((lesson) => {
-                                        const isLessonSelected = selectedLessonIds.has(
-                                          lesson.id
-                                        );
-
-                                        return (
-                                          <Pressable
-                                            key={lesson.id}
-                                            onPress={() =>
-                                              toggleLessonSelection(lesson.id)
-                                            }
-                                            style={({ pressed }) => [
-                                              styles.lessonRow,
-                                              {
-                                                backgroundColor: isLessonSelected
-                                                  ? theme.accentMuted
-                                                  : theme.backgroundElement,
-                                                borderColor: isLessonSelected
-                                                  ? theme.accent
-                                                  : theme.border,
-                                                opacity: pressed ? 0.8 : 1,
-                                              },
-                                            ]}>
-                                            <View style={styles.lessonRowLeft}>
-                                              <View
-                                                style={[
-                                                  styles.lessonNumCircle,
-                                                  {
-                                                    backgroundColor: isLessonSelected
-                                                      ? theme.accent
-                                                      : theme.backgroundSelected,
-                                                  },
-                                                ]}>
-                                                <Text
-                                                  style={[
-                                                    styles.lessonNumText,
-                                                    {
-                                                      color: isLessonSelected
-                                                        ? '#FFFFFF'
-                                                        : theme.accent,
-                                                    },
-                                                  ]}>
-                                                  {lesson.lessonNumber}
-                                                </Text>
-                                              </View>
-                                              <View style={styles.lessonTextCol}>
-                                                <Text
-                                                  style={[
-                                                    styles.lessonTitle,
-                                                    { color: theme.text },
-                                                  ]}>
-                                                  {lesson.title}
-                                                </Text>
-                                                <Text
-                                                  style={[
-                                                    styles.lessonMeta,
-                                                    { color: theme.textSecondary },
-                                                  ]}>
-                                                  {lesson.keyPoints.length} Concepts •{' '}
-                                                  {lesson.duration}
-                                                </Text>
-                                              </View>
-                                            </View>
-
-                                            {/* + Add Lesson Button */}
-                                            <View
-                                              style={[
-                                                styles.addSmallBtn,
-                                                {
-                                                  backgroundColor: isLessonSelected
-                                                    ? theme.accent
-                                                    : theme.backgroundSelected,
-                                                  borderColor: isLessonSelected
-                                                    ? theme.accent
-                                                    : theme.border,
-                                                },
-                                              ]}>
-                                              {isLessonSelected ? (
-                                                <Check
-                                                  size={12}
-                                                  color="#FFFFFF"
-                                                  strokeWidth={3}
-                                                />
-                                              ) : (
-                                                <Plus
-                                                  size={12}
-                                                  color={theme.text}
-                                                  strokeWidth={2.5}
-                                                />
-                                              )}
-                                            </View>
-                                          </Pressable>
-                                        );
-                                      })}
-                                    </Animated.View>
-                                  )}
-                                </View>
-                              </View>
+                              <PresetTopicItem
+                                key={topic.id}
+                                topic={topic}
+                                tIdx={tIdx}
+                                isLastTopic={isLastTopic}
+                                selectedLessonIds={selectedLessonIds}
+                                expandedTopics={expandedTopics}
+                                toggleTopic={toggleTopic}
+                                toggleTopicSelection={toggleTopicSelection}
+                                toggleLessonSelection={toggleLessonSelection}
+                                lastSelectedTopicIndex={lastSelectedTopicIndex}
+                                theme={theme}
+                              />
                             );
                           })}
                         </Animated.View>
@@ -2046,18 +2196,19 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0,0,0,0.06)',
     paddingLeft: 12,
     paddingRight: 10,
-    paddingVertical: 10,
-    gap: 10,
+    paddingTop: 10,
+    paddingBottom: 2,
+    gap: 0,
   },
 
   /* Topic Accordion */
   topicItemWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
   },
   treeBranchNode: {
     width: 18,
-    height: '100%',
+    alignSelf: 'stretch',
     position: 'relative',
     marginRight: 4,
   },
@@ -2065,26 +2216,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 8,
     top: 0,
-    width: 1.5,
-    height: 18,
+    width: 2,
   },
   treeBranchBottom: {
     position: 'absolute',
     left: 8,
-    top: 18,
-    width: 1.5,
     bottom: 0,
+    width: 2,
   },
   treeBranchHoriz: {
     position: 'absolute',
     left: 8,
-    top: 18,
     width: 10,
-    height: 1.5,
+    height: 2,
   },
   topicMainColumn: {
     flex: 1,
     gap: 6,
+    marginBottom: 10,
   },
   topicHeader: {
     flexDirection: 'row',
@@ -2119,11 +2268,45 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   lessonsContainer: {
-    paddingLeft: 8,
-    gap: 6,
-    marginTop: 2,
+    paddingLeft: 4,
+    paddingTop: 4,
+    gap: 0,
+  },
+  lessonRowWrapper: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginBottom: 6,
+  },
+  lessonBranchNode: {
+    width: 16,
+    alignSelf: 'stretch',
+    position: 'relative',
+    marginRight: 6,
+  },
+  lessonBranchTop: {
+    position: 'absolute',
+    left: 7,
+    top: 0,
+    height: '50%',
+    width: 2,
+  },
+  lessonBranchBottom: {
+    position: 'absolute',
+    left: 7,
+    top: '50%',
+    bottom: -6,
+    width: 2,
+  },
+  lessonBranchHoriz: {
+    position: 'absolute',
+    left: 7,
+    top: '50%',
+    marginTop: -1,
+    width: 9,
+    height: 2,
   },
   lessonRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
