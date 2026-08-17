@@ -714,21 +714,6 @@ export default function FlashcardsHubScreen() {
             {activePreset ? activePreset.title : 'Flashcards'}
           </Text>
         </View>
-
-        {!activePreset && (
-          <Pressable
-            onPress={handleOpenAddModal}
-            style={({ pressed }) => [
-              styles.topAddBtn,
-              {
-                backgroundColor: theme.accent,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}>
-            <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={styles.topAddBtnText}>Add</Text>
-          </Pressable>
-        )}
       </View>
 
       {/* ── Active Flashcard Drill View ──────────────────────────────────── */}
@@ -972,6 +957,18 @@ export default function FlashcardsHubScreen() {
                 <Text style={[styles.presetSectionHeading, { color: theme.text }]}>
                   Your Flashcard Presets ({presets.length})
                 </Text>
+                <Pressable
+                  onPress={handleOpenAddModal}
+                  style={({ pressed }) => [
+                    styles.listAddBtn,
+                    {
+                      backgroundColor: theme.accent,
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}>
+                  <Plus size={14} color="#FFFFFF" strokeWidth={2.5} />
+                  <Text style={styles.listAddBtnText}>Add Preset</Text>
+                </Pressable>
               </View>
 
               {presets.map((preset) => (
@@ -1684,10 +1681,26 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   presetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
   presetSectionHeading: {
     fontSize: 14,
+    fontWeight: '700',
+  },
+  listAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.xs,
+  },
+  listAddBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11.5,
     fontWeight: '700',
   },
   presetCard: {
