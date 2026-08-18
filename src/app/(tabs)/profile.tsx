@@ -2,7 +2,6 @@ import { useAuthActions } from '@convex-dev/auth/react';
 import { useRouter } from 'expo-router';
 import {
   Bell,
-  CheckCircle2,
   ChevronRight,
   Cloud,
   Flame,
@@ -10,9 +9,7 @@ import {
   LogOut,
   Moon,
   RotateCcw,
-  Shield,
   Smartphone,
-  Sparkles,
   Sun,
   Trophy,
   User,
@@ -120,7 +117,6 @@ export default function ProfileScreen() {
   // Settings State
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
-  const [weeklyReport, setWeeklyReport] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const themeOptions: { mode: ThemeMode; label: string; icon: typeof Sun }[] = [
@@ -191,19 +187,6 @@ export default function ProfileScreen() {
             <Text style={[styles.role, { color: colors.textSecondary }]}>
               johndoe@gmail.com
             </Text>
-            <View
-              style={[
-                styles.candidatePill,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(224, 122, 95, 0.2)'
-                    : '#F8EAE4',
-                },
-              ]}>
-              <Text style={[styles.candidatePillText, { color: colors.accent }]}>
-                ALE 2026 Candidate
-              </Text>
-            </View>
           </View>
         </View>
 
@@ -671,17 +654,6 @@ const styles = StyleSheet.create({
   role: {
     fontSize: 12.5,
     fontWeight: '500',
-  },
-  candidatePill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 9,
-    paddingVertical: 3.5,
-    borderRadius: 8,
-    marginTop: 2,
-  },
-  candidatePillText: {
-    fontSize: 11,
-    fontWeight: '700',
   },
   section: {
     gap: 10,

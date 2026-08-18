@@ -1,10 +1,6 @@
 import { useRouter } from 'expo-router';
 import {
-  CheckCircle2,
-  Clock,
   Play,
-  Sparkles,
-  TrendingUp,
   Zap,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -18,7 +14,6 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
 
 type SubjectArea = 'all' | 'area-1' | 'area-2' | 'area-3';

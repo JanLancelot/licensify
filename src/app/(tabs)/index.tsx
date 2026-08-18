@@ -116,7 +116,7 @@ export default function HomeScreen() {
                 styles.progressHeroMotivation,
                 { color: isDark ? '#E07A5F' : '#A23F1C' },
               ]}>
-              You're doing great!
+              {"You're doing great!"}
             </Text>
 
             {/* Progress Bar */}

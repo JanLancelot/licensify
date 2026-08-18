@@ -1,16 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
-  Award,
   BookOpen,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Flag,
   RotateCcw,
   Timer,
   Trophy,
-  XCircle,
 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {

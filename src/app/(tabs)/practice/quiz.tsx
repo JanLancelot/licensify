@@ -2,11 +2,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
   ArrowRight,
-  Award,
   CheckCircle2,
   HelpCircle,
   RotateCcw,
-  Sparkles,
   Trophy,
   XCircle,
 } from 'lucide-react-native';
@@ -93,7 +91,6 @@ export default function PracticeQuizScreen() {
   };
 
   const currentQ = questions[currentIdx];
-  const progressPercent = Math.min(100, Math.round(((currentIdx + (isAnswerSubmitted ? 1 : 0)) / (questions.length || 1)) * 100));
 
   return (
     <SafeAreaView

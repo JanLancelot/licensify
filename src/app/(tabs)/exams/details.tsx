@@ -4,15 +4,12 @@ import {
   Award,
   CheckCircle,
   Compass,
-  FileCheck2,
-  HelpCircle,
   Landmark,
   PenTool,
   Play,
   ShieldCheck,
   Timer,
   Trophy,
-  Zap,
 } from 'lucide-react-native';
 import React from 'react';
 import {

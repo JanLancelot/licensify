@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Layers, Plus } from 'lucide-react-native';
+import { ArrowLeft, Plus } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -85,7 +85,6 @@ export default function FlashcardsHubScreen() {
 
   // Preset Builder Modal State
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [modalExpandedSubjects, setModalExpandedSubjects] = useState<Record<string, boolean>>({});
   const [modalExpandedTopics, setModalExpandedTopics] = useState<Record<string, boolean>>({});
   const [selectedLessonIds, setSelectedLessonIds] = useState<Set<string>>(new Set());
@@ -107,7 +106,6 @@ export default function FlashcardsHubScreen() {
 
   // ── Modal Actions (Create / Edit Preset) ──────────────────────────────────
   const handleOpenAddModal = () => {
-    setEditingPresetId(null);
     setSelectedLessonIds(new Set());
     setModalExpandedSubjects({});
     setModalExpandedTopics({});
