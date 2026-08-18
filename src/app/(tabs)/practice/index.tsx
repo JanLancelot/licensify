@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
+  CheckCircle2,
+  Clock,
   Play,
+  Sparkles,
+  TrendingUp,
+  Zap,
 } from 'lucide-react-native';
+import React, { useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -10,10 +16,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { useTheme } from '@/hooks/use-theme';
 import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 
 type SubjectArea = 'all' | 'area-1' | 'area-2' | 'area-3';
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -54,15 +60,56 @@ const PAST_HISTORY = [
   },
 ];
 
+function GradientIconBox({
+  colors: [startColor, endColor],
+  size = 46,
+  borderRadius = 14,
+  children,
+}: {
+  colors: [string, string];
+  size?: number;
+  borderRadius?: number;
+  children: React.ReactNode;
+}) {
+  const gradId = `grad_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startColor} />
+            <Stop offset="100%" stopColor={endColor} />
+          </LinearGradient>
+        </Defs>
+        <Rect
+          width={size}
+          height={size}
+          rx={borderRadius}
+          fill={`url(#${gradId})`}
+        />
+      </Svg>
+      {children}
+    </View>
+  );
+}
+
 export default function PracticeScreen() {
-  const theme = useTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   // Launcher State
   const [selectedArea, setSelectedArea] = useState<SubjectArea>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('medium');
-  const [selectedCount, setSelectedCount] = useState<QuestionCount>(5);
+  const [selectedCount, setSelectedCount] = useState<QuestionCount>(10);
 
   const handleStartQuiz = () => {
     router.push({
@@ -78,12 +125,17 @@ export default function PracticeScreen() {
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Header */}
+      style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* 1. Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          Practice Arena
-        </Text>
+        <View style={styles.headerTexts}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            Practice
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Drills, timed quizzes, and knowledge checks
+          </Text>
+        </View>
       </View>
 
       <ScrollView
@@ -93,323 +145,226 @@ export default function PracticeScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* SECTION 1: CONFIGURE QUIZ */}
+        {/* SECTION 1: CONFIGURE QUIZ (Flat card, no borders, no shadows) */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Configure Practice Quiz
-          </Text>
-
           <View
             style={[
               styles.configCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
             {/* 1. Subject / Topic Selection */}
             <View style={styles.configGroup}>
-              <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
-                1. SELECT SUBJECT AREA
+              <Text
+                style={[
+                  styles.configLabel,
+                  { color: isDark ? '#E07A5F' : '#A23F1C' },
+                ]}>
+                SELECT SUBJECT AREA
               </Text>
               <View style={styles.pillsRow}>
-                <Pressable
-                  onPress={() => setSelectedArea('all')}
-                  style={[
-                    styles.pillBtn,
-                    {
-                      backgroundColor:
-                        selectedArea === 'all'
-                          ? theme.accent
-                          : theme.backgroundSelected,
-                      borderColor:
-                        selectedArea === 'all'
-                          ? theme.accent
-                          : theme.borderStrong,
-                    },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.pillBtnText,
-                      {
-                        color:
-                          selectedArea === 'all' ? '#FFFFFF' : theme.text,
-                      },
-                    ]}>
-                    All Subjects (Mixed)
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setSelectedArea('area-1')}
-                  style={[
-                    styles.pillBtn,
-                    {
-                      backgroundColor:
-                        selectedArea === 'area-1'
-                          ? theme.accent
-                          : theme.backgroundSelected,
-                      borderColor:
-                        selectedArea === 'area-1'
-                          ? theme.accent
-                          : theme.borderStrong,
-                    },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.pillBtnText,
-                      {
-                        color:
-                          selectedArea === 'area-1' ? '#FFFFFF' : theme.text,
-                      },
-                    ]}>
-                    Area 1: History & Planning
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setSelectedArea('area-2')}
-                  style={[
-                    styles.pillBtn,
-                    {
-                      backgroundColor:
-                        selectedArea === 'area-2'
-                          ? theme.accent
-                          : theme.backgroundSelected,
-                      borderColor:
-                        selectedArea === 'area-2'
-                          ? theme.accent
-                          : theme.borderStrong,
-                    },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.pillBtnText,
-                      {
-                        color:
-                          selectedArea === 'area-2' ? '#FFFFFF' : theme.text,
-                      },
-                    ]}>
-                    Area 2: Structural & Utilities
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setSelectedArea('area-3')}
-                  style={[
-                    styles.pillBtn,
-                    {
-                      backgroundColor:
-                        selectedArea === 'area-3'
-                          ? theme.accent
-                          : theme.backgroundSelected,
-                      borderColor:
-                        selectedArea === 'area-3'
-                          ? theme.accent
-                          : theme.borderStrong,
-                    },
-                  ]}>
-                  <Text
-                    style={[
-                      styles.pillBtnText,
-                      {
-                        color:
-                          selectedArea === 'area-3' ? '#FFFFFF' : theme.text,
-                      },
-                    ]}>
-                    Area 3: Design & Laws
-                  </Text>
-                </Pressable>
+                {[
+                  { key: 'all', label: 'All Subjects' },
+                  { key: 'area-1', label: 'Area 1: History' },
+                  { key: 'area-2', label: 'Area 2: Structures' },
+                  { key: 'area-3', label: 'Area 3: Design & Laws' },
+                ].map((item) => {
+                  const isSelected = selectedArea === item.key;
+                  return (
+                    <Pressable
+                      key={item.key}
+                      onPress={() => setSelectedArea(item.key as SubjectArea)}
+                      style={[
+                        styles.pillBtn,
+                        {
+                          backgroundColor: isSelected
+                            ? colors.accent
+                            : isDark
+                              ? '#272B35'
+                              : '#EBE2DC',
+                        },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.pillBtnText,
+                          {
+                            color: isSelected ? '#FFFFFF' : colors.text,
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}>
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
-
-            <View
-              style={[styles.configDivider, { backgroundColor: theme.border }]}
-            />
 
             {/* 2. Difficulty Level */}
             <View style={styles.configGroup}>
-              <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
-                2. DIFFICULTY LEVEL
+              <Text
+                style={[
+                  styles.configLabel,
+                  { color: isDark ? '#E07A5F' : '#A23F1C' },
+                ]}>
+                DIFFICULTY LEVEL
               </Text>
               <View style={styles.pillsRow}>
-                {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => (
-                  <Pressable
-                    key={level}
-                    onPress={() => setSelectedDifficulty(level)}
-                    style={[
-                      styles.pillBtnFlex,
-                      {
-                        backgroundColor:
-                          selectedDifficulty === level
-                            ? theme.accent
-                            : theme.backgroundSelected,
-                        borderColor:
-                          selectedDifficulty === level
-                            ? theme.accent
-                            : theme.borderStrong,
-                      },
-                    ]}>
-                    <Text
+                {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => {
+                  const isSelected = selectedDifficulty === level;
+                  return (
+                    <Pressable
+                      key={level}
+                      onPress={() => setSelectedDifficulty(level)}
                       style={[
-                        styles.pillBtnText,
+                        styles.pillBtnFlex,
                         {
-                          color:
-                            selectedDifficulty === level
-                              ? '#FFFFFF'
-                              : theme.text,
+                          backgroundColor: isSelected
+                            ? colors.accent
+                            : isDark
+                              ? '#272B35'
+                              : '#EBE2DC',
                         },
                       ]}>
-                      {level === 'easy'
-                        ? 'Easy (Basics)'
-                        : level === 'medium'
-                          ? 'Medium (Standard)'
-                          : 'Hard (Tricky)'}
-                    </Text>
-                  </Pressable>
-                ))}
+                      <Text
+                        style={[
+                          styles.pillBtnText,
+                          {
+                            color: isSelected ? '#FFFFFF' : colors.text,
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}>
+                        {level.toUpperCase()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
-
-            <View
-              style={[styles.configDivider, { backgroundColor: theme.border }]}
-            />
 
             {/* 3. Question Count */}
             <View style={styles.configGroup}>
-              <Text style={[styles.configLabel, { color: theme.textSecondary }]}>
-                3. QUESTION COUNT
+              <Text
+                style={[
+                  styles.configLabel,
+                  { color: isDark ? '#E07A5F' : '#A23F1C' },
+                ]}>
+                QUESTION COUNT
               </Text>
               <View style={styles.pillsRow}>
-                {([5, 10, 20] as QuestionCount[]).map((count) => (
-                  <Pressable
-                    key={count}
-                    onPress={() => setSelectedCount(count)}
-                    style={[
-                      styles.pillBtnFlex,
-                      {
-                        backgroundColor:
-                          selectedCount === count
-                            ? theme.accent
-                            : theme.backgroundSelected,
-                        borderColor:
-                          selectedCount === count
-                            ? theme.accent
-                            : theme.borderStrong,
-                      },
-                    ]}>
-                    <Text
+                {([5, 10, 20] as QuestionCount[]).map((count) => {
+                  const isSelected = selectedCount === count;
+                  return (
+                    <Pressable
+                      key={count}
+                      onPress={() => setSelectedCount(count)}
                       style={[
-                        styles.pillBtnText,
+                        styles.pillBtnFlex,
                         {
-                          color:
-                            selectedCount === count ? '#FFFFFF' : theme.text,
+                          backgroundColor: isSelected
+                            ? colors.accent
+                            : isDark
+                              ? '#272B35'
+                              : '#EBE2DC',
                         },
                       ]}>
-                      {count} Questions
-                    </Text>
-                  </Pressable>
-                ))}
+                      <Text
+                        style={[
+                          styles.pillBtnText,
+                          {
+                            color: isSelected ? '#FFFFFF' : colors.text,
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}>
+                        {count} Qs
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
 
-            {/* Start Quiz CTA */}
+            {/* Start Quiz CTA with Terracotta Gradient */}
             <Pressable
               onPress={handleStartQuiz}
               style={({ pressed }) => [
                 styles.startQuizBtn,
                 {
-                  backgroundColor: theme.accent,
-                  opacity: pressed ? 0.85 : 1,
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.985 : 1 }],
                 },
               ]}>
-              <Play size={15} color="#FFFFFF" fill="#FFFFFF" />
-              <Text style={styles.startQuizBtnText}>Start Practice Quiz</Text>
+              <View style={StyleSheet.absoluteFill}>
+                <Svg width="100%" height="100%">
+                  <Defs>
+                    <LinearGradient id="ctaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <Stop offset="0%" stopColor="#E58368" />
+                      <Stop offset="100%" stopColor="#C85A32" />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect width="100%" height="100%" rx={16} fill="url(#ctaGrad)" />
+                </Svg>
+              </View>
+              <Play size={16} color="#FFFFFF" fill="#FFFFFF" />
+              <Text style={styles.startQuizBtnText}>Start Practice Drill</Text>
             </Pressable>
           </View>
         </View>
 
         {/* SECTION 2: PRACTICE HISTORY */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Practice History
+          <Text style={[styles.sectionHeading, { color: colors.text }]}>
+            Recent Practice Drills
           </Text>
 
-          <View
-            style={[
-              styles.historyCard,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-              },
-            ]}>
-            {PAST_HISTORY.map((item, idx) => (
-              <React.Fragment key={item.id}>
-                <View style={styles.historyRow}>
-                  <View style={styles.historyLeft}>
-                    <View style={styles.historyTagRow}>
-                      <View
-                        style={[
-                          styles.diffBadge,
-                          {
-                            backgroundColor: theme.backgroundSelected,
-                            borderColor: theme.border,
-                          },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.diffBadgeText,
-                            { color: theme.textSecondary },
-                          ]}>
-                          {item.difficulty}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.historyDate,
-                          { color: theme.textSecondary },
-                        ]}>
-                        {item.date}
-                      </Text>
-                    </View>
-                    <Text style={[styles.historyTopic, { color: theme.text }]}>
-                      {item.topic}
-                    </Text>
-                  </View>
+          <View style={styles.historyList}>
+            {PAST_HISTORY.map((item) => (
+              <View
+                key={item.id}
+                style={[
+                  styles.historyCard,
+                  {
+                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                  },
+                ]}>
+                <GradientIconBox
+                  colors={
+                    item.score === '90%'
+                      ? ['#34D399', '#059669']
+                      : ['#FBBF24', '#D97706']
+                  }
+                  size={44}
+                  borderRadius={13}>
+                  <Zap size={22} color="#FFFFFF" strokeWidth={2.2} />
+                </GradientIconBox>
 
-                  <View style={styles.historyRight}>
-                    <View
-                      style={[
-                        styles.scoreBadge,
-                        {
-                          backgroundColor: theme.accentMuted,
-                          borderColor: theme.border,
-                        },
-                      ]}>
-                      <Text
-                        style={[styles.scoreBadgeText, { color: theme.accent }]}>
-                        {item.score}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.scoreDetail,
-                        { color: theme.textSecondary },
-                      ]}>
-                      {item.scoreDetail}
-                    </Text>
-                  </View>
+                <View style={styles.historyInfo}>
+                  <Text
+                    style={[styles.historyTopic, { color: colors.text }]}
+                    numberOfLines={1}>
+                    {item.topic}
+                  </Text>
+                  <Text
+                    style={[styles.historyMeta, { color: colors.textSecondary }]}>
+                    {item.difficulty} • {item.date}
+                  </Text>
                 </View>
 
-                {idx < PAST_HISTORY.length - 1 && (
-                  <View
+                <View style={styles.historyScoreBox}>
+                  <Text
+                    style={[styles.historyScoreText, { color: colors.accent }]}>
+                    {item.score}
+                  </Text>
+                  <Text
                     style={[
-                      styles.historyDivider,
-                      { backgroundColor: theme.border },
-                    ]}
-                  />
-                )}
-              </React.Fragment>
+                      styles.historyScoreSub,
+                      { color: colors.textSecondary },
+                    ]}>
+                    {item.scoreDetail}
+                  </Text>
+                </View>
+              </View>
             ))}
           </View>
         </View>
@@ -428,7 +383,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    gap: 22,
+    gap: 18,
   },
 
   /* Header */
@@ -437,36 +392,42 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
   },
+  headerTexts: {
+    gap: 2,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 
   /* Section Structure */
   section: {
     gap: 10,
   },
-  sectionTitle: {
+  sectionHeading: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: -0.3,
   },
 
-  /* Config Card */
+  /* Config Card (Flat, No borders, No shadows) */
   configCard: {
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 14,
+    borderRadius: 20,
+    padding: 18,
+    gap: 16,
   },
   configGroup: {
     gap: 8,
   },
   configLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.9,
+    letterSpacing: 0.8,
   },
   pillsRow: {
     flexDirection: 'row',
@@ -474,102 +435,72 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pillBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
   },
   pillBtnFlex: {
     flex: 1,
-    paddingVertical: 9,
-    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Radius.xs,
-    borderWidth: 1,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 12,
   },
   pillBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontSize: 12.5,
   },
-  configDivider: {
-    height: 1,
-  },
+
+  /* CTA Button */
   startQuizBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: Radius.sm,
+    gap: 8,
+    height: 48,
+    borderRadius: 16,
     marginTop: 4,
+    overflow: 'hidden',
   },
   startQuizBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
 
-  /* Practice History Card */
-  historyCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  historyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+  /* History Cards */
+  historyList: {
     gap: 10,
   },
-  historyLeft: {
-    flex: 1,
-    gap: 3,
-  },
-  historyTagRow: {
+  historyCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    padding: 14,
+    borderRadius: 18,
+    gap: 12,
   },
-  diffBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  diffBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  historyDate: {
-    fontSize: 11,
+  historyInfo: {
+    flex: 1,
+    gap: 3,
   },
   historyTopic: {
     fontSize: 13.5,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
-  historyRight: {
+  historyMeta: {
+    fontSize: 11.5,
+    fontWeight: '500',
+  },
+  historyScoreBox: {
     alignItems: 'flex-end',
     gap: 2,
   },
-  scoreBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  scoreBadgeText: {
-    fontSize: 11.5,
+  historyScoreText: {
+    fontSize: 14,
     fontWeight: '800',
   },
-  scoreDetail: {
-    fontSize: 10.5,
-  },
-  historyDivider: {
-    height: 1,
-    marginHorizontal: 16,
+  historyScoreSub: {
+    fontSize: 11,
   },
 });

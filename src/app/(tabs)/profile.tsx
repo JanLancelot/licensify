@@ -123,8 +123,7 @@ export default function ProfileScreen() {
           style={[
             styles.profileCard,
             {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
+              backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
             },
           ]}>
           <View
@@ -132,7 +131,6 @@ export default function ProfileScreen() {
               styles.avatar,
               {
                 backgroundColor: colors.accentMuted,
-                borderColor: colors.border,
               },
             ]}>
             <User size={26} color={colors.accent} />
@@ -158,8 +156,7 @@ export default function ProfileScreen() {
             style={[
               styles.groupedCard,
               {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
             {/* Streak Row */}
@@ -241,8 +238,7 @@ export default function ProfileScreen() {
             style={[
               styles.groupedCard,
               {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
             {/* Achievement 1 */}
@@ -362,8 +358,7 @@ export default function ProfileScreen() {
             style={[
               styles.groupedCard,
               {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
             {/* Dark Mode Switch */}
@@ -468,8 +463,7 @@ export default function ProfileScreen() {
             style={[
               styles.groupedCard,
               {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
             {/* Daily Reminder */}
@@ -549,8 +543,7 @@ export default function ProfileScreen() {
             style={[
               styles.groupedCard,
               {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
             {/* Sync Row */}
@@ -713,8 +706,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    borderRadius: 18,
     gap: 14,
   },
   avatar: {
@@ -723,7 +715,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
   },
   profileInfo: {
     flex: 1,
@@ -749,8 +740,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   groupedCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    borderRadius: 18,
     overflow: 'hidden',
   },
   itemDivider: {
