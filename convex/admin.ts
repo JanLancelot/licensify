@@ -21,6 +21,7 @@ export const createAdminUser = action({
   ): Promise<{ success: boolean; message: string; result?: any }> => {
     const email = args.email.trim().toLowerCase();
     const result: any = await ctx.runAction(api.auth.signIn, {
+      provider: "password",
       params: {
         email,
         password: args.password,
