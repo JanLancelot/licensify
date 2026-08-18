@@ -13,7 +13,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { LogBox, Platform, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableFreeze, enableScreens } from 'react-native-screens';
 
 import { SyncProvider } from '@/components/SyncProvider';
@@ -21,6 +22,12 @@ import {
   ThemeProvider as AppThemeProvider,
   useAppTheme,
 } from '@/context/theme-context';
+
+// Ignore SafeAreaView deprecation warnings triggered by internal/third-party dependencies
+LogBox.ignoreLogs([
+  'SafeAreaView has been deprecated and will be removed in a future release',
+  'SafeAreaView has been deprecated',
+]);
 
 // Keep screens pre-rendered in memory
 enableScreens(true);
@@ -148,11 +155,13 @@ function AppLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <ConvexAuthProvider client={convex} storage={secureStorage}>
-      <AppThemeProvider>
-        <AppLayoutContent />
-      </AppThemeProvider>
-    </ConvexAuthProvider>
+    <SafeAreaProvider>
+      <ConvexAuthProvider client={convex} storage={secureStorage}>
+        <AppThemeProvider>
+          <AppLayoutContent />
+        </AppThemeProvider>
+      </ConvexAuthProvider>
+    </SafeAreaProvider>
   );
 }
 

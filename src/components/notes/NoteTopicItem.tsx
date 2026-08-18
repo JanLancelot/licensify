@@ -7,8 +7,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ChevronRight } from 'lucide-react-native';
 
-import { Radius } from '@/constants/theme';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
+import { useAppTheme } from '@/context/theme-context';
 import { Lesson, Topic } from '@/types/curriculum';
 
 export interface NoteTopicItemProps {
@@ -22,7 +22,7 @@ export interface NoteTopicItemProps {
     topicTitle: string;
     lesson: Lesson;
   }) => void;
-  theme: any;
+  theme?: any;
 }
 
 export function NoteTopicItem({
@@ -32,10 +32,12 @@ export function NoteTopicItem({
   toggleTopic,
   subjectTitle,
   setSelectedLesson,
-  theme,
 }: NoteTopicItemProps) {
+  const { colors, isDark } = useAppTheme();
   const [headerHeight, setHeaderHeight] = useState(56);
   const center = headerHeight / 2;
+
+  const branchColor = isDark ? 'rgba(224, 122, 95, 0.25)' : 'rgba(200, 90, 50, 0.2)';
 
   return (
     <Animated.View
@@ -47,7 +49,7 @@ export function NoteTopicItem({
         <View
           style={[
             styles.topicBranchTop,
-            { height: center, backgroundColor: theme.border },
+            { height: center, backgroundColor: branchColor },
           ]}
         />
         {/* Bottom Vertical Segment (Only if NOT last topic) */}
@@ -55,7 +57,7 @@ export function NoteTopicItem({
           <View
             style={[
               styles.topicBranchBottom,
-              { top: center, backgroundColor: theme.border },
+              { top: center, backgroundColor: branchColor },
             ]}
           />
         )}
@@ -63,7 +65,7 @@ export function NoteTopicItem({
         <View
           style={[
             styles.topicBranchHoriz,
-            { top: center - 1, backgroundColor: theme.border },
+            { top: center - 1, backgroundColor: branchColor },
           ]}
         />
       </View>
@@ -72,8 +74,7 @@ export function NoteTopicItem({
         style={[
           styles.topicCard,
           {
-            backgroundColor: theme.backgroundElement,
-            borderColor: theme.border,
+            backgroundColor: isDark ? '#23262F' : '#FFFFFF',
           },
         ]}>
         {/* TOPIC HEADER ROW */}
@@ -94,25 +95,27 @@ export function NoteTopicItem({
               style={[
                 styles.topicNumberBadge,
                 {
-                  backgroundColor: theme.accentMuted,
+                  backgroundColor: isDark
+                    ? 'rgba(224, 122, 95, 0.2)'
+                    : '#F8EAE4',
                 },
               ]}>
               <Text
                 style={[
                   styles.topicNumberText,
-                  { color: theme.accent },
+                  { color: colors.accent },
                 ]}>
                 T{topic.topicNumber}
               </Text>
             </View>
             <View style={styles.topicTitleBox}>
-              <Text style={[styles.topicTitle, { color: theme.text }]}>
+              <Text style={[styles.topicTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
                 {topic.title}
               </Text>
               <Text
                 style={[
                   styles.topicLessonCount,
-                  { color: theme.textSecondary },
+                  { color: colors.textSecondary },
                 ]}>
                 {topic.lessons.length} Lessons Available
               </Text>
@@ -122,7 +125,7 @@ export function NoteTopicItem({
           <View style={styles.topicChevron}>
             <RotatingChevron
               isOpen={isTopicOpen}
-              color={theme.accent}
+              color={colors.accent}
               size={16}
             />
           </View>
@@ -145,21 +148,21 @@ export function NoteTopicItem({
                     <View
                       style={[
                         styles.lessonBranchTop,
-                        { backgroundColor: theme.border },
+                        { backgroundColor: branchColor },
                       ]}
                     />
                     {!isLastLesson && (
                       <View
                         style={[
                           styles.lessonBranchBottom,
-                          { backgroundColor: theme.border },
+                          { backgroundColor: branchColor },
                         ]}
                       />
                     )}
                     <View
                       style={[
                         styles.lessonBranchHoriz,
-                        { backgroundColor: theme.border },
+                        { backgroundColor: branchColor },
                       ]}
                     />
                   </View>
@@ -174,32 +177,39 @@ export function NoteTopicItem({
                     }
                     style={({ pressed }) => [
                       styles.lessonRow,
-                      { opacity: pressed ? 0.65 : 1 },
+                      {
+                        backgroundColor: isDark ? '#1C1F26' : '#F8F6F4',
+                        opacity: pressed ? 0.65 : 1,
+                      },
                     ]}>
                     <View style={styles.lessonRowLeft}>
                       <View
                         style={[
                           styles.lessonNumCircle,
-                          { backgroundColor: theme.accentMuted },
+                          {
+                            backgroundColor: isDark
+                              ? 'rgba(224, 122, 95, 0.2)'
+                              : '#F8EAE4',
+                          },
                         ]}>
                         <Text
                           style={[
                             styles.lessonNumText,
-                            { color: theme.accent },
+                            { color: colors.accent },
                           ]}>
                           {lesson.lessonNumber}
                         </Text>
                       </View>
                       <Text
-                        style={[styles.lessonTitle, { color: theme.text }]}>
+                        style={[styles.lessonTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
                         {lesson.title}
                       </Text>
                     </View>
 
                     <ChevronRight
                       size={15}
-                      color={theme.accent}
-                      strokeWidth={2}
+                      color={colors.accent}
+                      strokeWidth={2.2}
                     />
                   </Pressable>
                 </View>
@@ -219,7 +229,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   topicBranchNode: {
-    width: 16,
+    width: 14,
     position: 'relative',
   },
   topicBranchTop: {
@@ -237,13 +247,12 @@ const styles = StyleSheet.create({
   topicBranchHoriz: {
     position: 'absolute',
     left: 0,
-    width: 16,
+    width: 14,
     height: 2,
   },
   topicCard: {
     flex: 1,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   topicHeader: {
@@ -259,21 +268,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topicNumberBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: Radius.xs,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 8,
   },
   topicNumberText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
   topicTitleBox: {
     flex: 1,
     gap: 2,
   },
   topicTitle: {
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   topicLessonCount: {
     fontSize: 11,
@@ -283,7 +294,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   lessonsContainer: {
-    marginLeft: 16,
+    marginLeft: 12,
     marginRight: 10,
     marginBottom: 10,
     paddingTop: 4,
@@ -293,7 +304,7 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   lessonBranchNode: {
-    width: 14,
+    width: 12,
     position: 'relative',
   },
   lessonBranchTop: {
@@ -315,7 +326,7 @@ const styles = StyleSheet.create({
     left: 0,
     top: '50%',
     marginTop: -1,
-    width: 14,
+    width: 12,
     height: 2,
   },
   lessonRow: {
@@ -325,7 +336,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: Radius.xs,
+    borderRadius: 10,
     marginBottom: 4,
   },
   lessonRowLeft: {
@@ -335,19 +346,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lessonNumCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   lessonNumText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '800',
   },
   lessonTitle: {
-    fontSize: 12.5,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     flex: 1,
   },
 });

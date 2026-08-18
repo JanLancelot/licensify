@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { X } from 'lucide-react-native';
+import { ArrowRight, X } from 'lucide-react-native';
 
-import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 import { Lesson } from '@/types/curriculum';
 
 export interface LessonDetailModalProps {
@@ -21,14 +21,14 @@ export interface LessonDetailModalProps {
     lesson: Lesson;
   } | null;
   onClose: () => void;
-  theme: any;
+  theme?: any;
 }
 
 export function LessonDetailModal({
   selectedLesson,
   onClose,
-  theme,
 }: LessonDetailModalProps) {
+  const { colors, isDark } = useAppTheme();
   const router = useRouter();
 
   return (
@@ -40,14 +40,15 @@ export function LessonDetailModal({
       <SafeAreaView
         style={[
           styles.modalContainer,
-          { backgroundColor: theme.background },
+          { backgroundColor: colors.background },
         ]}>
-        <View style={[styles.modalTopBar, { borderBottomColor: theme.border }]}>
+        {/* Top Header Bar */}
+        <View style={styles.modalTopBar}>
           <View style={styles.modalTitleBox}>
-            <Text style={[styles.modalAreaTag, { color: theme.accent }]}>
+            <Text style={[styles.modalAreaTag, { color: colors.accent }]}>
               {selectedLesson?.subjectTitle} • {selectedLesson?.topicTitle}
             </Text>
-            <Text style={[styles.modalMainTitle, { color: theme.text }]}>
+            <Text style={[styles.modalMainTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
               {selectedLesson?.lesson.title}
             </Text>
           </View>
@@ -56,9 +57,12 @@ export function LessonDetailModal({
             hitSlop={12}
             style={({ pressed }) => [
               styles.modalCloseBtn,
-              { opacity: pressed ? 0.5 : 1 },
+              {
+                backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                opacity: pressed ? 0.6 : 1,
+              },
             ]}>
-            <X size={20} color={theme.text} />
+            <X size={18} color={colors.text} strokeWidth={2.4} />
           </Pressable>
         </View>
 
@@ -70,14 +74,13 @@ export function LessonDetailModal({
             style={[
               styles.modalCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
-            <Text style={[styles.modalCardLabel, { color: theme.accent }]}>
+            <Text style={[styles.modalCardLabel, { color: colors.accent }]}>
               CORE SUMMARY & CONCEPTS
             </Text>
-            <Text style={[styles.modalSummaryText, { color: theme.text }]}>
+            <Text style={[styles.modalSummaryText, { color: isDark ? '#E2E8F0' : '#1E293B' }]}>
               {selectedLesson?.lesson.summary}
             </Text>
           </View>
@@ -87,11 +90,10 @@ export function LessonDetailModal({
             style={[
               styles.modalCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
-            <Text style={[styles.modalCardLabel, { color: theme.accent }]}>
+            <Text style={[styles.modalCardLabel, { color: colors.accent }]}>
               KEY EXAM PROVISIONS & SPECIFICATIONS
             </Text>
 
@@ -101,10 +103,10 @@ export function LessonDetailModal({
                   <View
                     style={[
                       styles.pointBullet,
-                      { backgroundColor: theme.accent },
+                      { backgroundColor: colors.accent },
                     ]}
                   />
-                  <Text style={[styles.pointText, { color: theme.text }]}>
+                  <Text style={[styles.pointText, { color: isDark ? '#CBD5E1' : '#334155' }]}>
                     {point}
                   </Text>
                 </View>
@@ -112,19 +114,24 @@ export function LessonDetailModal({
             </View>
           </View>
 
-          {/* Practice CTA */}
+          {/* Practice CTA Button */}
           <Pressable
             onPress={() => {
               onClose();
               router.push('/(tabs)/practice' as any);
             }}
-            style={[
+            style={({ pressed }) => [
               styles.modalPracticeBtn,
-              { backgroundColor: theme.accent },
+              {
+                backgroundColor: colors.accent,
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.985 : 1 }],
+              },
             ]}>
             <Text style={styles.modalPracticeText}>
               Practice Questions on this Subject
             </Text>
+            <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.4} />
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -141,8 +148,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingTop: 16,
+    paddingBottom: 12,
     gap: 16,
   },
   modalTitleBox: {
@@ -156,32 +163,36 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   modalMainTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
   modalCloseBtn: {
-    padding: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalContent: {
     padding: 20,
-    gap: 16,
+    gap: 14,
     paddingBottom: 40,
   },
   modalCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    padding: 16,
+    borderRadius: 20,
+    padding: 18,
     gap: 12,
   },
   modalCardLabel: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
   modalSummaryText: {
     fontSize: 14,
     lineHeight: 22,
+    fontWeight: '400',
   },
   keyPointsList: {
     gap: 12,
@@ -201,17 +212,21 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13.5,
     lineHeight: 20,
+    fontWeight: '400',
   },
   modalPracticeBtn: {
-    borderRadius: Radius.md,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    gap: 8,
+    marginTop: 6,
   },
   modalPracticeText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '700',
   },
 });
