@@ -15,9 +15,12 @@ export const createAdminUser = action({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; message: string; result?: any }> => {
     const email = args.email.trim().toLowerCase();
-    const result = await ctx.runAction(api.auth.signIn, {
+    const result: any = await ctx.runAction(api.auth.signIn, {
       params: {
         email,
         password: args.password,
