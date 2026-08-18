@@ -13,7 +13,9 @@ export default function LoginPage() {
   const user = useQuery(api.users.getCurrentUserProfile);
   const router = useRouter();
 
+  const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -39,28 +41,31 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      try {
-        await signIn("password", {
-          email: email.trim().toLowerCase(),
-          password,
-          flow: "signIn",
-        });
-      } catch (signInErr: any) {
-        // If account doesn't exist yet, bootstrap initial staff registration
-        if (
-          signInErr?.message?.includes("Invalid") ||
-          signInErr?.message?.includes("not found") ||
-          signInErr?.message?.includes("No account")
-        ) {
+      if (mode === "signIn") {
+        try {
           await signIn("password", {
             email: email.trim().toLowerCase(),
             password,
-            username: email.trim().split("@")[0] || "ArchAdmin",
-            flow: "signUp",
+            flow: "signIn",
           });
-        } else {
+        } catch (signInErr: any) {
+          const errStr = (signInErr?.message || signInErr?.toString() || "").toLowerCase();
+          if (errStr.includes("invalidaccountid") || errStr.includes("not found") || errStr.includes("no account")) {
+            setError("No account found for this email. Please switch to 'Create Account' to register your staff login.");
+            return;
+          } else if (errStr.includes("invalidsecret") || errStr.includes("password")) {
+            setError("Incorrect password. Please verify and try again.");
+            return;
+          }
           throw signInErr;
         }
+      } else {
+        await signIn("password", {
+          email: email.trim().toLowerCase(),
+          password,
+          username: username.trim() || email.trim().split("@")[0] || "StaffAdmin",
+          flow: "signUp",
+        });
       }
       router.push("/");
     } catch (err: any) {
@@ -71,7 +76,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-
   };
 
   return (
@@ -92,11 +96,43 @@ export default function LoginPage() {
 
         {/* Auth Card */}
         <div className="glass-modal rounded-3xl p-6 sm:p-8">
+          {/* Mode Switch Tabs */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-studio-200/60 dark:bg-studio-800/60 rounded-2xl mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signIn");
+                setError(null);
+              }}
+              className={`py-2 text-xs font-semibold rounded-xl transition-all ${
+                mode === "signIn"
+                  ? "bg-white dark:bg-studio-900 text-studio-900 dark:text-studio-100 shadow-sm"
+                  : "text-studio-500 hover:text-studio-800 dark:hover:text-studio-200"
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signUp");
+                setError(null);
+              }}
+              className={`py-2 text-xs font-semibold rounded-xl transition-all ${
+                mode === "signUp"
+                  ? "bg-white dark:bg-studio-900 text-studio-900 dark:text-studio-100 shadow-sm"
+                  : "text-studio-500 hover:text-studio-800 dark:hover:text-studio-200"
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
+
           <div className="flex items-center justify-between gap-2 mb-6 pb-4 border-b border-studio-200 dark:border-studio-800">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-blueprint-500" />
               <h2 className="font-semibold text-base text-studio-900 dark:text-studio-100">
-                Staff Authentication
+                {mode === "signIn" ? "Staff Authentication" : "Register Staff Account"}
               </h2>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border border-studio-300 dark:border-studio-700">
@@ -112,6 +148,22 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signUp" && (
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Staff Username
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="ArchAdmin"
+                  required={mode === "signUp"}
+                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                 Staff Email Address
@@ -146,7 +198,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
                   required
-                  autoComplete="current-password"
+                  autoComplete={mode === "signIn" ? "current-password" : "new-password"}
                   className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
                 />
                 <button
@@ -167,12 +219,12 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Credentials...</span>
+                  <span>{mode === "signIn" ? "Verifying Credentials..." : "Creating Account..."}</span>
                 </>
               ) : (
                 <>
                   <Lock className="w-4 h-4" />
-                  <span>Authenticate & Enter Studio</span>
+                  <span>{mode === "signIn" ? "Authenticate & Enter Studio" : "Create Staff Account"}</span>
                 </>
               )}
             </button>
