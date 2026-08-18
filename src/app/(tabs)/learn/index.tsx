@@ -359,10 +359,10 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 4,
+    paddingBottom: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
   },

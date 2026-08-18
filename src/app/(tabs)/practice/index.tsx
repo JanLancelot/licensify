@@ -128,14 +128,9 @@ export default function PracticeScreen() {
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* 1. Header */}
       <View style={styles.header}>
-        <View style={styles.headerTexts}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Practice
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Drills, timed quizzes, and knowledge checks
-          </Text>
-        </View>
+        <Text style={[styles.title, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+          Practice
+        </Text>
       </View>
 
       <ScrollView
@@ -390,19 +385,12 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
-  },
-  headerTexts: {
-    gap: 2,
+    paddingBottom: 10,
   },
   title: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontSize: 13,
-    fontWeight: '500',
+    letterSpacing: -0.5,
   },
 
   /* Section Structure */

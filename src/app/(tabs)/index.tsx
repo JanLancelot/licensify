@@ -73,17 +73,11 @@ export default function HomeScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* 1. Header (No user icon, Greeting 'Good morning, User!') */}
+      {/* 1. Header */}
       <View style={styles.header}>
-        <View style={styles.headerTexts}>
-          <Text style={[styles.headerGreeting, { color: colors.text }]}>
-            Good morning, User!
-          </Text>
-          <Text
-            style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            Keep going, future architect.
-          </Text>
-        </View>
+        <Text style={[styles.headerGreeting, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+          Good morning, User!
+        </Text>
       </View>
 
       <ScrollView
@@ -394,22 +388,12 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTexts: {
-    gap: 2,
+    paddingBottom: 10,
   },
   headerGreeting: {
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
+    letterSpacing: -0.5,
   },
 
   /* 2. Hero Progress Card (Lighter Terracotta, No Outlines, No Shadows) */

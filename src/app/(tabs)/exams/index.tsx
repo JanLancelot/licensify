@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 10,
   },
   title: {
