@@ -7,7 +7,6 @@ import {
   ClipboardList,
   FileText,
   Layers,
-  User,
 } from 'lucide-react-native';
 import React from 'react';
 import {
@@ -74,31 +73,17 @@ export default function HomeScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* 1. Header */}
+      {/* 1. Header (No user icon, Greeting 'Good morning, User!') */}
       <View style={styles.header}>
         <View style={styles.headerTexts}>
           <Text style={[styles.headerGreeting, { color: colors.text }]}>
-            Good morning, Alex!
+            Good morning, User!
           </Text>
           <Text
             style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             Keep going, future architect.
           </Text>
         </View>
-
-        <Pressable
-          onPress={() => router.push('/(tabs)/profile' as any)}
-          style={({ pressed }) => [
-            styles.avatarButton,
-            { opacity: pressed ? 0.8 : 1 },
-          ]}>
-          <GradientIconBox
-            colors={['#E07A5F', '#C85A32']}
-            size={40}
-            borderRadius={20}>
-            <User size={20} color="#FFFFFF" strokeWidth={2.2} />
-          </GradientIconBox>
-        </Pressable>
       </View>
 
       <ScrollView
@@ -323,7 +308,7 @@ export default function HomeScreen() {
             style={({ pressed }) => [
               styles.continueCard,
               {
-                backgroundColor: colors.backgroundElement,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
                 opacity: pressed ? 0.88 : 1,
               },
             ]}>
@@ -364,7 +349,11 @@ export default function HomeScreen() {
               <View
                 style={[
                   styles.continueProgressTrack,
-                  { backgroundColor: colors.backgroundSelected },
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(255, 255, 255, 0.12)'
+                      : '#E8DCD6',
+                  },
                 ]}>
                 <View
                   style={[
@@ -421,10 +410,6 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-  },
-  avatarButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   /* 2. Hero Progress Card (Lighter Terracotta, No Outlines, No Shadows) */
