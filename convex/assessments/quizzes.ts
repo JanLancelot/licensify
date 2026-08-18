@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { requireContentManager, requireUser } from "./authHelpers";
+import { mutation, query } from "../_generated/server";
+import { requireContentManager, requireUser } from "../_helpers/authHelpers";
 import { paginationOptsValidator } from "convex/server";
 
 /**

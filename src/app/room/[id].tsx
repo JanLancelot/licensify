@@ -16,9 +16,9 @@ export default function StudyRoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const roomId = id as Id<'studyRooms'>;
-  const roomDetails = useQuery(api.rooms.getRoomDetails, roomId ? { roomId } : 'skip');
-  const joinRoom = useMutation(api.rooms.joinRoom);
-  const leaveRoom = useMutation(api.rooms.leaveRoom);
+  const roomDetails = useQuery(api.collaboration.rooms.getRoomDetails, roomId ? { roomId } : 'skip');
+  const joinRoom = useMutation(api.collaboration.rooms.joinRoom);
+  const leaveRoom = useMutation(api.collaboration.rooms.leaveRoom);
 
   const [joining, setJoining] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);

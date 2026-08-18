@@ -22,15 +22,15 @@ import { Modal } from "@/components/ui/Modal";
 
 
 export default function MaterialsPage() {
-  const subjects = useQuery(api.subjects.listAllSubjects);
-  const topics = useQuery(api.topics.listAllTopicsAdmin, {});
-  const materials = useQuery(api.materials.listAllMaterialsAdmin, {});
+  const subjects = useQuery(api.learning.subjects.listAllSubjects);
+  const topics = useQuery(api.learning.topics.listAllTopicsAdmin, {});
+  const materials = useQuery(api.learning.materials.listAllMaterialsAdmin, {});
   const { success, error: showError } = useToast();
 
-  const createMaterial = useMutation(api.materials.createMaterial);
-  const updateMaterial = useMutation(api.materials.updateMaterial);
-  const deleteMaterial = useMutation(api.materials.deleteMaterial);
-  const generateUploadUrl = useMutation(api.materials.generateUploadUrl);
+  const createMaterial = useMutation(api.learning.materials.createMaterial);
+  const updateMaterial = useMutation(api.learning.materials.updateMaterial);
+  const deleteMaterial = useMutation(api.learning.materials.deleteMaterial);
+  const generateUploadUrl = useMutation(api.learning.materials.generateUploadUrl);
 
   // Filters
   const [selectedSubject, setSelectedSubject] = useState<string>("all");

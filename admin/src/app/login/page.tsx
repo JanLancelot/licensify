@@ -10,7 +10,7 @@ import { Compass, KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, AlertCircle
 export default function LoginPage() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
-  const user = useQuery(api.users.getCurrentUserProfile);
+  const user = useQuery(api.auth.users.getCurrentUserProfile);
   const router = useRouter();
 
   const [email, setEmail] = useState("");

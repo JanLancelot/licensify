@@ -13,7 +13,7 @@ test("Backend Security and Robustness Tests", async () => {
   // Setup: Create users and seed subjects/quizzes/questions
   // --------------------------------------------------------
   const admin = t.withIdentity({ subject: "admin_user" });
-  const adminId = await admin.mutation(api.users.storeUser, {
+  const adminId = await admin.mutation(api.auth.users.storeUser, {
     username: "admin_dev",
   });
   // Manually update role to admin in database to allow creating quizzes/questions
@@ -22,17 +22,17 @@ test("Backend Security and Robustness Tests", async () => {
   });
 
   const studentA = t.withIdentity({ subject: "student_a" });
-  const studentAId = await studentA.mutation(api.users.storeUser, {
+  const studentAId = await studentA.mutation(api.auth.users.storeUser, {
     username: "student_a",
   });
 
   const studentB = t.withIdentity({ subject: "student_b" });
-  const studentBId = await studentB.mutation(api.users.storeUser, {
+  const studentBId = await studentB.mutation(api.auth.users.storeUser, {
     username: "student_b",
   });
 
   // Create a subject
-  const subjectId = await admin.mutation(api.subjects.createSubject, {
+  const subjectId = await admin.mutation(api.learning.subjects.createSubject, {
     name: "Architectural Practice",
     description: "ALE Practice questions",
     order: 1,
@@ -40,7 +40,7 @@ test("Backend Security and Robustness Tests", async () => {
   });
 
   // Create questions
-  const questionId = await admin.mutation(api.questions.createQuestion, {
+  const questionId = await admin.mutation(api.assessments.questions.createQuestion, {
     subjectId,
     question: "What is the maximum height of a building under Zone R-1?",
     choices: [
@@ -53,7 +53,7 @@ test("Backend Security and Robustness Tests", async () => {
   });
 
   // Create a quiz
-  const quizId = await admin.mutation(api.quizzes.createQuiz, {
+  const quizId = await admin.mutation(api.assessments.quizzes.createQuiz, {
     title: "Practice Exam 1",
     type: "practice",
     subjectId,
@@ -64,7 +64,7 @@ test("Backend Security and Robustness Tests", async () => {
   // --------------------------------------------------------
   // Test 1: Data Sanitization (Anti-Cheating)
   // --------------------------------------------------------
-  const quizData = await studentA.query(api.quizzes.getQuizWithQuestions, {
+  const quizData = await studentA.query(api.assessments.quizzes.getQuizWithQuestions, {
     quizId,
   });
   expect(quizData).not.toBeNull();
@@ -75,17 +75,17 @@ test("Backend Security and Robustness Tests", async () => {
   // --------------------------------------------------------
   // Test 2: IDOR Protection
   // --------------------------------------------------------
-  const attemptId = await studentA.mutation(api.attempts.startQuizAttempt, {
+  const attemptId = await studentA.mutation(api.assessments.attempts.startQuizAttempt, {
     quizId,
   });
 
   // Student B attempts to query Student A's quiz attempt details
   await expect(
-    studentB.query(api.attempts.getAttemptWithAnswers, { attemptId })
+    studentB.query(api.assessments.attempts.getAttemptWithAnswers, { attemptId })
   ).rejects.toThrow("Unauthorized to view this attempt");
 
   // Student A can view their own attempt successfully
-  const myAttempt = await studentA.query(api.attempts.getAttemptWithAnswers, {
+  const myAttempt = await studentA.query(api.assessments.attempts.getAttemptWithAnswers, {
     attemptId,
   });
   expect(myAttempt).not.toBeNull();
@@ -95,7 +95,7 @@ test("Backend Security and Robustness Tests", async () => {
   // Test 3: Invalid Data Injection (Choice Validation)
   // --------------------------------------------------------
   await expect(
-    studentA.mutation(api.attempts.recordAnswer, {
+    studentA.mutation(api.assessments.attempts.recordAnswer, {
       attemptId,
       questionId,
       selectedChoiceId: "choice_fake", // Invalid choice
@@ -103,7 +103,7 @@ test("Backend Security and Robustness Tests", async () => {
   ).rejects.toThrow("Invalid answer choice ID.");
 
   // Recording a valid answer choice succeeds
-  const answerId = await studentA.mutation(api.attempts.recordAnswer, {
+  const answerId = await studentA.mutation(api.assessments.attempts.recordAnswer, {
     attemptId,
     questionId,
     selectedChoiceId: "choice_1",
@@ -118,19 +118,19 @@ test("Backend Security and Robustness Tests", async () => {
   // 1st request was done above (attemptId).
   // Perform 4 more successful starts.
   for (let i = 0; i < 4; i++) {
-    await studentA.mutation(api.attempts.startQuizAttempt, { quizId });
+    await studentA.mutation(api.assessments.attempts.startQuizAttempt, { quizId });
   }
 
   // The 6th request must trigger the rate limit error
   await expect(
-    studentA.mutation(api.attempts.startQuizAttempt, { quizId })
+    studentA.mutation(api.assessments.attempts.startQuizAttempt, { quizId })
   ).rejects.toThrow(/Too many quiz attempts/);
 
   // --------------------------------------------------------
   // Test 5: Practice Quiz Generation Bounds Check
   // --------------------------------------------------------
   await expect(
-    admin.mutation(api.quizzes.generatePracticeQuiz, {
+    admin.mutation(api.assessments.quizzes.generatePracticeQuiz, {
       title: "Oversized Quiz",
       subjectId,
       questionCount: 150, // Exceeds 100 limit
@@ -142,11 +142,11 @@ test("Backend Security and Robustness Tests", async () => {
   // --------------------------------------------------------
   // The capacity for recordAnswer is 20.
   // Student B starts an attempt so they can answer.
-  const studentBAttempt = await studentB.mutation(api.attempts.startQuizAttempt, { quizId });
+  const studentBAttempt = await studentB.mutation(api.assessments.attempts.startQuizAttempt, { quizId });
   
   // Record 20 valid answers (this drains the token bucket)
   for (let i = 0; i < 20; i++) {
-    await studentB.mutation(api.attempts.recordAnswer, {
+    await studentB.mutation(api.assessments.attempts.recordAnswer, {
       attemptId: studentBAttempt,
       questionId,
       selectedChoiceId: "choice_1"
@@ -155,7 +155,7 @@ test("Backend Security and Robustness Tests", async () => {
 
   // The 21st answer must trigger the rate limit error
   await expect(
-    studentB.mutation(api.attempts.recordAnswer, {
+    studentB.mutation(api.assessments.attempts.recordAnswer, {
       attemptId: studentBAttempt,
       questionId,
       selectedChoiceId: "choice_1"

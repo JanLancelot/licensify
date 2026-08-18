@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { requireUser } from "./authHelpers";
+import { mutation, query } from "../_generated/server";
+import { requireUser } from "../_helpers/authHelpers";
 
 /**
  * Public/Student query: Fetches all currently active study rooms.

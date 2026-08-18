@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { signOut } = useAuthActions();
-  const user = useQuery(api.users.getCurrentUserProfile);
+  const user = useQuery(api.auth.users.getCurrentUserProfile);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // If on login page, don't wrap with AppShell sidebar

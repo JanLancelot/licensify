@@ -9,7 +9,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
-  const user = useQuery(api.users.getCurrentUserProfile);
+  const user = useQuery(api.auth.users.getCurrentUserProfile);
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useAuthActions();

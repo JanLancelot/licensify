@@ -7,7 +7,7 @@ const crons = cronJobs();
 crons.daily(
   "daily-study-reminder",
   { hourUTC: 8, minuteUTC: 0 },
-  api.notifications.triggerStudyReminders
+  api.system.notifications.triggerStudyReminders
 );
 
 export default crons;

@@ -31,8 +31,8 @@ interface Choice {
 }
 
 export default function QuestionsPage() {
-  const subjects = useQuery(api.subjects.listAllSubjects);
-  const topics = useQuery(api.topics.listAllTopicsAdmin, {});
+  const subjects = useQuery(api.learning.subjects.listAllSubjects);
+  const topics = useQuery(api.learning.topics.listAllTopicsAdmin, {});
   const { success, error: showError } = useToast();
 
   // Filters
@@ -41,7 +41,7 @@ export default function QuestionsPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const questions = useQuery(api.questions.listAllQuestionsAdmin, {
+  const questions = useQuery(api.assessments.questions.listAllQuestionsAdmin, {
     subjectId: selectedSubject !== "all" ? (selectedSubject as Id<"subjects">) : undefined,
     topicId: selectedTopic !== "all" ? (selectedTopic as Id<"topics">) : undefined,
     difficulty:
@@ -51,10 +51,10 @@ export default function QuestionsPage() {
     search: searchQuery.trim() || undefined,
   });
 
-  const createQuestion = useMutation(api.questions.createQuestion);
-  const updateQuestion = useMutation(api.questions.updateQuestion);
-  const deleteQuestion = useMutation(api.questions.deleteQuestion);
-  const bulkCreateQuestions = useMutation(api.questions.bulkCreateQuestions);
+  const createQuestion = useMutation(api.assessments.questions.createQuestion);
+  const updateQuestion = useMutation(api.assessments.questions.updateQuestion);
+  const deleteQuestion = useMutation(api.assessments.questions.deleteQuestion);
+  const bulkCreateQuestions = useMutation(api.assessments.questions.bulkCreateQuestions);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);

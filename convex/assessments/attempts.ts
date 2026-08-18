@@ -1,8 +1,8 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { requireUser } from "./authHelpers";
+import { mutation, query } from "../_generated/server";
+import { requireUser } from "../_helpers/authHelpers";
 import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
-import { components } from "./_generated/api";
+import { components } from "../_generated/api";
 
 const rateLimiter = new RateLimiter((components as any).ratelimiter, {
   startQuizAttempt: { kind: "token bucket", rate: 5, period: MINUTE, capacity: 5 },

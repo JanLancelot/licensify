@@ -18,13 +18,13 @@ import { Modal } from "@/components/ui/Modal";
 
 
 export default function UsersPage() {
-  const currentUser = useQuery(api.users.getCurrentUserProfile);
+  const currentUser = useQuery(api.auth.users.getCurrentUserProfile);
   const { success, error: showError } = useToast();
 
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const users = useQuery(api.users.listAllUsersAdmin, {
+  const users = useQuery(api.auth.users.listAllUsersAdmin, {
     role:
       roleFilter !== "all"
         ? (roleFilter as "student" | "admin" | "content_manager")
@@ -32,8 +32,8 @@ export default function UsersPage() {
     search: searchQuery.trim() || undefined,
   });
 
-  const updateRole = useMutation(api.users.updateRole);
-  const toggleUserActive = useMutation(api.users.toggleUserActive);
+  const updateRole = useMutation(api.auth.users.updateRole);
+  const toggleUserActive = useMutation(api.auth.users.toggleUserActive);
 
   // Role Edit Modal
   const [editingUser, setEditingUser] = useState<any>(null);

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { requireContentManager } from "./authHelpers";
+import { mutation, query } from "../_generated/server";
+import { requireContentManager } from "../_helpers/authHelpers";
 
 /**
  * Public/Student query: Fetches published flashcards by Subject.

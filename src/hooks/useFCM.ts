@@ -7,8 +7,8 @@ import { handleNotificationDeepLink, requestFcmToken, setupNotificationListeners
  * Custom hook to register FCM push notification token and set up deep link handling.
  */
 export function useFCM(onNotification?: (payload: PushNotificationPayload) => void) {
-  const profile = useQuery(api.users.getCurrentUserProfile);
-  const updateFcmToken = useMutation(api.users.updateFcmToken);
+  const profile = useQuery(api.auth.users.getCurrentUserProfile);
+  const updateFcmToken = useMutation(api.auth.users.updateFcmToken);
 
   // 1. Token Registration Lifecycle
   useEffect(() => {

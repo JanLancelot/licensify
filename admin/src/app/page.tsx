@@ -19,8 +19,8 @@ import {
 
 
 export default function DashboardOverviewPage() {
-  const stats = useQuery(api.admin.getDashboardStats);
-  const user = useQuery(api.users.getCurrentUserProfile);
+  const stats = useQuery(api.admin.admin.getDashboardStats);
+  const user = useQuery(api.auth.users.getCurrentUserProfile);
 
   if (stats === undefined) {
     return (

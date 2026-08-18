@@ -8,23 +8,23 @@
  * @module
  */
 
-import type * as ResendOTP from "../ResendOTP.js";
-import type * as admin from "../admin.js";
-import type * as attempts from "../attempts.js";
+import type * as _helpers_ResendOTP from "../_helpers/ResendOTP.js";
+import type * as _helpers_authHelpers from "../_helpers/authHelpers.js";
+import type * as admin_admin from "../admin/admin.js";
+import type * as assessments_attempts from "../assessments/attempts.js";
+import type * as assessments_questions from "../assessments/questions.js";
+import type * as assessments_quizzes from "../assessments/quizzes.js";
 import type * as auth from "../auth.js";
-import type * as authHelpers from "../authHelpers.js";
+import type * as auth_users from "../auth/users.js";
+import type * as collaboration_rooms from "../collaboration/rooms.js";
 import type * as crons from "../crons.js";
-import type * as flashcards from "../flashcards.js";
 import type * as http from "../http.js";
-import type * as materials from "../materials.js";
-import type * as notifications from "../notifications.js";
-import type * as questions from "../questions.js";
-import type * as quizzes from "../quizzes.js";
-import type * as rooms from "../rooms.js";
+import type * as learning_flashcards from "../learning/flashcards.js";
+import type * as learning_materials from "../learning/materials.js";
+import type * as learning_subjects from "../learning/subjects.js";
+import type * as learning_topics from "../learning/topics.js";
 import type * as seed from "../seed.js";
-import type * as subjects from "../subjects.js";
-import type * as topics from "../topics.js";
-import type * as users from "../users.js";
+import type * as system_notifications from "../system/notifications.js";
 
 import type {
   ApiFromModules,
@@ -33,23 +33,23 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  ResendOTP: typeof ResendOTP;
-  admin: typeof admin;
-  attempts: typeof attempts;
+  "_helpers/ResendOTP": typeof _helpers_ResendOTP;
+  "_helpers/authHelpers": typeof _helpers_authHelpers;
+  "admin/admin": typeof admin_admin;
+  "assessments/attempts": typeof assessments_attempts;
+  "assessments/questions": typeof assessments_questions;
+  "assessments/quizzes": typeof assessments_quizzes;
   auth: typeof auth;
-  authHelpers: typeof authHelpers;
+  "auth/users": typeof auth_users;
+  "collaboration/rooms": typeof collaboration_rooms;
   crons: typeof crons;
-  flashcards: typeof flashcards;
   http: typeof http;
-  materials: typeof materials;
-  notifications: typeof notifications;
-  questions: typeof questions;
-  quizzes: typeof quizzes;
-  rooms: typeof rooms;
+  "learning/flashcards": typeof learning_flashcards;
+  "learning/materials": typeof learning_materials;
+  "learning/subjects": typeof learning_subjects;
+  "learning/topics": typeof learning_topics;
   seed: typeof seed;
-  subjects: typeof subjects;
-  topics: typeof topics;
-  users: typeof users;
+  "system/notifications": typeof system_notifications;
 }>;
 
 /**

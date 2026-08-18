@@ -21,17 +21,17 @@ import { Modal } from "@/components/ui/Modal";
 
 
 export default function CurriculumPage() {
-  const subjects = useQuery(api.subjects.listAllSubjects);
-  const topics = useQuery(api.topics.listAllTopicsAdmin, {});
+  const subjects = useQuery(api.learning.subjects.listAllSubjects);
+  const topics = useQuery(api.learning.topics.listAllTopicsAdmin, {});
   const { success, error: showError } = useToast();
 
-  const createSubject = useMutation(api.subjects.createSubject);
-  const updateSubject = useMutation(api.subjects.updateSubject);
-  const deleteSubject = useMutation(api.subjects.deleteSubject);
+  const createSubject = useMutation(api.learning.subjects.createSubject);
+  const updateSubject = useMutation(api.learning.subjects.updateSubject);
+  const deleteSubject = useMutation(api.learning.subjects.deleteSubject);
 
-  const createTopic = useMutation(api.topics.createTopic);
-  const updateTopic = useMutation(api.topics.updateTopic);
-  const deleteTopic = useMutation(api.topics.deleteTopic);
+  const createTopic = useMutation(api.learning.topics.createTopic);
+  const updateTopic = useMutation(api.learning.topics.updateTopic);
+  const deleteTopic = useMutation(api.learning.topics.deleteTopic);
 
   // UI state
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});

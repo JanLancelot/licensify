@@ -34,7 +34,7 @@ export function useSyncService() {
       console.log('[SyncService] Starting Down-Sync...');
 
       // 1. Fetch published subjects
-      const subjects = await convex.query(api.subjects.listPublishedSubjects as any, {});
+      const subjects = await convex.query(api.learning.subjects.listPublishedSubjects as any, {});
 
       if (subjects && subjects.length > 0) {
         for (const sub of subjects) {
@@ -56,7 +56,7 @@ export function useSyncService() {
           });
 
           // 2. Fetch topics under subject
-          const topics = await convex.query(api.topics.listTopicsBySubject as any, {
+          const topics = await convex.query(api.learning.topics.listTopicsBySubject as any, {
             subjectId: sub._id,
           });
 
@@ -81,7 +81,7 @@ export function useSyncService() {
               });
 
               // Fetch materials by topic
-              const topicMaterials = await convex.query(api.materials.listMaterialsByTopic as any, {
+              const topicMaterials = await convex.query(api.learning.materials.listMaterialsByTopic as any, {
                 topicId: top._id,
               });
               if (topicMaterials && topicMaterials.length > 0) {
@@ -108,7 +108,7 @@ export function useSyncService() {
               }
 
               // Fetch flashcards by topic
-              const topicFlashcards = await convex.query(api.flashcards.getFlashcardsByTopic as any, {
+              const topicFlashcards = await convex.query(api.learning.flashcards.getFlashcardsByTopic as any, {
                 topicId: top._id,
               });
               if (topicFlashcards && topicFlashcards.length > 0) {
@@ -131,7 +131,7 @@ export function useSyncService() {
               }
 
               // Fetch questions by topic
-              const topicQuestions = await convex.query(api.questions.listQuestionsByTopic as any, {
+              const topicQuestions = await convex.query(api.assessments.questions.listQuestionsByTopic as any, {
                 topicId: top._id,
               });
               if (topicQuestions && topicQuestions.length > 0) {
@@ -166,7 +166,7 @@ export function useSyncService() {
           }
 
           // 3. Fetch questions by subject
-          const subjectQuestions = await convex.query(api.questions.listQuestionsBySubject as any, {
+          const subjectQuestions = await convex.query(api.assessments.questions.listQuestionsBySubject as any, {
             subjectId: sub._id,
           });
           if (subjectQuestions && subjectQuestions.length > 0) {
@@ -199,7 +199,7 @@ export function useSyncService() {
           }
 
           // 4. Fetch flashcards by subject
-          const subjectFlashcards = await convex.query(api.flashcards.getFlashcardsBySubject as any, {
+          const subjectFlashcards = await convex.query(api.learning.flashcards.getFlashcardsBySubject as any, {
             subjectId: sub._id,
           });
           if (subjectFlashcards && subjectFlashcards.length > 0) {
@@ -224,7 +224,7 @@ export function useSyncService() {
       }
 
       // 5. Fetch published quizzes
-      const quizzesResult = await convex.query(api.quizzes.listQuizzes as any, {
+      const quizzesResult = await convex.query(api.assessments.quizzes.listQuizzes as any, {
         paginationOpts: { numItems: 50, cursor: null },
       });
       if (quizzesResult && quizzesResult.page && quizzesResult.page.length > 0) {
@@ -289,14 +289,14 @@ export function useSyncService() {
 
         try {
           // 1. Start attempt on Convex
-          const serverAttemptId = await convex.mutation(api.attempts.startQuizAttempt as any, {
+          const serverAttemptId = await convex.mutation(api.assessments.attempts.startQuizAttempt as any, {
             quizId: attempt.quizId,
           });
 
           // 2. Record each answer choice
           for (const ans of answers) {
             if (ans.selectedChoiceId) {
-              await convex.mutation(api.attempts.recordAnswer as any, {
+              await convex.mutation(api.assessments.attempts.recordAnswer as any, {
                 attemptId: serverAttemptId,
                 questionId: ans.questionId,
                 selectedChoiceId: ans.selectedChoiceId,
@@ -306,7 +306,7 @@ export function useSyncService() {
 
           // 3. Finalize attempt on Convex if marked submitted
           if (attempt.status === 'submitted') {
-            await convex.mutation(api.attempts.submitQuizAttempt as any, {
+            await convex.mutation(api.assessments.attempts.submitQuizAttempt as any, {
               attemptId: serverAttemptId,
             });
           }

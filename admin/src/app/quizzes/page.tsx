@@ -21,15 +21,15 @@ import { Modal } from "@/components/ui/Modal";
 
 
 export default function QuizzesPage() {
-  const subjects = useQuery(api.subjects.listAllSubjects);
-  const topics = useQuery(api.topics.listAllTopicsAdmin, {});
-  const quizzes = useQuery(api.quizzes.listAllQuizzesAdmin, {});
-  const allQuestions = useQuery(api.questions.listAllQuestionsAdmin, {});
+  const subjects = useQuery(api.learning.subjects.listAllSubjects);
+  const topics = useQuery(api.learning.topics.listAllTopicsAdmin, {});
+  const quizzes = useQuery(api.assessments.quizzes.listAllQuizzesAdmin, {});
+  const allQuestions = useQuery(api.assessments.questions.listAllQuestionsAdmin, {});
   const { success, error: showError } = useToast();
 
-  const createQuiz = useMutation(api.quizzes.createQuiz);
-  const updateQuiz = useMutation(api.quizzes.updateQuiz);
-  const deleteQuiz = useMutation(api.quizzes.deleteQuiz);
+  const createQuiz = useMutation(api.assessments.quizzes.createQuiz);
+  const updateQuiz = useMutation(api.assessments.quizzes.updateQuiz);
+  const deleteQuiz = useMutation(api.assessments.quizzes.deleteQuiz);
 
   // Filters
   const [selectedType, setSelectedType] = useState<string>("all");

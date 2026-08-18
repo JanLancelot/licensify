@@ -1,5 +1,5 @@
-import { query } from "./_generated/server";
-import { getCurrentUser } from "./authHelpers";
+import { query } from "../_generated/server";
+import { getCurrentUser } from "../_helpers/authHelpers";
 
 
 /**

@@ -14,7 +14,7 @@ test("Admin Dashboard & Content Management API Tests", async () => {
     email: "admin_test@reapp.com",
     name: "Master Admin",
   });
-  const adminId = await adminAuth.mutation(api.users.storeUser, {
+  const adminId = await adminAuth.mutation(api.auth.users.storeUser, {
     username: "admin_test",
   });
   await t.run(async (ctx) => {
@@ -25,23 +25,23 @@ test("Admin Dashboard & Content Management API Tests", async () => {
     subject: "auth_student_test",
     email: "student_test@reapp.com",
   });
-  await studentAuth.mutation(api.users.storeUser, {
+  await studentAuth.mutation(api.auth.users.storeUser, {
     username: "student_test",
   });
 
   // 2. Student cannot access admin dashboard stats (returns null)
-  const studentStats = await studentAuth.query(api.admin.getDashboardStats);
+  const studentStats = await studentAuth.query(api.admin.admin.getDashboardStats);
   expect(studentStats).toBeNull();
 
 
   // 3. Admin can retrieve dashboard stats
-  const initialStats = await adminAuth.query(api.admin.getDashboardStats);
+  const initialStats = await adminAuth.query(api.admin.admin.getDashboardStats);
   expect(initialStats!.totals.subjects).toBe(0);
   expect(initialStats!.totals.questions).toBe(0);
 
 
   // 4. Admin Subject & Topic CRUD
-  const subjectId = await adminAuth.mutation(api.subjects.createSubject, {
+  const subjectId = await adminAuth.mutation(api.learning.subjects.createSubject, {
     name: "Architectural Design & Site Planning",
     description: "Area 3 board exam coverage",
     order: 1,
@@ -49,7 +49,7 @@ test("Admin Dashboard & Content Management API Tests", async () => {
   });
   expect(subjectId).toBeDefined();
 
-  const topicId = await adminAuth.mutation(api.topics.createTopic, {
+  const topicId = await adminAuth.mutation(api.learning.topics.createTopic, {
     subjectId,
     name: "Space Planning & Programming",
     description: "Core architectural concepts",
@@ -58,11 +58,11 @@ test("Admin Dashboard & Content Management API Tests", async () => {
   });
   expect(topicId).toBeDefined();
 
-  const topicsList = await adminAuth.query(api.topics.listAllTopicsAdmin, { subjectId });
+  const topicsList = await adminAuth.query(api.learning.topics.listAllTopicsAdmin, { subjectId });
   expect(topicsList.length).toBe(1);
 
   // 5. Admin Question Bank & Bulk Import
-  const singleQId = await adminAuth.mutation(api.questions.createQuestion, {
+  const singleQId = await adminAuth.mutation(api.assessments.questions.createQuestion, {
     subjectId,
     topicId,
     question: "What is the standard clearance for an accessible corridor?",
@@ -80,7 +80,7 @@ test("Admin Dashboard & Content Management API Tests", async () => {
   expect(singleQId).toBeDefined();
 
   // Test Bulk Import
-  const bulkResult = await adminAuth.mutation(api.questions.bulkCreateQuestions, {
+  const bulkResult = await adminAuth.mutation(api.assessments.questions.bulkCreateQuestions, {
     items: [
       {
         subjectId,
@@ -111,19 +111,19 @@ test("Admin Dashboard & Content Management API Tests", async () => {
   expect(bulkResult.count).toBe(2);
 
   // Filter questions
-  const allQuestions = await adminAuth.query(api.questions.listAllQuestionsAdmin, {});
+  const allQuestions = await adminAuth.query(api.assessments.questions.listAllQuestionsAdmin, {});
   expect(allQuestions.length).toBe(3);
 
   // Update question
-  await adminAuth.mutation(api.questions.updateQuestion, {
+  await adminAuth.mutation(api.assessments.questions.updateQuestion, {
     questionId: singleQId,
     difficulty: "medium",
   });
-  const updatedQ = await adminAuth.query(api.questions.getQuestionByIdAdmin, { questionId: singleQId });
+  const updatedQ = await adminAuth.query(api.assessments.questions.getQuestionByIdAdmin, { questionId: singleQId });
   expect(updatedQ?.difficulty).toBe("medium");
 
   // 6. Study Materials & Flashcards
-  const matId = await adminAuth.mutation(api.materials.createMaterial, {
+  const matId = await adminAuth.mutation(api.learning.materials.createMaterial, {
     subjectId,
     topicId,
     title: "BP 344 Accessibility Law Summary",
@@ -133,7 +133,7 @@ test("Admin Dashboard & Content Management API Tests", async () => {
   });
   expect(matId).toBeDefined();
 
-  const flashcardId = await adminAuth.mutation(api.flashcards.createFlashcard, {
+  const flashcardId = await adminAuth.mutation(api.learning.flashcards.createFlashcard, {
     subjectId,
     topicId,
     front: "Minimum stair width for occupant load > 50?",
@@ -143,7 +143,7 @@ test("Admin Dashboard & Content Management API Tests", async () => {
   expect(flashcardId).toBeDefined();
 
   // 7. Quizzes / Mock Exams
-  const quizId = await adminAuth.mutation(api.quizzes.createQuiz, {
+  const quizId = await adminAuth.mutation(api.assessments.quizzes.createQuiz, {
     title: "ALE Area 3 Mock Diagnostic",
     type: "mock_exam",
     subjectId,
@@ -155,11 +155,11 @@ test("Admin Dashboard & Content Management API Tests", async () => {
   });
   expect(quizId).toBeDefined();
 
-  const quizzesList = await adminAuth.query(api.quizzes.listAllQuizzesAdmin, {});
+  const quizzesList = await adminAuth.query(api.assessments.quizzes.listAllQuizzesAdmin, {});
   expect(quizzesList.length).toBe(1);
 
   // 8. Re-check dashboard stats
-  const finalStats = await adminAuth.query(api.admin.getDashboardStats);
+  const finalStats = await adminAuth.query(api.admin.admin.getDashboardStats);
   expect(finalStats!.totals.subjects).toBe(1);
   expect(finalStats!.totals.topics).toBe(1);
   expect(finalStats!.totals.questions).toBe(3);

@@ -22,15 +22,15 @@ import { Modal } from "@/components/ui/Modal";
 
 
 export default function FlashcardsPage() {
-  const subjects = useQuery(api.subjects.listAllSubjects);
-  const topics = useQuery(api.topics.listAllTopicsAdmin, {});
-  const flashcards = useQuery(api.flashcards.listAllFlashcardsAdmin, {});
+  const subjects = useQuery(api.learning.subjects.listAllSubjects);
+  const topics = useQuery(api.learning.topics.listAllTopicsAdmin, {});
+  const flashcards = useQuery(api.learning.flashcards.listAllFlashcardsAdmin, {});
   const { success, error: showError } = useToast();
 
-  const createFlashcard = useMutation(api.flashcards.createFlashcard);
-  const updateFlashcard = useMutation(api.flashcards.updateFlashcard);
-  const deleteFlashcard = useMutation(api.flashcards.deleteFlashcard);
-  const generateUploadUrl = useMutation(api.materials.generateUploadUrl);
+  const createFlashcard = useMutation(api.learning.flashcards.createFlashcard);
+  const updateFlashcard = useMutation(api.learning.flashcards.updateFlashcard);
+  const deleteFlashcard = useMutation(api.learning.flashcards.deleteFlashcard);
+  const generateUploadUrl = useMutation(api.learning.materials.generateUploadUrl);
 
   // Filters
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
