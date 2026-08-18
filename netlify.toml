@@ -1,8 +1,13 @@
-[build]
-  base = "admin"
-  command = "npm run build"
-  publish = "out"
+# ──────────────────────────────────────────────────────────
+# Student-facing Expo Web App (Root)
+# Netlify builds the Expo web export from the repo root.
+# The admin dashboard has its OWN Netlify site configured
+# with Base directory = "admin" in the Netlify UI.
+# ──────────────────────────────────────────────────────────
 
+[build]
+  command = "npm run build:web"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"

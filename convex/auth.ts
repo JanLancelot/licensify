@@ -59,7 +59,6 @@ export function CustomPassword() {
       };
     },
     reset: ResendOTP,
-    verify: ResendOTP,
   });
 }
 

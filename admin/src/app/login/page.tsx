@@ -5,7 +5,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { Compass, KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, AlertCircle, Lock } from "lucide-react";
+import { Compass, KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, Lock } from "lucide-react";
+import { AuthErrorAlert, AuthErrorInfo, parseAuthError } from "@/components/auth/AuthErrorAlert";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
@@ -17,9 +18,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
 
-  // If already authenticated and has proper role, redirect to dashboard
+  // If already authenticated and has staff clearance, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === "admin" || user.role === "content_manager") {
@@ -31,47 +32,30 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError("Please provide your staff email and password.");
+      setAuthError({
+        type: "server_error",
+        title: "Required Fields",
+        message: "Please enter both your staff email address and password.",
+      });
       return;
     }
 
     setLoading(true);
-    setError(null);
+    setAuthError(null);
 
     try {
-      try {
-        await signIn("password", {
-          email: email.trim().toLowerCase(),
-          password,
-          flow: "signIn",
-        });
-      } catch (signInErr: any) {
-        // If account doesn't exist yet, bootstrap initial staff registration
-        if (
-          signInErr?.message?.includes("Invalid") ||
-          signInErr?.message?.includes("not found") ||
-          signInErr?.message?.includes("No account")
-        ) {
-          await signIn("password", {
-            email: email.trim().toLowerCase(),
-            password,
-            username: email.trim().split("@")[0] || "ArchAdmin",
-            flow: "signUp",
-          });
-        } else {
-          throw signInErr;
-        }
-      }
+      await signIn("password", {
+        email: email.trim().toLowerCase(),
+        password,
+        flow: "signIn",
+      });
       router.push("/");
     } catch (err: any) {
-      console.error("Staff auth error:", err);
-      setError(
-        err?.message || "Authentication failed. Please check your staff credentials."
-      );
+      console.error("Staff sign-in error:", err);
+      setAuthError(parseAuthError(err));
     } finally {
       setLoading(false);
     }
-
   };
 
   return (
@@ -104,12 +88,8 @@ export default function LoginPage() {
             </span>
           </div>
 
-          {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
+          {/* Dedicated Error Component */}
+          <AuthErrorAlert error={authError} onDismiss={() => setAuthError(null)} />
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -123,8 +103,11 @@ export default function LoginPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="faculty@reapp.com"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (authError) setAuthError(null);
+                  }}
+                  placeholder="admin@licensify.app"
                   required
                   autoComplete="email"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
@@ -143,7 +126,10 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (authError) setAuthError(null);
+                  }}
                   placeholder="••••••••••••"
                   required
                   autoComplete="current-password"

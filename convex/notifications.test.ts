@@ -67,5 +67,5 @@ test("Notification & Study Room Invite System Tests", async () => {
   const userANotifications = await userA.query(api.notifications.getUserNotifications, {
     unreadOnly: true,
   });
-  expect(userANotifications.some((n) => n.title === "Daily ALE Board Exam Study Reminder")).toBe(true);
+  expect(userANotifications.some((n: any) => n.title === "Daily ALE Board Exam Study Reminder")).toBe(true);
 });

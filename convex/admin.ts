@@ -1,5 +1,76 @@
-import { query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
+import { v } from "convex/values";
+import { api } from "./_generated/api";
 import { getCurrentUser } from "./authHelpers";
+
+/**
+ * CLI / Cloud Helper: Directly creates a new Admin User account with email and password on Convex Live.
+ * Usage: `npx convex run admin:createAdminUser '{"email": "admin@reapp.com", "password": "admin12345"}'`
+ */
+export const createAdminUser = action({
+  args: {
+    email: v.string(),
+    password: v.string(),
+    username: v.optional(v.string()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; message: string; result?: any }> => {
+    const email = args.email.trim().toLowerCase();
+    const result: any = await ctx.runAction(api.auth.signIn, {
+      provider: "password",
+      params: {
+        email,
+        password: args.password,
+        username: args.username ?? email.split("@")[0] ?? "Admin",
+        firstName: args.firstName ?? "Admin",
+        lastName: args.lastName ?? "User",
+        flow: "signUp",
+      },
+    });
+
+    return {
+      success: true,
+      message: `Admin account created successfully for ${email}. You can now sign in on the dashboard.`,
+      result,
+    };
+  },
+});
+
+/**
+ * CLI / Cloud Helper: Promotes an existing user by email to admin or content_manager.
+ */
+export const promoteUserToAdmin = mutation({
+  args: {
+    email: v.string(),
+    role: v.optional(v.union(v.literal("admin"), v.literal("content_manager"), v.literal("student"))),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email.trim().toLowerCase()))
+      .first();
+
+    if (!user) {
+      throw new Error(`User with email "${args.email}" not found.`);
+    }
+
+    const newRole = args.role ?? "admin";
+    await ctx.db.patch(user._id, {
+      role: newRole,
+      updatedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      message: `User ${args.email} role updated to "${newRole}".`,
+      user: { id: user._id, email: user.email, role: newRole },
+    };
+  },
+});
 
 
 /**
