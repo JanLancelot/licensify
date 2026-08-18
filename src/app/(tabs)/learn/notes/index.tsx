@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowLeft, BookOpen, Layers, Sparkles } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Platform,
@@ -29,11 +29,11 @@ import { useAppTheme } from '@/context/theme-context';
 import { SUBJECT_NOTES } from '@/data/curriculum';
 import { Lesson } from '@/types/curriculum';
 
-/* Subject Gradient Squircle */
+/* Prominent Subject Gradient Icon */
 function SubjectGradientIcon({
   icon: IconComponent,
   colors: [startColor, endColor],
-  size = 46,
+  size = 48,
 }: {
   icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
   colors: [string, string];
@@ -60,11 +60,11 @@ function SubjectGradientIcon({
         <Rect
           width={size}
           height={size}
-          rx={15}
+          rx={16}
           fill={`url(#${gradId})`}
         />
       </Svg>
-      <IconComponent size={22} color="#FFFFFF" strokeWidth={2.2} />
+      <IconComponent size={24} color="#FFFFFF" strokeWidth={2.2} />
     </View>
   );
 }
@@ -147,9 +147,6 @@ export default function NotesScreen() {
           <Text style={[styles.topBarHeading, { color: colors.text }]}>
             Comprehensive Notes
           </Text>
-          <Text style={[styles.topBarSubHeading, { color: colors.textSecondary }]}>
-            Structured syllabus notes for ALE review
-          </Text>
         </View>
       </View>
 
@@ -166,10 +163,6 @@ export default function NotesScreen() {
             const isSubjectOpen = !!expandedSubjects[subject.id];
             const IconComponent = subject.icon;
             const gradColors = SUBJECT_GRADIENTS[sIdx % SUBJECT_GRADIENTS.length];
-            const totalLessons = subject.topics.reduce(
-              (acc, t) => acc + t.lessons.length,
-              0
-            );
 
             return (
               <Animated.View
@@ -181,7 +174,7 @@ export default function NotesScreen() {
                     backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
                   },
                 ]}>
-                {/* LEVEL 1: SUBJECT HEADER */}
+                {/* LEVEL 1: SUBJECT HEADER PILL */}
                 <Pressable
                   onPress={() => toggleSubject(subject.id)}
                   style={({ pressed }) => [
@@ -190,45 +183,24 @@ export default function NotesScreen() {
                       opacity: pressed ? 0.8 : 1,
                     },
                   ]}>
-                  {/* Subject Gradient Icon Box */}
+                  {/* Prominent Left Icon */}
                   <SubjectGradientIcon
                     icon={IconComponent}
                     colors={gradColors}
                     size={48}
                   />
 
-                  {/* Subject Metadata */}
-                  <View style={styles.subjectInfo}>
-                    <Text style={[styles.subjectTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                      {subject.title}
-                    </Text>
+                  {/* Clean Subject Title */}
+                  <Text
+                    numberOfLines={2}
+                    style={[
+                      styles.subjectTitle,
+                      { color: isDark ? '#F9FAFB' : '#0F172A' },
+                    ]}>
+                    {subject.title}
+                  </Text>
 
-                    <View style={styles.badgeRow}>
-                      <View
-                        style={[
-                          styles.countPill,
-                          {
-                            backgroundColor: isDark
-                              ? 'rgba(224, 122, 95, 0.18)'
-                              : '#F8EAE4',
-                          },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.countPillText,
-                            { color: colors.accent },
-                          ]}>
-                          {subject.topics.length} Topics
-                        </Text>
-                      </View>
-                      <Text style={[styles.bulletDot, { color: colors.textSecondary }]}>•</Text>
-                      <Text style={[styles.lessonsCountText, { color: colors.textSecondary }]}>
-                        {totalLessons} Lessons
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Rotating Dropdown Chevron */}
+                  {/* Rotating Chevron on Right */}
                   <View style={styles.chevronWrapper}>
                     <RotatingChevron
                       isOpen={isSubjectOpen}
@@ -238,7 +210,7 @@ export default function NotesScreen() {
                   </View>
                 </Pressable>
 
-                {/* LEVEL 2: TOPICS DROPDOWN */}
+                {/* LEVEL 2: TOPICS LIST */}
                 {isSubjectOpen && (
                   <Animated.View
                     entering={FadeInDown.duration(220)}
@@ -254,7 +226,6 @@ export default function NotesScreen() {
                         toggleTopic={toggleTopic}
                         subjectTitle={subject.title}
                         setSelectedLesson={setSelectedLesson}
-                        theme={colors}
                       />
                     ))}
                   </Animated.View>
@@ -269,7 +240,6 @@ export default function NotesScreen() {
       <LessonDetailModal
         selectedLesson={selectedLesson}
         onClose={() => setSelectedLesson(null)}
-        theme={colors}
       />
     </SafeAreaView>
   );
@@ -303,16 +273,11 @@ const styles = StyleSheet.create({
   },
   topBarTitles: {
     flex: 1,
-    gap: 2,
   },
   topBarHeading: {
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.4,
-  },
-  topBarSubHeading: {
-    fontSize: 12.5,
-    fontWeight: '500',
   },
   listContainer: {
     gap: 14,
@@ -324,39 +289,15 @@ const styles = StyleSheet.create({
   subjectHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     gap: 14,
   },
-  subjectInfo: {
-    flex: 1,
-    gap: 5,
-  },
   subjectTitle: {
-    fontSize: 15.5,
+    fontSize: 16,
     fontWeight: '800',
     letterSpacing: -0.3,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  countPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
-    borderRadius: 8,
-  },
-  countPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  bulletDot: {
-    fontSize: 12,
-  },
-  lessonsCountText: {
-    fontSize: 12,
-    fontWeight: '500',
+    flex: 1,
   },
   chevronWrapper: {
     padding: 4,
@@ -365,6 +306,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 4,
     paddingBottom: 12,
-    gap: 2,
+    gap: 6,
   },
 });

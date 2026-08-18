@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
   FadeOutUp,
   LinearTransition,
 } from 'react-native-reanimated';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, FileText } from 'lucide-react-native';
 
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
@@ -27,338 +27,211 @@ export interface NoteTopicItemProps {
 
 export function NoteTopicItem({
   topic,
-  isLastTopic,
   isTopicOpen,
   toggleTopic,
   subjectTitle,
   setSelectedLesson,
 }: NoteTopicItemProps) {
   const { colors, isDark } = useAppTheme();
-  const [headerHeight, setHeaderHeight] = useState(56);
-  const center = headerHeight / 2;
-
-  const branchColor = isDark ? 'rgba(224, 122, 95, 0.25)' : 'rgba(200, 90, 50, 0.2)';
 
   return (
     <Animated.View
       layout={LinearTransition.duration(200)}
-      style={styles.topicRowWrapper}>
-      {/* Tree Branch Node for Topic */}
-      <View style={styles.topicBranchNode}>
-        {/* Top Vertical Segment */}
-        <View
-          style={[
-            styles.topicBranchTop,
-            { height: center, backgroundColor: branchColor },
-          ]}
-        />
-        {/* Bottom Vertical Segment (Only if NOT last topic) */}
-        {!isLastTopic && (
-          <View
-            style={[
-              styles.topicBranchBottom,
-              { top: center, backgroundColor: branchColor },
-            ]}
-          />
-        )}
-        {/* Horizontal Line into Topic Card */}
-        <View
-          style={[
-            styles.topicBranchHoriz,
-            { top: center - 1, backgroundColor: branchColor },
-          ]}
-        />
-      </View>
-
-      <View
-        style={[
-          styles.topicCard,
+      style={styles.topicContainer}>
+      {/* TOPIC PILL HEADER */}
+      <Pressable
+        onPress={() => toggleTopic(topic.id)}
+        style={({ pressed }) => [
+          styles.topicPill,
           {
             backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+            borderColor: isTopicOpen
+              ? isDark
+                ? 'rgba(224, 122, 95, 0.4)'
+                : 'rgba(200, 90, 50, 0.25)'
+              : 'transparent',
+            borderWidth: isTopicOpen ? 1.2 : 0,
+            borderBottomLeftRadius: isTopicOpen ? 0 : 16,
+            borderBottomRightRadius: isTopicOpen ? 0 : 16,
+            opacity: pressed ? 0.8 : 1,
           },
         ]}>
-        {/* TOPIC HEADER ROW */}
-        <Pressable
-          onLayout={(e) => {
-            const h = e.nativeEvent.layout.height;
-            if (h > 0 && Math.abs(h - headerHeight) > 1) {
-              setHeaderHeight(h);
-            }
-          }}
-          onPress={() => toggleTopic(topic.id)}
-          style={({ pressed }) => [
-            styles.topicHeader,
-            { opacity: pressed ? 0.75 : 1 },
+        <View style={styles.topicTitleRow}>
+          <Text
+            style={[
+              styles.topicNumberLabel,
+              { color: colors.accent },
+            ]}>
+            Topic {topic.topicNumber}:
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.topicTitleText,
+              { color: isDark ? '#F9FAFB' : '#0F172A' },
+            ]}>
+            {topic.title}
+          </Text>
+        </View>
+
+        <RotatingChevron
+          isOpen={isTopicOpen}
+          color={colors.accent}
+          size={16}
+        />
+      </Pressable>
+
+      {/* EXPANDED LESSONS CONTAINER */}
+      {isTopicOpen && (
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(160)}
+          layout={LinearTransition.duration(200)}
+          style={[
+            styles.lessonsWrapper,
+            {
+              backgroundColor: isDark ? '#1C1F26' : '#FAF8F6',
+              borderColor: isDark
+                ? 'rgba(224, 122, 95, 0.4)'
+                : 'rgba(200, 90, 50, 0.25)',
+            },
           ]}>
-          <View style={styles.topicHeaderLeft}>
-            <View
-              style={[
-                styles.topicNumberBadge,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(224, 122, 95, 0.2)'
-                    : '#F8EAE4',
-                },
-              ]}>
-              <Text
-                style={[
-                  styles.topicNumberText,
-                  { color: colors.accent },
+          {topic.lessons.map((lesson, lIdx) => {
+            const isLast = lIdx === topic.lessons.length - 1;
+
+            return (
+              <Pressable
+                key={lesson.id}
+                onPress={() =>
+                  setSelectedLesson({
+                    subjectTitle,
+                    topicTitle: topic.title,
+                    lesson,
+                  })
+                }
+                style={({ pressed }) => [
+                  styles.lessonRow,
+                  {
+                    borderBottomWidth: isLast ? 0 : 1,
+                    borderBottomColor: isDark
+                      ? 'rgba(255, 255, 255, 0.06)'
+                      : 'rgba(0, 0, 0, 0.05)',
+                    opacity: pressed ? 0.6 : 1,
+                  },
                 ]}>
-                T{topic.topicNumber}
-              </Text>
-            </View>
-            <View style={styles.topicTitleBox}>
-              <Text style={[styles.topicTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                {topic.title}
-              </Text>
-              <Text
-                style={[
-                  styles.topicLessonCount,
-                  { color: colors.textSecondary },
-                ]}>
-                {topic.lessons.length} Lessons Available
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.topicChevron}>
-            <RotatingChevron
-              isOpen={isTopicOpen}
-              color={colors.accent}
-              size={16}
-            />
-          </View>
-        </Pressable>
-
-        {/* LEVEL 3: LESSONS DROPDOWN */}
-        {isTopicOpen && (
-          <Animated.View
-            entering={FadeInDown.duration(200)}
-            exiting={FadeOutUp.duration(160)}
-            layout={LinearTransition.duration(200)}
-            style={styles.lessonsContainer}>
-            {topic.lessons.map((lesson, lIdx) => {
-              const isLastLesson = lIdx === topic.lessons.length - 1;
-
-              return (
-                <View key={lesson.id} style={styles.lessonRowWrapper}>
-                  {/* Tree Branch Node for Lesson */}
-                  <View style={styles.lessonBranchNode}>
-                    <View
-                      style={[
-                        styles.lessonBranchTop,
-                        { backgroundColor: branchColor },
-                      ]}
-                    />
-                    {!isLastLesson && (
-                      <View
-                        style={[
-                          styles.lessonBranchBottom,
-                          { backgroundColor: branchColor },
-                        ]}
-                      />
-                    )}
-                    <View
-                      style={[
-                        styles.lessonBranchHoriz,
-                        { backgroundColor: branchColor },
-                      ]}
-                    />
-                  </View>
-
-                  <Pressable
-                    onPress={() =>
-                      setSelectedLesson({
-                        subjectTitle,
-                        topicTitle: topic.title,
-                        lesson,
-                      })
-                    }
-                    style={({ pressed }) => [
-                      styles.lessonRow,
+                <View style={styles.lessonLeftInfo}>
+                  <View
+                    style={[
+                      styles.lessonIconBadge,
                       {
-                        backgroundColor: isDark ? '#1C1F26' : '#F8F6F4',
-                        opacity: pressed ? 0.65 : 1,
+                        backgroundColor: isDark
+                          ? 'rgba(224, 122, 95, 0.18)'
+                          : '#F8EAE4',
                       },
                     ]}>
-                    <View style={styles.lessonRowLeft}>
-                      <View
-                        style={[
-                          styles.lessonNumCircle,
-                          {
-                            backgroundColor: isDark
-                              ? 'rgba(224, 122, 95, 0.2)'
-                              : '#F8EAE4',
-                          },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.lessonNumText,
-                            { color: colors.accent },
-                          ]}>
-                          {lesson.lessonNumber}
-                        </Text>
-                      </View>
-                      <Text
-                        style={[styles.lessonTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                        {lesson.title}
-                      </Text>
-                    </View>
+                    <FileText size={13} color={colors.accent} strokeWidth={2.4} />
+                  </View>
 
-                    <ChevronRight
-                      size={15}
-                      color={colors.accent}
-                      strokeWidth={2.2}
-                    />
-                  </Pressable>
+                  <Text
+                    style={[
+                      styles.lessonNumberLabel,
+                      { color: colors.accent },
+                    ]}>
+                    Lesson {lesson.lessonNumber}:
+                  </Text>
+
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.lessonTitleText,
+                      { color: isDark ? '#E2E8F0' : '#1E293B' },
+                    ]}>
+                    {lesson.title}
+                  </Text>
                 </View>
-              );
-            })}
-          </Animated.View>
-        )}
-      </View>
+
+                <ChevronRight
+                  size={15}
+                  color={colors.accent}
+                  strokeWidth={2.2}
+                />
+              </Pressable>
+            );
+          })}
+        </Animated.View>
+      )}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  topicRowWrapper: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    marginBottom: 10,
+  topicContainer: {
+    marginBottom: 8,
   },
-  topicBranchNode: {
-    width: 14,
-    position: 'relative',
-  },
-  topicBranchTop: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: 2,
-  },
-  topicBranchBottom: {
-    position: 'absolute',
-    left: 0,
-    bottom: -10,
-    width: 2,
-  },
-  topicBranchHoriz: {
-    position: 'absolute',
-    left: 0,
-    width: 14,
-    height: 2,
-  },
-  topicCard: {
-    flex: 1,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  topicHeader: {
+  topicPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
   },
-  topicHeaderLeft: {
+  topicTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
     flex: 1,
+    gap: 6,
+    paddingRight: 10,
   },
-  topicNumberBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderRadius: 8,
-  },
-  topicNumberText: {
-    fontSize: 10.5,
+  topicNumberLabel: {
+    fontSize: 13.5,
     fontWeight: '800',
-    letterSpacing: 0.2,
-  },
-  topicTitleBox: {
-    flex: 1,
-    gap: 2,
-  },
-  topicTitle: {
-    fontSize: 14,
-    fontWeight: '700',
     letterSpacing: -0.2,
   },
-  topicLessonCount: {
-    fontSize: 11,
-    fontWeight: '500',
+  topicTitleText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    flex: 1,
   },
-  topicChevron: {
-    paddingLeft: 8,
-  },
-  lessonsContainer: {
-    marginLeft: 12,
-    marginRight: 10,
-    marginBottom: 10,
-    paddingTop: 4,
-  },
-  lessonRowWrapper: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  lessonBranchNode: {
-    width: 12,
-    position: 'relative',
-  },
-  lessonBranchTop: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    height: '50%',
-    width: 2,
-  },
-  lessonBranchBottom: {
-    position: 'absolute',
-    left: 0,
-    top: '50%',
-    bottom: 0,
-    width: 2,
-  },
-  lessonBranchHoriz: {
-    position: 'absolute',
-    left: 0,
-    top: '50%',
-    marginTop: -1,
-    width: 12,
-    height: 2,
+  lessonsWrapper: {
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    borderWidth: 1.2,
+    borderTopWidth: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    overflow: 'hidden',
   },
   lessonRow: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginBottom: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    gap: 10,
   },
-  lessonRowLeft: {
+  lessonLeftInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     flex: 1,
+    paddingRight: 6,
   },
-  lessonNumCircle: {
+  lessonIconBadge: {
     width: 24,
     height: 24,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lessonNumText: {
-    fontSize: 11,
-    fontWeight: '800',
+  lessonNumberLabel: {
+    fontSize: 12.5,
+    fontWeight: '700',
   },
-  lessonTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+  lessonTitleText: {
+    fontSize: 12.5,
+    fontWeight: '500',
     flex: 1,
   },
 });
