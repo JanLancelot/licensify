@@ -162,7 +162,7 @@ export default function UsersPage() {
                   </td>
                 </tr>
               ) : (
-                users.map((u) => {
+                users.map((u: any) => {
                   const isCurrent = currentUser?._id === u._id;
                   const isSuspended = u.isActive === false;
 

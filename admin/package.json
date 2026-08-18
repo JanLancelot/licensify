@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "rm -rf .next && next dev --port 3001",
     "build": "next build",
+    "build:web": "next build",
     "start": "next start --port 3001",
-    "clean": "rm -rf .next",
+    "clean": "rm -rf .next out",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -21,6 +22,7 @@
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "resend": "^6.20.0",
     "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {

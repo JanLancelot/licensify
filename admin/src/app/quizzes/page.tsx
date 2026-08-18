@@ -163,16 +163,16 @@ export default function QuizzesPage() {
     );
   }
 
-  const filteredQuizzes = quizzes.filter((q) => {
+  const filteredQuizzes = quizzes.filter((q: any) => {
     if (selectedType !== "all" && q.type !== selectedType) return false;
     return true;
   });
 
-  const pickerQuestions = allQuestions.filter((q) => {
+  const pickerQuestions = allQuestions.filter((q: any) => {
     if (!pickerSearch.trim()) return true;
     return (
       q.question.toLowerCase().includes(pickerSearch.toLowerCase()) ||
-      q.choices.some((c) => c.text.toLowerCase().includes(pickerSearch.toLowerCase()))
+      q.choices.some((c: any) => c.text.toLowerCase().includes(pickerSearch.toLowerCase()))
     );
   });
 
@@ -240,8 +240,8 @@ export default function QuizzesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredQuizzes.map((quiz) => {
-            const subj = subjects.find((s) => s._id === quiz.subjectId);
+          {filteredQuizzes.map((quiz: any) => {
+            const subj = subjects.find((s: any) => s._id === quiz.subjectId);
 
             return (
               <div
@@ -468,7 +468,7 @@ export default function QuizzesPage() {
             </div>
 
             <div className="max-h-52 overflow-y-auto rounded-xl border border-studio-200 dark:border-studio-700 divide-y divide-studio-200 dark:divide-studio-800">
-              {pickerQuestions.map((q) => {
+              {pickerQuestions.map((q: any) => {
                 const isSelected = formSelectedQuestionIds.includes(q._id);
                 return (
                   <div

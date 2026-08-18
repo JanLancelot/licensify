@@ -1,7 +1,7 @@
 [build]
-  command = "npm run build:web"
-  publish = "dist"
-  # Trigger Netlify rebuild with updated Convex environment variables
+  base = "admin"
+  command = "npm run build"
+  publish = "out"
 
 
 [build.environment]
