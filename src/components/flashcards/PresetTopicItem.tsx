@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
@@ -7,8 +7,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Check, Plus } from 'lucide-react-native';
 
-import { Radius } from '@/constants/theme';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
+import { useAppTheme } from '@/context/theme-context';
 import { Topic } from '@/types/curriculum';
 
 export interface PresetTopicItemProps {
@@ -21,24 +21,18 @@ export interface PresetTopicItemProps {
   toggleTopicSelection: (topic: Topic) => void;
   toggleLessonSelection: (lessonId: string) => void;
   lastSelectedTopicIndex: number;
-  theme: any;
+  theme?: any;
 }
 
 export function PresetTopicItem({
   topic,
-  tIdx,
-  isLastTopic,
   selectedLessonIds,
   expandedTopics,
   toggleTopic,
   toggleTopicSelection,
   toggleLessonSelection,
-  lastSelectedTopicIndex,
-  theme,
 }: PresetTopicItemProps) {
-  const [headerHeight, setHeaderHeight] = useState(48);
-  const center = Math.round(headerHeight / 2);
-
+  const { colors, isDark } = useAppTheme();
   const isTopicOpen = !!expandedTopics[topic.id];
   const topicLessonIds = topic.lessons.map((l) => l.id);
   const selectedInTopicCount = topicLessonIds.filter((id) =>
@@ -51,431 +45,237 @@ export function PresetTopicItem({
     selectedInTopicCount > 0 && !isAllTopicSelected;
   const hasTopicSelected = selectedInTopicCount > 0;
 
-  const isVerticalTopHighlighted =
-    lastSelectedTopicIndex >= 0 &&
-    tIdx <= lastSelectedTopicIndex;
-  const isVerticalBottomHighlighted =
-    lastSelectedTopicIndex >= 0 &&
-    tIdx < lastSelectedTopicIndex;
-
-  const lastSelectedLessonIndex = topic.lessons.reduce(
-    (lastIdx, l, idx) =>
-      selectedLessonIds.has(l.id) ? idx : lastIdx,
-    -1
-  );
-
   return (
-    <View key={topic.id} style={styles.topicItemWrapper}>
-      <View style={styles.treeBranchNode}>
-        <View
-          style={[
-            styles.treeBranchTop,
-            {
-              height: center,
-              backgroundColor: isVerticalTopHighlighted
-                ? theme.accent
-                : theme.border,
-            },
-          ]}
-        />
-        {!isLastTopic && (
-          <View
+    <Animated.View
+      layout={LinearTransition.duration(200)}
+      style={styles.topicContainer}>
+      {/* Topic Pill Row */}
+      <View
+        style={[
+          styles.topicPill,
+          {
+            backgroundColor: hasTopicSelected
+              ? isDark
+                ? 'rgba(224, 122, 95, 0.18)'
+                : '#F8EAE4'
+              : isDark
+                ? '#23262F'
+                : '#FFFFFF',
+            borderBottomLeftRadius: isTopicOpen ? 0 : 16,
+            borderBottomRightRadius: isTopicOpen ? 0 : 16,
+          },
+        ]}>
+        {/* Toggle Dropdown Area */}
+        <Pressable
+          onPress={() => toggleTopic(topic.id)}
+          style={styles.topicHeaderLeft}>
+          <Text
             style={[
-              styles.treeBranchBottom,
-              {
-                top: center,
-                backgroundColor: isVerticalBottomHighlighted
-                  ? theme.accent
-                  : theme.border,
-              },
-            ]}
-          />
-        )}
-        <View
-          style={[
-            styles.treeBranchHoriz,
-            {
-              top: center - 1,
-              backgroundColor: hasTopicSelected
-                ? theme.accent
-                : theme.border,
-            },
-          ]}
-        />
-      </View>
+              styles.topicNumberLabel,
+              { color: colors.accent },
+            ]}>
+            Topic {topic.topicNumber}:
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.topicTitleText,
+              { color: isDark ? '#F9FAFB' : '#0F172A' },
+            ]}>
+            {topic.title}
+          </Text>
 
-      <View style={styles.topicMainColumn}>
-        {/* Topic Header Row */}
-        <View
-          onLayout={(e) => {
-            const h = e.nativeEvent.layout.height;
-            if (h > 0 && Math.abs(h - headerHeight) > 1) {
-              setHeaderHeight(h);
-            }
-          }}
-          style={[
-            styles.topicHeader,
+          <RotatingChevron
+            isOpen={isTopicOpen}
+            color={colors.accent}
+            size={16}
+          />
+        </Pressable>
+
+        {/* Selection Check/Plus Toggle */}
+        <Pressable
+          onPress={() => toggleTopicSelection(topic)}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.topicSelectionBtn,
             {
-              backgroundColor: hasTopicSelected
-                ? theme.accentMuted
-                : theme.backgroundSelected,
-              borderColor: hasTopicSelected
-                ? theme.accent
-                : theme.border,
-              borderWidth: hasTopicSelected ? 1.5 : 1,
+              backgroundColor: isAllTopicSelected
+                ? colors.accent
+                : isSomeTopicSelected
+                  ? colors.accent
+                  : isDark
+                    ? '#1C1F26'
+                    : '#F0EBE8',
+              opacity: pressed ? 0.75 : 1,
             },
           ]}>
-          <Pressable
-            onPress={() => toggleTopic(topic.id)}
-            style={styles.topicHeaderLeft}>
-            <Text
-              style={[
-                styles.topicTitle,
-                { color: theme.text },
-              ]}>
-              {topic.title}
-            </Text>
-            <Text
-              style={[
-                styles.topicSubtext,
-                {
-                  color: hasTopicSelected
-                    ? theme.accent
-                    : theme.textSecondary,
-                  fontWeight: hasTopicSelected ? '700' : '400',
-                },
-              ]}>
-              {hasTopicSelected
-                ? `${selectedInTopicCount}/${topic.lessons.length} Selected`
-                : `${topic.lessons.length} Lessons`}
-            </Text>
-          </Pressable>
+          {isAllTopicSelected ? (
+            <Check size={13} color="#FFFFFF" strokeWidth={3} />
+          ) : isSomeTopicSelected ? (
+            <Text style={styles.someSelectedText}>-</Text>
+          ) : (
+            <Plus size={13} color={colors.textSecondary} strokeWidth={2.4} />
+          )}
+        </Pressable>
+      </View>
 
-          {/* + Add Topic Button */}
-          <Pressable
-            onPress={() => toggleTopicSelection(topic)}
-            style={({ pressed }) => [
-              styles.addSmallBtn,
-              {
-                backgroundColor: isAllTopicSelected
-                  ? theme.accent
-                  : isSomeTopicSelected
-                  ? theme.accentMuted
-                  : theme.backgroundElement,
-                borderColor: isAllTopicSelected || isSomeTopicSelected
-                  ? theme.accent
-                  : theme.border,
-                opacity: pressed ? 0.75 : 1,
-              },
-            ]}>
-            {isAllTopicSelected ? (
-              <Check size={12} color="#FFFFFF" strokeWidth={3} />
-            ) : (
-              <Plus
-                size={12}
-                color={isSomeTopicSelected ? theme.accent : theme.text}
-                strokeWidth={2.5}
-              />
-            )}
-          </Pressable>
+      {/* Expanded Lessons Container */}
+      {isTopicOpen && (
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(160)}
+          layout={LinearTransition.duration(200)}
+          style={[
+            styles.lessonsWrapper,
+            {
+              backgroundColor: isDark ? '#1C1F26' : '#FAF8F6',
+            },
+          ]}>
+          {topic.lessons.map((lesson, lIdx) => {
+            const isLessonSelected = selectedLessonIds.has(lesson.id);
+            const isLast = lIdx === topic.lessons.length - 1;
 
-          <Pressable
-            onPress={() => toggleTopic(topic.id)}
-            style={styles.chevronPressableSmall}>
-            <RotatingChevron
-              isOpen={isTopicOpen}
-              color={hasTopicSelected ? theme.accent : theme.textSecondary}
-              size={15}
-            />
-          </Pressable>
-        </View>
+            return (
+              <Pressable
+                key={lesson.id}
+                onPress={() => toggleLessonSelection(lesson.id)}
+                style={({ pressed }) => [
+                  styles.lessonRow,
+                  {
+                    borderBottomWidth: isLast ? 0 : 1,
+                    borderBottomColor: isDark
+                      ? 'rgba(255, 255, 255, 0.06)'
+                      : 'rgba(0, 0, 0, 0.05)',
+                    opacity: pressed ? 0.6 : 1,
+                  },
+                ]}>
+                <View style={styles.lessonLeftInfo}>
+                  <Text
+                    style={[
+                      styles.lessonNumberLabel,
+                      { color: isLessonSelected ? colors.accent : colors.textSecondary },
+                    ]}>
+                    Lesson {lesson.lessonNumber}:
+                  </Text>
 
-        {/* Lesson Level Accordion */}
-        {isTopicOpen && (
-          <Animated.View
-            entering={FadeInDown.duration(180)}
-            exiting={FadeOutUp.duration(150)}
-            layout={LinearTransition.duration(180)}
-            style={styles.lessonsContainer}>
-            {topic.lessons.map((lesson, lIdx) => {
-              const isLessonSelected = selectedLessonIds.has(
-                lesson.id
-              );
-              const isLastLesson =
-                lIdx === topic.lessons.length - 1;
-              const isLessonTopHighlighted =
-                lastSelectedLessonIndex >= 0 &&
-                lIdx <= lastSelectedLessonIndex;
-              const isLessonBottomHighlighted =
-                lastSelectedLessonIndex >= 0 &&
-                lIdx < lastSelectedLessonIndex;
-
-              return (
-                <View
-                  key={lesson.id}
-                  style={styles.lessonRowWrapper}>
-                  {/* Tree Branch Node for Lesson */}
-                  <View style={styles.lessonBranchNode}>
-                    <View
-                      style={[
-                        styles.lessonBranchTop,
-                        {
-                          backgroundColor: isLessonTopHighlighted
-                            ? theme.accent
-                            : theme.border,
-                        },
-                      ]}
-                    />
-                    {!isLastLesson && (
-                      <View
-                        style={[
-                          styles.lessonBranchBottom,
-                          {
-                            backgroundColor: isLessonBottomHighlighted
-                              ? theme.accent
-                              : theme.border,
-                          },
-                        ]}
-                      />
-                    )}
-                    <View
-                      style={[
-                        styles.lessonBranchHoriz,
-                        {
-                          backgroundColor: isLessonSelected
-                            ? theme.accent
-                            : theme.border,
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  <Pressable
-                    onPress={() =>
-                      toggleLessonSelection(lesson.id)
-                    }
-                    style={({ pressed }) => [
-                      styles.lessonRow,
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.lessonTitleText,
                       {
-                        backgroundColor: isLessonSelected
-                          ? theme.accentMuted
-                          : theme.backgroundElement,
-                        borderColor: isLessonSelected
-                          ? theme.accent
-                          : theme.border,
-                        borderWidth: isLessonSelected ? 1.5 : 1,
-                        opacity: pressed ? 0.8 : 1,
+                        color: isLessonSelected
+                          ? isDark
+                            ? '#FFFFFF'
+                            : '#0F172A'
+                          : colors.textSecondary,
+                        fontWeight: isLessonSelected ? '600' : '400',
                       },
                     ]}>
-                    <View style={styles.lessonRowLeft}>
-                      <View
-                        style={[
-                          styles.lessonNumCircle,
-                          {
-                            backgroundColor: isLessonSelected
-                              ? theme.accent
-                              : theme.backgroundSelected,
-                          },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.lessonNumText,
-                            {
-                              color: isLessonSelected
-                                ? '#FFFFFF'
-                                : theme.accent,
-                            },
-                          ]}>
-                          {lesson.lessonNumber}
-                        </Text>
-                      </View>
-                      <View style={styles.lessonTextCol}>
-                        <Text
-                          style={[
-                            styles.lessonTitle,
-                            { color: theme.text },
-                          ]}>
-                          {lesson.title}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* + Add Lesson Button */}
-                    <View
-                      style={[
-                        styles.addSmallBtn,
-                        {
-                          backgroundColor: isLessonSelected
-                            ? theme.accent
-                            : theme.backgroundSelected,
-                          borderColor: isLessonSelected
-                            ? theme.accent
-                            : theme.border,
-                        },
-                      ]}>
-                      {isLessonSelected ? (
-                        <Check
-                          size={12}
-                          color="#FFFFFF"
-                          strokeWidth={3}
-                        />
-                      ) : (
-                        <Plus
-                          size={12}
-                          color={theme.text}
-                          strokeWidth={2.5}
-                        />
-                      )}
-                    </View>
-                  </Pressable>
+                    {lesson.title}
+                  </Text>
                 </View>
-              );
-            })}
-          </Animated.View>
-        )}
-      </View>
-    </View>
+
+                {/* Lesson Checkbox */}
+                <View
+                  style={[
+                    styles.lessonCheckbox,
+                    {
+                      backgroundColor: isLessonSelected
+                        ? colors.accent
+                        : isDark
+                          ? '#23262F'
+                          : '#EFEAE6',
+                    },
+                  ]}>
+                  {isLessonSelected && (
+                    <Check size={11} color="#FFFFFF" strokeWidth={3} />
+                  )}
+                </View>
+              </Pressable>
+            );
+          })}
+        </Animated.View>
+      )}
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  topicItemWrapper: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
+  topicContainer: {
+    marginBottom: 8,
   },
-  treeBranchNode: {
-    width: 18,
-    alignSelf: 'stretch',
-    position: 'relative',
-    marginRight: 4,
-  },
-  treeBranchTop: {
-    position: 'absolute',
-    left: 8,
-    top: 0,
-    width: 2,
-  },
-  treeBranchBottom: {
-    position: 'absolute',
-    left: 8,
-    bottom: 0,
-    width: 2,
-  },
-  treeBranchHoriz: {
-    position: 'absolute',
-    left: 8,
-    width: 10,
-    height: 2,
-  },
-  topicMainColumn: {
-    flex: 1,
-    gap: 6,
-    marginBottom: 10,
-  },
-  topicHeader: {
+  topicPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
   },
   topicHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    gap: 1,
+    gap: 6,
+    paddingRight: 10,
   },
-  topicTitle: {
-    fontSize: 12.5,
-    fontWeight: '600',
+  topicNumberLabel: {
+    fontSize: 13,
+    fontWeight: '800',
   },
-  topicSubtext: {
-    fontSize: 10.5,
+  topicTitleText: {
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
   },
-  addSmallBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  topicSelectionBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
   },
-  chevronPressableSmall: {
-    padding: 2,
+  someSelectedText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 14,
   },
-  lessonsContainer: {
-    paddingLeft: 4,
-    paddingTop: 4,
-    gap: 0,
-  },
-  lessonRowWrapper: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    marginBottom: 6,
-  },
-  lessonBranchNode: {
-    width: 16,
-    alignSelf: 'stretch',
-    position: 'relative',
-    marginRight: 6,
-  },
-  lessonBranchTop: {
-    position: 'absolute',
-    left: 7,
-    top: 0,
-    height: '50%',
-    width: 2,
-  },
-  lessonBranchBottom: {
-    position: 'absolute',
-    left: 7,
-    top: '50%',
-    bottom: -6,
-    width: 2,
-  },
-  lessonBranchHoriz: {
-    position: 'absolute',
-    left: 7,
-    top: '50%',
-    marginTop: -1,
-    width: 9,
-    height: 2,
+  lessonsWrapper: {
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    overflow: 'hidden',
   },
   lessonRow: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 2,
+    gap: 10,
   },
-  lessonRowLeft: {
-    flex: 1,
+  lessonLeftInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flex: 1,
+    paddingRight: 6,
   },
-  lessonNumCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  lessonNumText: {
-    fontSize: 10,
+  lessonNumberLabel: {
+    fontSize: 12,
     fontWeight: '700',
   },
-  lessonTextCol: {
-    flex: 1,
-    gap: 1,
-  },
-  lessonTitle: {
+  lessonTitleText: {
     fontSize: 12,
-    fontWeight: '600',
+    flex: 1,
+  },
+  lessonCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

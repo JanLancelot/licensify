@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Pencil, Play, Shuffle, Trash2 } from 'lucide-react-native';
 
-import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 import { FlashcardPreset } from '@/types/curriculum';
 
 export interface FlashcardPresetCardProps {
@@ -10,7 +10,7 @@ export interface FlashcardPresetCardProps {
   onStartDrill: (preset: FlashcardPreset) => void;
   onEditPreset: (preset: FlashcardPreset) => void;
   onDeletePreset: (id: string) => void;
-  theme: any;
+  theme?: any;
 }
 
 export function FlashcardPresetCard({
@@ -18,15 +18,15 @@ export function FlashcardPresetCard({
   onStartDrill,
   onEditPreset,
   onDeletePreset,
-  theme,
 }: FlashcardPresetCardProps) {
+  const { colors, isDark } = useAppTheme();
+
   return (
     <View
       style={[
         styles.presetCard,
         {
-          backgroundColor: theme.backgroundElement,
-          borderColor: theme.border,
+          backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
         },
       ]}>
       {/* Top Badges & Actions */}
@@ -36,11 +36,12 @@ export function FlashcardPresetCard({
             style={[
               styles.presetPill,
               {
-                backgroundColor: theme.accentMuted,
-                borderColor: theme.border,
+                backgroundColor: isDark
+                  ? 'rgba(224, 122, 95, 0.2)'
+                  : '#F8EAE4',
               },
             ]}>
-            <Text style={[styles.presetPillText, { color: theme.accent }]}>
+            <Text style={[styles.presetPillText, { color: colors.accent }]}>
               {preset.cardCount} Cards
             </Text>
           </View>
@@ -49,11 +50,10 @@ export function FlashcardPresetCard({
             style={[
               styles.presetPill,
               {
-                backgroundColor: theme.backgroundSelected,
-                borderColor: theme.border,
+                backgroundColor: isDark ? '#23262F' : '#FFFFFF',
               },
             ]}>
-            <Text style={[styles.presetPillText, { color: theme.textSecondary }]}>
+            <Text style={[styles.presetPillText, { color: colors.textSecondary }]}>
               {preset.lessonCount} Lessons
             </Text>
           </View>
@@ -63,12 +63,11 @@ export function FlashcardPresetCard({
               style={[
                 styles.presetPill,
                 {
-                  backgroundColor: theme.backgroundSelected,
-                  borderColor: theme.border,
+                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
                 },
               ]}>
-              <Shuffle size={10} color={theme.textSecondary} />
-              <Text style={[styles.presetPillText, { color: theme.textSecondary }]}>
+              <Shuffle size={10} color={colors.textSecondary} />
+              <Text style={[styles.presetPillText, { color: colors.textSecondary }]}>
                 Shuffled
               </Text>
             </View>
@@ -81,9 +80,12 @@ export function FlashcardPresetCard({
             hitSlop={8}
             style={({ pressed }) => [
               styles.iconBtn,
-              { opacity: pressed ? 0.6 : 1 },
+              {
+                backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                opacity: pressed ? 0.6 : 1,
+              },
             ]}>
-            <Pencil size={15} color={theme.textSecondary} />
+            <Pencil size={13} color={colors.textSecondary} />
           </Pressable>
 
           <Pressable
@@ -91,57 +93,47 @@ export function FlashcardPresetCard({
             hitSlop={8}
             style={({ pressed }) => [
               styles.iconBtn,
-              { opacity: pressed ? 0.6 : 1 },
+              {
+                backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                opacity: pressed ? 0.6 : 1,
+              },
             ]}>
-            <Trash2 size={15} color={theme.textSecondary} />
+            <Trash2 size={13} color={colors.textSecondary} />
           </Pressable>
         </View>
       </View>
 
       {/* Preset Title & Scope */}
       <View style={styles.presetCardBody}>
-        <Text style={[styles.presetCardTitle, { color: theme.text }]}>
+        <Text style={[styles.presetCardTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
           {preset.title}
         </Text>
         <Text
           numberOfLines={1}
-          style={[styles.presetCardScope, { color: theme.textSecondary }]}>
+          style={[styles.presetCardScope, { color: colors.textSecondary }]}>
           {preset.subjectNames.join(' • ')}
         </Text>
       </View>
 
       {/* Footer & Actions */}
-      <View style={[styles.presetCardFooter, { borderTopColor: theme.border }]}>
-        <Text style={[styles.presetCardDate, { color: theme.textSecondary }]}>
+      <View style={styles.presetCardFooter}>
+        <Text style={[styles.presetCardDate, { color: colors.textSecondary }]}>
           {preset.createdAt}
         </Text>
 
         <View style={styles.footerActions}>
           <Pressable
-            onPress={() => onEditPreset(preset)}
-            style={({ pressed }) => [
-              styles.editBtn,
-              {
-                backgroundColor: theme.backgroundSelected,
-                borderColor: theme.border,
-                opacity: pressed ? 0.75 : 1,
-              },
-            ]}>
-            <Pencil size={11} color={theme.text} />
-            <Text style={[styles.editBtnText, { color: theme.text }]}>Edit</Text>
-          </Pressable>
-
-          <Pressable
             onPress={() => onStartDrill(preset)}
             style={({ pressed }) => [
               styles.startDrillBtn,
               {
-                backgroundColor: theme.accent,
+                backgroundColor: colors.accent,
                 opacity: pressed ? 0.85 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
               },
             ]}>
             <Play size={12} color="#FFFFFF" fill="#FFFFFF" />
-            <Text style={styles.startDrillBtnText}>Start Flashcards</Text>
+            <Text style={styles.startDrillBtnText}>Start Deck</Text>
           </Pressable>
         </View>
       </View>
@@ -151,9 +143,8 @@ export function FlashcardPresetCard({
 
 const styles = StyleSheet.create({
   presetCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    padding: 14,
+    borderRadius: 20,
+    padding: 16,
     gap: 12,
   },
   presetCardTop: {
@@ -172,72 +163,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    borderWidth: 1,
+    paddingVertical: 3.5,
+    borderRadius: 8,
   },
   presetPillText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
   },
   topActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
   },
   iconBtn: {
-    padding: 4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   presetCardBody: {
     gap: 4,
   },
   presetCardTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   presetCardScope: {
-    fontSize: 11.5,
+    fontSize: 12,
   },
   presetCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 10,
-    borderTopWidth: 1,
+    paddingTop: 4,
   },
   presetCardDate: {
-    fontSize: 11,
+    fontSize: 11.5,
+    fontWeight: '500',
   },
   footerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  editBtnText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-  },
   startDrillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.xs,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   startDrillBtnText: {
     color: '#FFFFFF',
-    fontSize: 11.5,
+    fontSize: 12.5,
     fontWeight: '700',
   },
 });
