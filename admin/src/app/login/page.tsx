@@ -5,7 +5,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { Compass, KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, AlertCircle, Lock } from "lucide-react";
+import { Compass, KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, Lock } from "lucide-react";
+import { AuthErrorAlert, AuthErrorInfo, parseAuthError } from "@/components/auth/AuthErrorAlert";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
@@ -13,15 +14,13 @@ export default function LoginPage() {
   const user = useQuery(api.users.getCurrentUserProfile);
   const router = useRouter();
 
-  const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
 
-  // If already authenticated and has proper role, redirect to dashboard
+  // If already authenticated and has staff clearance, redirect to dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === "admin" || user.role === "content_manager") {
@@ -33,46 +32,27 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setError("Please provide your staff email and password.");
+      setAuthError({
+        type: "server_error",
+        title: "Required Fields",
+        message: "Please enter both your staff email address and password.",
+      });
       return;
     }
 
     setLoading(true);
-    setError(null);
+    setAuthError(null);
 
     try {
-      if (mode === "signIn") {
-        try {
-          await signIn("password", {
-            email: email.trim().toLowerCase(),
-            password,
-            flow: "signIn",
-          });
-        } catch (signInErr: any) {
-          const errStr = (signInErr?.message || signInErr?.toString() || "").toLowerCase();
-          if (errStr.includes("invalidaccountid") || errStr.includes("not found") || errStr.includes("no account")) {
-            setError("No account found for this email. Please switch to 'Create Account' to register your staff login.");
-            return;
-          } else if (errStr.includes("invalidsecret") || errStr.includes("password")) {
-            setError("Incorrect password. Please verify and try again.");
-            return;
-          }
-          throw signInErr;
-        }
-      } else {
-        await signIn("password", {
-          email: email.trim().toLowerCase(),
-          password,
-          username: username.trim() || email.trim().split("@")[0] || "StaffAdmin",
-          flow: "signUp",
-        });
-      }
+      await signIn("password", {
+        email: email.trim().toLowerCase(),
+        password,
+        flow: "signIn",
+      });
       router.push("/");
     } catch (err: any) {
-      console.error("Staff auth error:", err);
-      setError(
-        err?.message || "Authentication failed. Please check your staff credentials."
-      );
+      console.error("Staff sign-in error:", err);
+      setAuthError(parseAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -96,43 +76,11 @@ export default function LoginPage() {
 
         {/* Auth Card */}
         <div className="glass-modal rounded-3xl p-6 sm:p-8">
-          {/* Mode Switch Tabs */}
-          <div className="grid grid-cols-2 gap-1.5 p-1 bg-studio-200/60 dark:bg-studio-800/60 rounded-2xl mb-6">
-            <button
-              type="button"
-              onClick={() => {
-                setMode("signIn");
-                setError(null);
-              }}
-              className={`py-2 text-xs font-semibold rounded-xl transition-all ${
-                mode === "signIn"
-                  ? "bg-white dark:bg-studio-900 text-studio-900 dark:text-studio-100 shadow-sm"
-                  : "text-studio-500 hover:text-studio-800 dark:hover:text-studio-200"
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode("signUp");
-                setError(null);
-              }}
-              className={`py-2 text-xs font-semibold rounded-xl transition-all ${
-                mode === "signUp"
-                  ? "bg-white dark:bg-studio-900 text-studio-900 dark:text-studio-100 shadow-sm"
-                  : "text-studio-500 hover:text-studio-800 dark:hover:text-studio-200"
-              }`}
-            >
-              Create Account
-            </button>
-          </div>
-
           <div className="flex items-center justify-between gap-2 mb-6 pb-4 border-b border-studio-200 dark:border-studio-800">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-blueprint-500" />
               <h2 className="font-semibold text-base text-studio-900 dark:text-studio-100">
-                {mode === "signIn" ? "Staff Authentication" : "Register Staff Account"}
+                Staff Authentication
               </h2>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border border-studio-300 dark:border-studio-700">
@@ -140,30 +88,10 @@ export default function LoginPage() {
             </span>
           </div>
 
-          {error && (
-            <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
+          {/* Dedicated Error Component */}
+          <AuthErrorAlert error={authError} onDismiss={() => setAuthError(null)} />
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "signUp" && (
-              <div>
-                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                  Staff Username
-                </label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="ArchAdmin"
-                  required={mode === "signUp"}
-                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
-                />
-              </div>
-            )}
-
             <div>
               <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                 Staff Email Address
@@ -175,8 +103,11 @@ export default function LoginPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="faculty@reapp.com"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (authError) setAuthError(null);
+                  }}
+                  placeholder="admin@reapp.com"
                   required
                   autoComplete="email"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
@@ -195,10 +126,13 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (authError) setAuthError(null);
+                  }}
                   placeholder="••••••••••••"
                   required
-                  autoComplete={mode === "signIn" ? "current-password" : "new-password"}
+                  autoComplete="current-password"
                   className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
                 />
                 <button
@@ -219,12 +153,12 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>{mode === "signIn" ? "Verifying Credentials..." : "Creating Account..."}</span>
+                  <span>Verifying Credentials...</span>
                 </>
               ) : (
                 <>
                   <Lock className="w-4 h-4" />
-                  <span>{mode === "signIn" ? "Authenticate & Enter Studio" : "Create Staff Account"}</span>
+                  <span>Authenticate & Enter Studio</span>
                 </>
               )}
             </button>
