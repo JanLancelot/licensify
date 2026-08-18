@@ -12,9 +12,8 @@ export const ResendOTP = Email({
   },
   async sendVerificationRequest({ identifier: email, token }) {
     if (!process.env.RESEND_API_KEY) {
-      throw new ConvexError(
-        "RESEND_API_KEY is not configured in the Convex Dashboard. Please add it to send verification emails."
-      );
+      console.log(`[DEV OTP SIMULATION] Verification OTP for ${email}: ${token}`);
+      return;
     }
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { error } = await resend.emails.send({

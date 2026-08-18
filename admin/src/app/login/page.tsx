@@ -107,7 +107,7 @@ export default function LoginPage() {
                     setEmail(e.target.value);
                     if (authError) setAuthError(null);
                   }}
-                  placeholder="admin@reapp.com"
+                  placeholder="admin@licensify.app"
                   required
                   autoComplete="email"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
