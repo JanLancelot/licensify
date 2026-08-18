@@ -10,8 +10,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MotiView } from 'moti';
 import {
   BookOpen,
-  Building2,
   FileEdit,
+  Home,
   Target,
   User,
 } from 'lucide-react-native';
@@ -34,7 +34,7 @@ interface TabItemConfig {
 const TAB_CONFIGS: TabItemConfig[] = [
   { name: 'learn', label: 'Learn', Icon: BookOpen },
   { name: 'practice', label: 'Practice', Icon: FileEdit },
-  { name: 'index', label: 'Home', Icon: Building2, isCenter: true },
+  { name: 'index', label: 'Home', Icon: Home, isCenter: true },
   { name: 'exams', label: 'Exams', Icon: Target },
   { name: 'profile', label: 'Profile', Icon: User },
 ];
@@ -123,7 +123,7 @@ function CenterHomeButton({
                 : colors.border,
             },
           ]}>
-          <Building2
+          <Home
             size={24}
             color={isFocused ? '#FFFFFF' : colors.tabInactive}
             strokeWidth={isFocused ? 2.2 : 1.7}

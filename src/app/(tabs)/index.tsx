@@ -1,31 +1,66 @@
 import { useRouter } from 'expo-router';
 import {
-  ArrowRight,
   Award,
+  BookOpen,
   ChevronRight,
+  Clock,
+  FileEdit,
+  Flame,
+  Layers,
   Play,
+  Sparkles,
+  Target,
+  TrendingUp,
   Zap,
 } from 'lucide-react-native';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Radius } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme } from '@/context/theme-context';
 
 export default function HomeScreen() {
-  const theme = useTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Clean Header */}
+      style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          Dashboard
-        </Text>
+        <View>
+          <Text style={[styles.headerGreeting, { color: colors.textSecondary }]}>
+            Welcome back
+          </Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Dashboard
+          </Text>
+        </View>
+
+        {/* Streak Pill Header Icon */}
+        <View
+          style={[
+            styles.streakBadge,
+            {
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+            },
+          ]}>
+          <Flame size={16} color="#F59E0B" fill="#F59E0B" />
+          <Text style={[styles.streakBadgeText, { color: colors.text }]}>
+            5d
+          </Text>
+        </View>
       </View>
 
       <ScrollView
@@ -35,392 +70,303 @@ export default function HomeScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* 1. OVERALL PROGRESS */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Overall Progress
-          </Text>
+        {/* 1. OVERALL PROGRESS BLOCK (Split left & right) */}
+        <View
+          style={[
+            styles.progressBlock,
+            {
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              shadowColor: isDark ? '#000000' : '#111827',
+            },
+          ]}>
+          {/* Left Column: Progress text, percentage, motivational text, progress bar */}
+          <View style={styles.progressLeft}>
+            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
+              YOUR PROGRESS
+            </Text>
 
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-              },
-            ]}>
-            {/* Top Score Summary */}
-            <View style={styles.progressHero}>
-              <View>
-                <Text style={[styles.progressBigNumber, { color: theme.accent }]}>
-                  74%
-                </Text>
-                <Text style={[styles.progressSubLabel, { color: theme.textSecondary }]}>
-                  Overall Readiness Score
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.statusPill,
-                  {
-                    backgroundColor: theme.accentMuted,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                <Award size={13} color={theme.accent} />
-                <Text style={[styles.statusPillText, { color: theme.accent }]}>
-                  On Track
-                </Text>
-              </View>
-            </View>
+            <Text style={[styles.progressPercentage, { color: colors.text }]}>
+              74%
+            </Text>
 
-            {/* Clean Progress Bar */}
+            <Text style={[styles.progressMotivation, { color: colors.accent }]}>
+              You're doing great!
+            </Text>
+
+            {/* Progress Bar */}
             <View
               style={[
-                styles.track,
-                { backgroundColor: theme.backgroundSelected },
+                styles.progressBarTrack,
+                { backgroundColor: colors.backgroundSelected },
               ]}>
               <View
                 style={[
-                  styles.fill,
-                  { width: '74%', backgroundColor: theme.accent },
+                  styles.progressBarFill,
+                  { width: '74%', backgroundColor: colors.accent },
                 ]}
               />
             </View>
+          </View>
 
-            {/* 3 Key Stats */}
+          {/* Right Column: Icon */}
+          <View style={styles.progressRight}>
             <View
-              style={[styles.statsRow, { borderTopColor: theme.border }]}>
-              <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: theme.text }]}>
-                  128h
-                </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                  Study Time
-                </Text>
-              </View>
-
-              <View
-                style={[styles.statDivider, { backgroundColor: theme.border }]}
-              />
-
-              <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: theme.text }]}>
-                  1,420
-                </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                  Answered
-                </Text>
-              </View>
-
-              <View
-                style={[styles.statDivider, { backgroundColor: theme.border }]}
-              />
-
-              <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: theme.accent }]}>
-                  84%
-                </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                  Accuracy
-                </Text>
-              </View>
+              style={[
+                styles.iconBubble,
+                {
+                  backgroundColor: colors.accentMuted,
+                  borderColor: colors.border,
+                },
+              ]}>
+              <Award size={36} color={colors.accent} strokeWidth={2.2} />
             </View>
           </View>
         </View>
 
-        {/* 2. CONTINUE STUDYING */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Continue Studying
-          </Text>
-
+        {/* 2. BENTO BOX NAVIGATION (The other 3 navigation tabs: Learn, Practice, Exams) */}
+        <View style={styles.bentoSection}>
+          {/* Bento Item 1: LEARN (Wide Featured Card) */}
           <Pressable
-            onPress={() => router.push('/(tabs)/learn/practice-law' as any)}
+            onPress={() => router.push('/(tabs)/learn' as any)}
             style={({ pressed }) => [
-              styles.card,
+              styles.bentoCardLarge,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-                opacity: pressed ? 0.85 : 1,
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.985 : 1 }],
+                shadowColor: isDark ? '#000000' : '#111827',
               },
             ]}>
-            <View style={styles.continueHeaderRow}>
-              <Text
-                style={[styles.continueTag, { color: theme.accent }]}>
-                MODULE 3 • PRACTICE & LAWS
-              </Text>
-              <Text
-                style={[styles.continuePercent, { color: theme.textSecondary }]}>
-                65% Done
-              </Text>
-            </View>
-
-            <Text style={[styles.continueTitle, { color: theme.text }]}>
-              Rule 7 & 8: Classification of Occupancies
-            </Text>
-            <Text
-              style={[styles.continueSubtitle, { color: theme.textSecondary }]}>
-              Lesson 4 • NBCP PD 1096 Computations
-            </Text>
-
-            <View style={styles.continueFooter}>
+            <View style={styles.bentoCardLargeInner}>
               <View
                 style={[
-                  styles.miniTrack,
-                  { backgroundColor: theme.backgroundSelected, flex: 1 },
+                  styles.bentoIconContainer,
+                  { backgroundColor: colors.accentMuted },
                 ]}>
-                <View
-                  style={[
-                    styles.fill,
-                    { width: '65%', backgroundColor: theme.accent },
-                  ]}
-                />
+                <BookOpen size={24} color={colors.accent} strokeWidth={2.2} />
               </View>
+
+              <View style={styles.bentoTextGroup}>
+                <Text style={[styles.bentoTitle, { color: colors.text }]}>
+                  Learn
+                </Text>
+                <Text
+                  style={[
+                    styles.bentoSubtitle,
+                    { color: colors.textSecondary },
+                  ]}>
+                  Study modules & lessons
+                </Text>
+              </View>
+
               <View
                 style={[
-                  styles.resumeButton,
-                  { backgroundColor: theme.accent },
+                  styles.arrowCircle,
+                  { backgroundColor: colors.backgroundSelected },
                 ]}>
-                <Play size={11} color="#FFFFFF" fill="#FFFFFF" />
-                <Text style={styles.resumeButtonText}>Resume</Text>
+                <ChevronRight size={18} color={colors.textSecondary} />
               </View>
             </View>
           </Pressable>
+
+          {/* Bento Items 2 & 3: PRACTICE and EXAMS (Two Split Cards Side-by-Side) */}
+          <View style={styles.bentoRow}>
+            {/* PRACTICE */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/practice' as any)}
+              style={({ pressed }) => [
+                styles.bentoCardSmall,
+                {
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                  shadowColor: isDark ? '#000000' : '#111827',
+                },
+              ]}>
+              <View
+                style={[
+                  styles.bentoIconContainer,
+                  { backgroundColor: colors.accentMuted },
+                ]}>
+                <FileEdit size={22} color={colors.accent} strokeWidth={2.2} />
+              </View>
+              <View style={styles.bentoSmallTextGroup}>
+                <Text style={[styles.bentoTitle, { color: colors.text }]}>
+                  Practice
+                </Text>
+                <Text
+                  style={[
+                    styles.bentoSubtitle,
+                    { color: colors.textSecondary },
+                  ]}>
+                  Drills & flashcards
+                </Text>
+              </View>
+            </Pressable>
+
+            {/* EXAMS */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/exams' as any)}
+              style={({ pressed }) => [
+                styles.bentoCardSmall,
+                {
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                  shadowColor: isDark ? '#000000' : '#111827',
+                },
+              ]}>
+              <View
+                style={[
+                  styles.bentoIconContainer,
+                  { backgroundColor: colors.accentMuted },
+                ]}>
+                <Target size={22} color={colors.accent} strokeWidth={2.2} />
+              </View>
+              <View style={styles.bentoSmallTextGroup}>
+                <Text style={[styles.bentoTitle, { color: colors.text }]}>
+                  Exams
+                </Text>
+                <Text
+                  style={[
+                    styles.bentoSubtitle,
+                    { color: colors.textSecondary },
+                  ]}>
+                  Mock simulations
+                </Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
 
-        {/* 3. RECOMMENDED LESSONS */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Recommended Lessons
+        {/* 3. KEY STATS CHIPS (Minimal Text, Icon Driven) */}
+        <View
+          style={[
+            styles.statsStrip,
+            {
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+            },
+          ]}>
+          <View style={styles.statItem}>
+            <Clock size={16} color={colors.accent} />
+            <Text style={[styles.statItemValue, { color: colors.text }]}>
+              128h
             </Text>
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn' as any)}
-              style={({ pressed }) => [
-                styles.seeAllBtn,
-                { opacity: pressed ? 0.6 : 1 },
-              ]}>
-              <Text style={[styles.seeAllText, { color: theme.accent }]}>
-                See all
-              </Text>
-              <ArrowRight size={13} color={theme.accent} />
-            </Pressable>
+            <Text
+              style={[styles.statItemLabel, { color: colors.textSecondary }]}>
+              Time
+            </Text>
           </View>
 
           <View
-            style={[
-              styles.groupedCard,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-              },
-            ]}>
-            {/* Lesson 1 */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/history' as any)}
-              style={({ pressed }) => [
-                styles.listItem,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <View style={styles.listItemLeft}>
-                <Text style={[styles.listMeta, { color: theme.accent }]}>
-                  Area 1 • 15 min
-                </Text>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Classical Greek & Roman Orders
-                </Text>
-              </View>
-              <ChevronRight size={16} color={theme.textSecondary} />
-            </Pressable>
+            style={[styles.statItemDivider, { backgroundColor: colors.border }]}
+          />
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
+          <View style={styles.statItem}>
+            <Zap size={16} color="#EAB308" />
+            <Text style={[styles.statItemValue, { color: colors.text }]}>
+              1.4k
+            </Text>
+            <Text
+              style={[styles.statItemLabel, { color: colors.textSecondary }]}>
+              Solved
+            </Text>
+          </View>
 
-            {/* Lesson 2 */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/building-tech' as any)}
-              style={({ pressed }) => [
-                styles.listItem,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <View style={styles.listItemLeft}>
-                <Text style={[styles.listMeta, { color: theme.accent }]}>
-                  Area 2 • 25 min
-                </Text>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Sanitary & Storm Drainage Systems
-                </Text>
-              </View>
-              <ChevronRight size={16} color={theme.textSecondary} />
-            </Pressable>
+          <View
+            style={[styles.statItemDivider, { backgroundColor: colors.border }]}
+          />
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
-
-            {/* Lesson 3 */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/practice-law' as any)}
-              style={({ pressed }) => [
-                styles.listItem,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <View style={styles.listItemLeft}>
-                <Text style={[styles.listMeta, { color: theme.accent }]}>
-                  Area 3 • 20 min
-                </Text>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  RA 9266 Architecture Act & SPP 200
-                </Text>
-              </View>
-              <ChevronRight size={16} color={theme.textSecondary} />
-            </Pressable>
+          <View style={styles.statItem}>
+            <TrendingUp size={16} color="#10B981" />
+            <Text style={[styles.statItemValue, { color: colors.text }]}>
+              84%
+            </Text>
+            <Text
+              style={[styles.statItemLabel, { color: colors.textSecondary }]}>
+              Accuracy
+            </Text>
           </View>
         </View>
 
-        {/* 4. WEAK SUBJECTS */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Weak Subjects
-          </Text>
-
+        {/* 4. QUICK CONTINUE (Minimalist Jump Back In) */}
+        <Pressable
+          onPress={() => router.push('/(tabs)/learn/practice-law' as any)}
+          style={({ pressed }) => [
+            styles.continueCompactCard,
+            {
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.border,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}>
           <View
             style={[
-              styles.groupedCard,
+              styles.playIconBox,
+              { backgroundColor: colors.accent },
+            ]}>
+            <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
+          </View>
+
+          <View style={styles.continueInfo}>
+            <Text
+              style={[styles.continueTagText, { color: colors.accent }]}>
+              CONTINUE RECENT
+            </Text>
+            <Text
+              style={[styles.continueMainTitle, { color: colors.text }]}
+              numberOfLines={1}>
+              Rule 7 & 8: Classification
+            </Text>
+          </View>
+
+          <View style={styles.continueRight}>
+            <Text
+              style={[styles.continueProgressText, { color: colors.textSecondary }]}>
+              65%
+            </Text>
+            <ChevronRight size={16} color={colors.textSecondary} />
+          </View>
+        </Pressable>
+
+        {/* 5. QUICK ACTIONS (Icon-driven shortcuts) */}
+        <View style={styles.quickActionsRow}>
+          <Pressable
+            onPress={() => router.push('/(tabs)/practice/quiz' as any)}
+            style={({ pressed }) => [
+              styles.quickActionBtn,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+                opacity: pressed ? 0.85 : 1,
               },
             ]}>
-            {/* Weak Subject 1 */}
-            <View style={styles.weakItem}>
-              <View style={styles.weakItemInfo}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Building Utilities & MEPFS
-                </Text>
-                <Text style={[styles.weakMeta, { color: theme.textSecondary }]}>
-                  Area 2 • 48% accuracy on drills
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => router.push('/(tabs)/practice' as any)}
-                style={({ pressed }) => [
-                  styles.compactPracticeBtn,
-                  {
-                    backgroundColor: theme.backgroundSelected,
-                    borderColor: theme.borderStrong,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}>
-                <Zap size={12} color={theme.accent} />
-                <Text style={[styles.compactPracticeText, { color: theme.text }]}>
-                  Practice
-                </Text>
-              </Pressable>
-            </View>
+            <Sparkles size={16} color={colors.accent} />
+            <Text style={[styles.quickActionText, { color: colors.text }]}>
+              Daily 5-Min Drill
+            </Text>
+          </Pressable>
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
-
-            {/* Weak Subject 2 */}
-            <View style={styles.weakItem}>
-              <View style={styles.weakItemInfo}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Structural Concepts & Trusses
-                </Text>
-                <Text style={[styles.weakMeta, { color: theme.textSecondary }]}>
-                  Area 2 • 55% accuracy on drills
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => router.push('/(tabs)/practice' as any)}
-                style={({ pressed }) => [
-                  styles.compactPracticeBtn,
-                  {
-                    backgroundColor: theme.backgroundSelected,
-                    borderColor: theme.borderStrong,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}>
-                <Zap size={12} color={theme.accent} />
-                <Text style={[styles.compactPracticeText, { color: theme.text }]}>
-                  Practice
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-
-        {/* 5. RECENT ACTIVITY */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Recent Activity
-          </Text>
-
-          <View
-            style={[
-              styles.groupedCard,
+          <Pressable
+            onPress={() => router.push('/(tabs)/practice/flashcards' as any)}
+            style={({ pressed }) => [
+              styles.quickActionBtn,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+                opacity: pressed ? 0.85 : 1,
               },
             ]}>
-            {/* Activity 1 */}
-            <View style={styles.activityRow}>
-              <View style={styles.activityMain}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  PRC ALE Area 1 Mock Simulation
-                </Text>
-                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
-                  Score: 86% • Passed
-                </Text>
-              </View>
-              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
-                2h ago
-              </Text>
-            </View>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
-
-            {/* Activity 2 */}
-            <View style={styles.activityRow}>
-              <View style={styles.activityMain}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Terms & Styles Flashcards
-                </Text>
-                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
-                  35 terms mastered
-                </Text>
-              </View>
-              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
-                Yesterday
-              </Text>
-            </View>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
-
-            {/* Activity 3 */}
-            <View style={styles.activityRow}>
-              <View style={styles.activityMain}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Rule 7 & 8 NBCP Computation Drill
-                </Text>
-                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
-                  Score: 90% (18/20)
-                </Text>
-              </View>
-              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
-                2d ago
-              </Text>
-            </View>
-          </View>
+            <Layers size={16} color={colors.accent} />
+            <Text style={[styles.quickActionText, { color: colors.text }]}>
+              Flashcards
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -436,243 +382,281 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    gap: 22,
+    paddingTop: 12,
+    gap: 16,
   },
 
   /* Header */
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  title: {
+  headerGreeting: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+  },
+  headerTitle: {
     fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.5,
+    marginTop: 1,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+  streakBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 
-  /* Section Structure */
-  section: {
-    gap: 10,
+  /* 1. Progress Block (Split into left and right) */
+  progressBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 18,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+      },
+    }),
   },
-  sectionTitle: {
+  progressLeft: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  progressLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  progressPercentage: {
+    fontSize: 34,
+    fontWeight: '800',
+    letterSpacing: -1,
+    marginTop: 2,
+    lineHeight: 38,
+  },
+  progressMotivation: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  progressBarTrack: {
+    height: 7,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: Radius.full,
+  },
+  progressRight: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBubble: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+
+  /* 2. Bento Box Navigation */
+  bentoSection: {
+    gap: 12,
+  },
+  bentoCardLarge: {
+    padding: 16,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+      },
+    }),
+  },
+  bentoCardLargeInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  bentoIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bentoTextGroup: {
+    flex: 1,
+    gap: 2,
+  },
+  bentoTitle: {
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  seeAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  seeAllText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  /* Clean Containers */
-  card: {
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 12,
-  },
-  groupedCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-
-  /* Progress Card */
-  progressHero: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  progressBigNumber: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -1,
-    lineHeight: 34,
-  },
-  progressSubLabel: {
+  bentoSubtitle: {
     fontSize: 12,
     fontWeight: '500',
-    marginTop: 2,
   },
-  statusPill: {
+  arrowCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bentoRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bentoCardSmall: {
+    flex: 1,
+    padding: 14,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    gap: 10,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+      },
+    }),
+  },
+  bentoSmallTextGroup: {
+    gap: 2,
+  },
+
+  /* 3. Key Stats Strip */
+  statsStrip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'space-around',
+    paddingVertical: 12,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Radius.xs,
+    borderRadius: Radius.md,
     borderWidth: 1,
   },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  track: {
-    height: 6,
-    borderRadius: Radius.xs,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: Radius.xs,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-  },
-  statBox: {
-    alignItems: 'center',
+  statItem: {
     flex: 1,
-    gap: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
-  statValue: {
-    fontSize: 14,
+  statItemValue: {
+    fontSize: 13.5,
     fontWeight: '700',
   },
-  statLabel: {
+  statItemLabel: {
     fontSize: 11,
+    fontWeight: '500',
   },
-  statDivider: {
+  statItemDivider: {
     width: 1,
-    height: 20,
+    height: 16,
   },
 
-  /* Continue Card */
-  continueHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  continueTag: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  continuePercent: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  continueTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    marginTop: -4,
-  },
-  continueSubtitle: {
-    fontSize: 12,
-    marginTop: -8,
-  },
-  continueFooter: {
+  /* 4. Quick Continue */
+  continueCompactCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 12,
+    borderRadius: Radius.md,
+    borderWidth: 1,
     gap: 12,
-    marginTop: 4,
   },
-  miniTrack: {
-    height: 4,
-    borderRadius: Radius.xs,
-    overflow: 'hidden',
-  },
-  resumeButton: {
-    flexDirection: 'row',
+  playIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.xs,
+    justifyContent: 'center',
   },
-  resumeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-
-  /* Grouped List Items (Recommended, Weak, Activity) */
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  listItemLeft: {
+  continueInfo: {
     flex: 1,
     gap: 2,
   },
-  listMeta: {
-    fontSize: 10.5,
-    fontWeight: '700',
+  continueTagText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
-  listTitle: {
+  continueMainTitle: {
     fontSize: 13.5,
     fontWeight: '600',
   },
-  itemDivider: {
-    height: 1,
-    marginHorizontal: 14,
-  },
-
-  /* Weak Subjects */
-  weakItem: {
+  continueRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
+    gap: 6,
   },
-  weakItemInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  weakMeta: {
-    fontSize: 11.5,
-  },
-  compactPracticeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  compactPracticeText: {
-    fontSize: 11,
+  continueProgressText: {
+    fontSize: 12,
     fontWeight: '700',
   },
 
-  /* Recent Activity */
-  activityRow: {
+  /* 5. Quick Actions Row */
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  quickActionBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    justifyContent: 'center',
     gap: 8,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: Radius.md,
+    borderWidth: 1,
   },
-  activityMain: {
-    flex: 1,
-    gap: 2,
-  },
-  activitySub: {
-    fontSize: 11.5,
-  },
-  activityTimestamp: {
-    fontSize: 11,
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
