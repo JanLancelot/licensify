@@ -48,6 +48,7 @@ export interface FlashcardPreset {
   subjectNames: string[];
   cards: FlashcardItem[];
   selectedLessonIds?: string[];
+  iconName?: string;
 }
 
 export interface QuizQuestion {

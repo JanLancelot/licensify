@@ -13,7 +13,25 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from 'react-native-reanimated';
-import { ArrowRight, Check, Plus, Shuffle, X } from 'lucide-react-native';
+import {
+  ArrowRight,
+  BookOpen,
+  Brain,
+  Check,
+  Compass,
+  Flame,
+  Landmark,
+  Layers,
+  Lightbulb,
+  PenTool,
+  Plus,
+  Shuffle,
+  Sparkles,
+  Target,
+  Trophy,
+  X,
+  Zap,
+} from 'lucide-react-native';
 import Svg, {
   Defs,
   LinearGradient,
@@ -26,6 +44,21 @@ import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
 import { SUBJECT_NOTES } from '@/data/curriculum';
 import { SubjectNote, Topic } from '@/types/curriculum';
+
+export const PRESET_ICONS = [
+  { id: 'Layers', name: 'Layers', icon: Layers, gradient: ['#E58368', '#C85A32'] as [string, string] },
+  { id: 'Sparkles', name: 'Sparkles', icon: Sparkles, gradient: ['#FBBF24', '#D97706'] as [string, string] },
+  { id: 'BookOpen', name: 'Book', icon: BookOpen, gradient: ['#38BDF8', '#0284C7'] as [string, string] },
+  { id: 'Compass', name: 'Compass', icon: Compass, gradient: ['#34D399', '#059669'] as [string, string] },
+  { id: 'Landmark', name: 'Landmark', icon: Landmark, gradient: ['#A78BFA', '#7C3AED'] as [string, string] },
+  { id: 'Flame', name: 'Flame', icon: Flame, gradient: ['#FB7185', '#E11D48'] as [string, string] },
+  { id: 'Zap', name: 'Zap', icon: Zap, gradient: ['#F59E0B', '#B45309'] as [string, string] },
+  { id: 'Brain', name: 'Brain', icon: Brain, gradient: ['#EC4899', '#BE185D'] as [string, string] },
+  { id: 'Lightbulb', name: 'Idea', icon: Lightbulb, gradient: ['#10B981', '#047857'] as [string, string] },
+  { id: 'Target', name: 'Target', icon: Target, gradient: ['#6366F1', '#4338CA'] as [string, string] },
+  { id: 'PenTool', name: 'Design', icon: PenTool, gradient: ['#14B8A6', '#0F766E'] as [string, string] },
+  { id: 'Trophy', name: 'Trophy', icon: Trophy, gradient: ['#EAB308', '#A16207'] as [string, string] },
+];
 
 export interface FlashcardPresetBuilderModalProps {
   visible: boolean;
@@ -44,6 +77,8 @@ export interface FlashcardPresetBuilderModalProps {
   setIsShuffled: (val: boolean) => void;
   customTitle: string;
   setCustomTitle: (val: string) => void;
+  selectedIconId: string;
+  setSelectedIconId: (val: string) => void;
   bottomInset: number;
   theme?: any;
 }
@@ -109,6 +144,8 @@ export function FlashcardPresetBuilderModal({
   setIsShuffled,
   customTitle,
   setCustomTitle,
+  selectedIconId,
+  setSelectedIconId,
   bottomInset,
 }: FlashcardPresetBuilderModalProps) {
   const { colors, isDark } = useAppTheme();
@@ -161,7 +198,7 @@ export function FlashcardPresetBuilderModal({
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.modalNotesContent}>
-            {/* 1. Preset Title Input */}
+            {/* 1. Preset Title & Customization Card */}
             <View
               style={[
                 styles.configCard,
@@ -183,6 +220,69 @@ export function FlashcardPresetBuilderModal({
                   },
                 ]}
               />
+
+              {/* Icon Selection Row */}
+              <View style={styles.iconSelectionSection}>
+                <Text style={[styles.fieldLabel, { color: colors.accent }]}>
+                  CHOOSE DECK ICON
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.iconScrollRow}>
+                  {PRESET_ICONS.map((item) => {
+                    const isSelected = selectedIconId === item.id;
+                    const IconComp = item.icon;
+                    const [startC, endC] = item.gradient;
+                    const gradId = `sel_icon_${item.id}`;
+
+                    return (
+                      <Pressable
+                        key={item.id}
+                        onPress={() => setSelectedIconId(item.id)}
+                        style={({ pressed }) => [
+                          styles.iconPickButton,
+                          {
+                            borderColor: isSelected ? colors.accent : 'transparent',
+                            backgroundColor: isSelected
+                              ? isDark
+                                ? 'rgba(224, 122, 95, 0.25)'
+                                : '#F8EAE4'
+                              : isDark
+                                ? '#23262F'
+                                : '#FFFFFF',
+                            opacity: pressed ? 0.75 : 1,
+                            transform: [{ scale: isSelected ? 1.05 : 1 }],
+                          },
+                        ]}>
+                        <View
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 12,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            position: 'relative',
+                          }}>
+                          <Svg width={36} height={36} style={StyleSheet.absoluteFill}>
+                            <Defs>
+                              <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <Stop offset="0%" stopColor={startC} />
+                                <Stop offset="100%" stopColor={endC} />
+                              </LinearGradient>
+                            </Defs>
+                            <Rect width={36} height={36} rx={12} fill={`url(#${gradId})`} />
+                          </Svg>
+                          <IconComp size={18} color="#FFFFFF" strokeWidth={2.4} />
+                        </View>
+                        {isSelected && (
+                          <View style={[styles.iconSelectedDot, { backgroundColor: colors.accent }]} />
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
 
               {/* Shuffle Toggle Row */}
               <Pressable
@@ -245,7 +345,6 @@ export function FlashcardPresetBuilderModal({
                   selectedInSubjectCount === subjectLessonIds.length;
                 const isSomeSubjectSelected =
                   selectedInSubjectCount > 0 && !isAllSubjectSelected;
-                const hasSubjectSelected = selectedInSubjectCount > 0;
 
                 const lastSelectedTopicIndex = subject.topics.reduce(
                   (lastIdx, topic, idx) => {
@@ -446,6 +545,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 14,
     fontWeight: '500',
+  },
+  iconSelectionSection: {
+    gap: 8,
+    paddingTop: 2,
+  },
+  iconScrollRow: {
+    gap: 10,
+    paddingVertical: 4,
+  },
+  iconPickButton: {
+    padding: 6,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  iconSelectedDot: {
+    position: 'absolute',
+    bottom: -3,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   shuffleToggleRow: {
     flexDirection: 'row',

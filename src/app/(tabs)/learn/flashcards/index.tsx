@@ -10,8 +10,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
-import { FlashcardPresetBuilderModal } from '@/components/flashcards/FlashcardPresetBuilderModal';
+import {
+  FlashcardPresetBuilderModal,
+  PRESET_ICONS,
+} from '@/components/flashcards/FlashcardPresetBuilderModal';
 import { FlashcardStudyView } from '@/components/flashcards/FlashcardStudyView';
 import { buildCardsForLessons } from '@/components/flashcards/flashcard-utils';
 import { useAppTheme } from '@/context/theme-context';
@@ -22,6 +31,43 @@ import {
   SubjectNote,
   Topic,
 } from '@/types/curriculum';
+
+/* Custom Deck Gradient Icon Component */
+function CustomDeckIcon({
+  iconName = 'Layers',
+  size = 52,
+}: {
+  iconName?: string;
+  size?: number;
+}) {
+  const iconConfig = PRESET_ICONS.find((i) => i.id === iconName) || PRESET_ICONS[0];
+  const IconComp = iconConfig.icon;
+  const [startC, endC] = iconConfig.gradient;
+  const gradId = `deck_icon_${iconConfig.id}_${size}`;
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startC} />
+            <Stop offset="100%" stopColor={endC} />
+          </LinearGradient>
+        </Defs>
+        <Rect width={size} height={size} rx={size / 2} fill={`url(#${gradId})`} />
+      </Svg>
+      <IconComp size={24} color="#FFFFFF" strokeWidth={2.4} />
+    </View>
+  );
+}
 
 export default function FlashcardsHubScreen() {
   const { colors, isDark } = useAppTheme();
@@ -45,6 +91,7 @@ export default function FlashcardsHubScreen() {
   const [selectedLessonIds, setSelectedLessonIds] = useState<Set<string>>(new Set());
   const [modalIsShuffled, setModalIsShuffled] = useState(true);
   const [customTitle, setCustomTitle] = useState('');
+  const [selectedIconId, setSelectedIconId] = useState('Layers');
 
   // ── Launching Custom Deck ────────────────────────────────────────────────
   const startCustomPresetDrill = (preset: FlashcardPreset) => {
@@ -65,6 +112,7 @@ export default function FlashcardsHubScreen() {
     setModalExpandedSubjects({});
     setModalExpandedTopics({});
     setCustomTitle('');
+    setSelectedIconId('Layers');
     setModalIsShuffled(true);
     setIsAddModalVisible(true);
   };
@@ -104,6 +152,7 @@ export default function FlashcardsHubScreen() {
       lessonCount: selectedLessonIds.size,
       cardCount: cards.length,
       isShuffled: modalIsShuffled,
+      iconName: selectedIconId,
       createdAt: new Date().toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -280,18 +329,8 @@ export default function FlashcardsHubScreen() {
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}>
-                {/* Circular Icon on Top */}
-                <View
-                  style={[
-                    styles.deckIconCircle,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(224, 122, 95, 0.2)'
-                        : '#F8EAE4',
-                    },
-                  ]}>
-                  <Layers size={24} color={colors.accent} strokeWidth={2.2} />
-                </View>
+                {/* Customizable Circular Icon on Top */}
+                <CustomDeckIcon iconName={preset.iconName} size={52} />
 
                 {/* Deck Title */}
                 <Text
@@ -338,7 +377,7 @@ export default function FlashcardsHubScreen() {
         </ScrollView>
       )}
 
-      {/* Preset Builder Modal (Pops up from (+) or New Deck card) */}
+      {/* Preset Builder Modal */}
       <FlashcardPresetBuilderModal
         visible={isAddModalVisible}
         isEditing={false}
@@ -356,6 +395,8 @@ export default function FlashcardsHubScreen() {
         setIsShuffled={setModalIsShuffled}
         customTitle={customTitle}
         setCustomTitle={setCustomTitle}
+        selectedIconId={selectedIconId}
+        setSelectedIconId={setSelectedIconId}
         bottomInset={insets.bottom}
         theme={colors}
       />
@@ -427,13 +468,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     minHeight: 124,
-  },
-  deckIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   customDeckTitle: {
     fontSize: 14,
