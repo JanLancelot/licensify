@@ -12,8 +12,9 @@ import * as SecureStore from 'expo-secure-store';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { LogBox, Platform, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableFreeze, enableScreens } from 'react-native-screens';
 
@@ -155,13 +156,15 @@ function AppLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <ConvexAuthProvider client={convex} storage={secureStorage}>
-        <AppThemeProvider>
-          <AppLayoutContent />
-        </AppThemeProvider>
-      </ConvexAuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.rootContainer}>
+      <SafeAreaProvider>
+        <ConvexAuthProvider client={convex} storage={secureStorage}>
+          <AppThemeProvider>
+            <AppLayoutContent />
+          </AppThemeProvider>
+        </ConvexAuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
