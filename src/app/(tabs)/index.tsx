@@ -2,20 +2,15 @@ import { useRouter } from 'expo-router';
 import {
   Award,
   BookOpen,
+  Building2,
   ChevronRight,
-  Clock,
-  FileEdit,
-  Flame,
+  ClipboardList,
+  FileText,
   Layers,
-  Play,
-  Sparkles,
-  Target,
-  TrendingUp,
-  Zap,
+  User,
 } from 'lucide-react-native';
 import React from 'react';
 import {
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,9 +18,52 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
+
+/* Reusable Gradient Squircle / Circle Container */
+function GradientIconBox({
+  colors: [startColor, endColor],
+  size = 54,
+  borderRadius = 16,
+  children,
+}: {
+  colors: [string, string];
+  size?: number;
+  borderRadius?: number;
+  children: React.ReactNode;
+}) {
+  const gradId = `grad_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startColor} />
+            <Stop offset="100%" stopColor={endColor} />
+          </LinearGradient>
+        </Defs>
+        <Rect
+          width={size}
+          height={size}
+          rx={borderRadius}
+          fill={`url(#${gradId})`}
+        />
+      </Svg>
+      {children}
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const { colors, isDark } = useAppTheme();
@@ -36,31 +74,31 @@ export default function HomeScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* Header */}
+      {/* 1. Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={[styles.headerGreeting, { color: colors.textSecondary }]}>
-            Welcome back
+        <View style={styles.headerTexts}>
+          <Text style={[styles.headerGreeting, { color: colors.text }]}>
+            Good morning, Alex!
           </Text>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Dashboard
+          <Text
+            style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+            Keep going, future architect.
           </Text>
         </View>
 
-        {/* Streak Pill Header Icon */}
-        <View
-          style={[
-            styles.streakBadge,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-            },
+        <Pressable
+          onPress={() => router.push('/(tabs)/profile' as any)}
+          style={({ pressed }) => [
+            styles.avatarButton,
+            { opacity: pressed ? 0.8 : 1 },
           ]}>
-          <Flame size={16} color="#F59E0B" fill="#F59E0B" />
-          <Text style={[styles.streakBadgeText, { color: colors.text }]}>
-            5d
-          </Text>
-        </View>
+          <GradientIconBox
+            colors={['#E07A5F', '#C85A32']}
+            size={40}
+            borderRadius={20}>
+            <User size={20} color="#FFFFFF" strokeWidth={2.2} />
+          </GradientIconBox>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -70,27 +108,35 @@ export default function HomeScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* 1. OVERALL PROGRESS BLOCK (Split left & right) */}
+        {/* 2. Light Terracotta Hero Progress Card with Right Icon */}
         <View
           style={[
-            styles.progressBlock,
+            styles.progressHeroCard,
             {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-              shadowColor: isDark ? '#000000' : '#111827',
+              backgroundColor: isDark ? '#2B1D19' : '#F8EBE5',
             },
           ]}>
-          {/* Left Column: Progress text, percentage, motivational text, progress bar */}
-          <View style={styles.progressLeft}>
-            <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>
+          {/* Left Column: Progress details */}
+          <View style={styles.progressHeroLeft}>
+            <Text
+              style={[
+                styles.progressHeroLabel,
+                { color: isDark ? '#F4A261' : '#B84922' },
+              ]}>
               YOUR PROGRESS
             </Text>
-
-            <Text style={[styles.progressPercentage, { color: colors.text }]}>
-              74%
+            <Text
+              style={[
+                styles.progressHeroPercentage,
+                { color: isDark ? '#FFFFFF' : '#2D120B' },
+              ]}>
+              72%
             </Text>
-
-            <Text style={[styles.progressMotivation, { color: colors.accent }]}>
+            <Text
+              style={[
+                styles.progressHeroMotivation,
+                { color: isDark ? '#E07A5F' : '#A23F1C' },
+              ]}>
               You're doing great!
             </Text>
 
@@ -98,274 +144,243 @@ export default function HomeScreen() {
             <View
               style={[
                 styles.progressBarTrack,
-                { backgroundColor: colors.backgroundSelected },
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255, 255, 255, 0.12)'
+                    : '#EAD5CC',
+                },
               ]}>
               <View
                 style={[
                   styles.progressBarFill,
-                  { width: '74%', backgroundColor: colors.accent },
+                  { width: '72%', backgroundColor: colors.accent },
                 ]}
               />
             </View>
           </View>
 
-          {/* Right Column: Icon */}
-          <View style={styles.progressRight}>
-            <View
-              style={[
-                styles.iconBubble,
-                {
-                  backgroundColor: colors.accentMuted,
-                  borderColor: colors.border,
-                },
-              ]}>
-              <Award size={36} color={colors.accent} strokeWidth={2.2} />
-            </View>
+          {/* Right Column: Gradient Award Icon */}
+          <View style={styles.progressHeroRight}>
+            <GradientIconBox
+              colors={['#E58368', '#C85A32']}
+              size={68}
+              borderRadius={34}>
+              <Award size={34} color="#FFFFFF" strokeWidth={2.2} />
+            </GradientIconBox>
           </View>
         </View>
 
-        {/* 2. BENTO BOX NAVIGATION (The other 3 navigation tabs: Learn, Practice, Exams) */}
-        <View style={styles.bentoSection}>
-          {/* Bento Item 1: LEARN (Wide Featured Card) */}
-          <Pressable
-            onPress={() => router.push('/(tabs)/learn' as any)}
-            style={({ pressed }) => [
-              styles.bentoCardLarge,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.985 : 1 }],
-                shadowColor: isDark ? '#000000' : '#111827',
-              },
-            ]}>
-            <View style={styles.bentoCardLargeInner}>
-              <View
-                style={[
-                  styles.bentoIconContainer,
-                  { backgroundColor: colors.accentMuted },
-                ]}>
-                <BookOpen size={24} color={colors.accent} strokeWidth={2.2} />
-              </View>
-
-              <View style={styles.bentoTextGroup}>
-                <Text style={[styles.bentoTitle, { color: colors.text }]}>
-                  Learn
-                </Text>
-                <Text
-                  style={[
-                    styles.bentoSubtitle,
-                    { color: colors.textSecondary },
-                  ]}>
-                  Study modules & lessons
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.arrowCircle,
-                  { backgroundColor: colors.backgroundSelected },
-                ]}>
-                <ChevronRight size={18} color={colors.textSecondary} />
-              </View>
-            </View>
-          </Pressable>
-
-          {/* Bento Items 2 & 3: PRACTICE and EXAMS (Two Split Cards Side-by-Side) */}
-          <View style={styles.bentoRow}>
-            {/* PRACTICE */}
+        {/* 3. Bento 2x2 Grid with Bigger Gradient Icons */}
+        <View style={styles.bentoGrid}>
+          {/* Row 1 */}
+          <View style={styles.bentoGridRow}>
+            {/* 1. Review (Learn) */}
             <Pressable
-              onPress={() => router.push('/(tabs)/practice' as any)}
+              onPress={() => router.push('/(tabs)/learn' as any)}
               style={({ pressed }) => [
-                styles.bentoCardSmall,
+                styles.bentoTile,
                 {
-                  backgroundColor: colors.backgroundElement,
-                  borderColor: colors.border,
+                  backgroundColor: isDark ? '#261C19' : '#FDF4F0',
                   opacity: pressed ? 0.88 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
-                  shadowColor: isDark ? '#000000' : '#111827',
                 },
               ]}>
-              <View
-                style={[
-                  styles.bentoIconContainer,
-                  { backgroundColor: colors.accentMuted },
-                ]}>
-                <FileEdit size={22} color={colors.accent} strokeWidth={2.2} />
-              </View>
-              <View style={styles.bentoSmallTextGroup}>
-                <Text style={[styles.bentoTitle, { color: colors.text }]}>
-                  Practice
-                </Text>
+              <GradientIconBox
+                colors={['#E58368', '#C85A32']}
+                size={50}
+                borderRadius={15}>
+                <BookOpen size={26} color="#FFFFFF" strokeWidth={2.2} />
+              </GradientIconBox>
+
+              <View style={styles.bentoTileBottom}>
                 <Text
                   style={[
-                    styles.bentoSubtitle,
-                    { color: colors.textSecondary },
+                    styles.bentoTileTitle,
+                    { color: isDark ? '#F9FAFB' : '#1C1917' },
                   ]}>
-                  Drills & flashcards
+                  Review
                 </Text>
+                <ChevronRight
+                  size={19}
+                  color={colors.accent}
+                  strokeWidth={2.4}
+                />
               </View>
             </Pressable>
 
-            {/* EXAMS */}
+            {/* 2. Flashcards */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/practice/flashcards' as any)}
+              style={({ pressed }) => [
+                styles.bentoTile,
+                {
+                  backgroundColor: isDark ? '#281E15' : '#FEF8EE',
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}>
+              <GradientIconBox
+                colors={['#FBBF24', '#D97706']}
+                size={50}
+                borderRadius={15}>
+                <Layers size={26} color="#FFFFFF" strokeWidth={2.2} />
+              </GradientIconBox>
+
+              <View style={styles.bentoTileBottom}>
+                <Text
+                  style={[
+                    styles.bentoTileTitle,
+                    { color: isDark ? '#F9FAFB' : '#1C1917' },
+                  ]}>
+                  Flashcards
+                </Text>
+                <ChevronRight size={19} color="#D97706" strokeWidth={2.4} />
+              </View>
+            </Pressable>
+          </View>
+
+          {/* Row 2 */}
+          <View style={styles.bentoGridRow}>
+            {/* 3. Practice Quiz */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/practice/quiz' as any)}
+              style={({ pressed }) => [
+                styles.bentoTile,
+                {
+                  backgroundColor: isDark ? '#17261D' : '#F0F8F3',
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}>
+              <GradientIconBox
+                colors={['#34D399', '#059669']}
+                size={50}
+                borderRadius={15}>
+                <ClipboardList size={26} color="#FFFFFF" strokeWidth={2.2} />
+              </GradientIconBox>
+
+              <View style={styles.bentoTileBottom}>
+                <Text
+                  style={[
+                    styles.bentoTileTitle,
+                    { color: isDark ? '#F9FAFB' : '#1C1917' },
+                  ]}>
+                  Practice Quiz
+                </Text>
+                <ChevronRight size={19} color="#059669" strokeWidth={2.4} />
+              </View>
+            </Pressable>
+
+            {/* 4. Mock Exam */}
             <Pressable
               onPress={() => router.push('/(tabs)/exams' as any)}
               style={({ pressed }) => [
-                styles.bentoCardSmall,
+                styles.bentoTile,
                 {
-                  backgroundColor: colors.backgroundElement,
-                  borderColor: colors.border,
+                  backgroundColor: isDark ? '#261A23' : '#F9F1F6',
                   opacity: pressed ? 0.88 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
-                  shadowColor: isDark ? '#000000' : '#111827',
                 },
               ]}>
-              <View
-                style={[
-                  styles.bentoIconContainer,
-                  { backgroundColor: colors.accentMuted },
-                ]}>
-                <Target size={22} color={colors.accent} strokeWidth={2.2} />
-              </View>
-              <View style={styles.bentoSmallTextGroup}>
-                <Text style={[styles.bentoTitle, { color: colors.text }]}>
-                  Exams
-                </Text>
+              <GradientIconBox
+                colors={['#F472B6', '#BE185D']}
+                size={50}
+                borderRadius={15}>
+                <FileText size={26} color="#FFFFFF" strokeWidth={2.2} />
+              </GradientIconBox>
+
+              <View style={styles.bentoTileBottom}>
                 <Text
                   style={[
-                    styles.bentoSubtitle,
-                    { color: colors.textSecondary },
+                    styles.bentoTileTitle,
+                    { color: isDark ? '#F9FAFB' : '#1C1917' },
                   ]}>
-                  Mock simulations
+                  Mock Exam
                 </Text>
+                <ChevronRight size={19} color="#BE185D" strokeWidth={2.4} />
               </View>
             </Pressable>
           </View>
         </View>
 
-        {/* 3. KEY STATS CHIPS (Minimal Text, Icon Driven) */}
-        <View
-          style={[
-            styles.statsStrip,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-            },
-          ]}>
-          <View style={styles.statItem}>
-            <Clock size={16} color={colors.accent} />
-            <Text style={[styles.statItemValue, { color: colors.text }]}>
-              128h
+        {/* 4. Continue Learning (Clean, Flat with Gradient Icon) */}
+        <View style={styles.continueSection}>
+          <View style={styles.continueSectionHeader}>
+            <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
+              Continue Learning
             </Text>
-            <Text
-              style={[styles.statItemLabel, { color: colors.textSecondary }]}>
-              Time
-            </Text>
+            <Pressable
+              onPress={() => router.push('/(tabs)/learn' as any)}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
+              <Text style={[styles.seeAllText, { color: colors.accent }]}>
+                See all
+              </Text>
+            </Pressable>
           </View>
-
-          <View
-            style={[styles.statItemDivider, { backgroundColor: colors.border }]}
-          />
-
-          <View style={styles.statItem}>
-            <Zap size={16} color="#EAB308" />
-            <Text style={[styles.statItemValue, { color: colors.text }]}>
-              1.4k
-            </Text>
-            <Text
-              style={[styles.statItemLabel, { color: colors.textSecondary }]}>
-              Solved
-            </Text>
-          </View>
-
-          <View
-            style={[styles.statItemDivider, { backgroundColor: colors.border }]}
-          />
-
-          <View style={styles.statItem}>
-            <TrendingUp size={16} color="#10B981" />
-            <Text style={[styles.statItemValue, { color: colors.text }]}>
-              84%
-            </Text>
-            <Text
-              style={[styles.statItemLabel, { color: colors.textSecondary }]}>
-              Accuracy
-            </Text>
-          </View>
-        </View>
-
-        {/* 4. QUICK CONTINUE (Minimalist Jump Back In) */}
-        <Pressable
-          onPress={() => router.push('/(tabs)/learn/practice-law' as any)}
-          style={({ pressed }) => [
-            styles.continueCompactCard,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}>
-          <View
-            style={[
-              styles.playIconBox,
-              { backgroundColor: colors.accent },
-            ]}>
-            <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
-          </View>
-
-          <View style={styles.continueInfo}>
-            <Text
-              style={[styles.continueTagText, { color: colors.accent }]}>
-              CONTINUE RECENT
-            </Text>
-            <Text
-              style={[styles.continueMainTitle, { color: colors.text }]}
-              numberOfLines={1}>
-              Rule 7 & 8: Classification
-            </Text>
-          </View>
-
-          <View style={styles.continueRight}>
-            <Text
-              style={[styles.continueProgressText, { color: colors.textSecondary }]}>
-              65%
-            </Text>
-            <ChevronRight size={16} color={colors.textSecondary} />
-          </View>
-        </Pressable>
-
-        {/* 5. QUICK ACTIONS (Icon-driven shortcuts) */}
-        <View style={styles.quickActionsRow}>
-          <Pressable
-            onPress={() => router.push('/(tabs)/practice/quiz' as any)}
-            style={({ pressed }) => [
-              styles.quickActionBtn,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}>
-            <Sparkles size={16} color={colors.accent} />
-            <Text style={[styles.quickActionText, { color: colors.text }]}>
-              Daily 5-Min Drill
-            </Text>
-          </Pressable>
 
           <Pressable
-            onPress={() => router.push('/(tabs)/practice/flashcards' as any)}
+            onPress={() => router.push('/(tabs)/learn/building-tech' as any)}
             style={({ pressed }) => [
-              styles.quickActionBtn,
+              styles.continueCard,
               {
                 backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-                opacity: pressed ? 0.85 : 1,
+                opacity: pressed ? 0.88 : 1,
               },
             ]}>
-            <Layers size={16} color={colors.accent} />
-            <Text style={[styles.quickActionText, { color: colors.text }]}>
-              Flashcards
-            </Text>
+            {/* Left Gradient Squircle Icon */}
+            <GradientIconBox
+              colors={['#E58368', '#C85A32']}
+              size={50}
+              borderRadius={15}>
+              <Building2 size={26} color="#FFFFFF" strokeWidth={2.2} />
+            </GradientIconBox>
+
+            {/* Middle Title & Progress */}
+            <View style={styles.continueCardBody}>
+              <View style={styles.continueTitleRow}>
+                <Text
+                  style={[styles.continueCourseTitle, { color: colors.text }]}
+                  numberOfLines={1}>
+                  Structural Analysis
+                </Text>
+                <Text
+                  style={[
+                    styles.continuePercentageText,
+                    { color: colors.accent },
+                  ]}>
+                  65%
+                </Text>
+              </View>
+
+              <Text
+                style={[
+                  styles.continueCourseSubtitle,
+                  { color: colors.textSecondary },
+                ]}>
+                Strength of Materials
+              </Text>
+
+              {/* Progress Line */}
+              <View
+                style={[
+                  styles.continueProgressTrack,
+                  { backgroundColor: colors.backgroundSelected },
+                ]}>
+                <View
+                  style={[
+                    styles.continueProgressFill,
+                    { width: '65%', backgroundColor: colors.accent },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Right Action Chevron */}
+            <ChevronRight
+              size={19}
+              color={colors.textSecondary}
+              strokeWidth={2.2}
+            />
           </Pressable>
         </View>
       </ScrollView>
@@ -382,91 +397,69 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     gap: 16,
   },
 
-  /* Header */
+  /* 1. Header */
   header: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headerTexts: {
+    gap: 2,
+  },
   headerGreeting: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-  headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    letterSpacing: -0.5,
-    marginTop: 1,
+    letterSpacing: -0.4,
   },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  streakBadgeText: {
+  headerSubtitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
+  },
+  avatarButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  /* 1. Progress Block (Split into left and right) */
-  progressBlock: {
+  /* 2. Hero Progress Card (Lighter Terracotta, No Outlines, No Shadows) */
+  progressHeroCard: {
+    borderRadius: 22,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 18,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-      },
-    }),
   },
-  progressLeft: {
+  progressHeroLeft: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 14,
+    gap: 2,
   },
-  progressLabel: {
-    fontSize: 11,
+  progressHeroLabel: {
+    fontSize: 11.5,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
-  progressPercentage: {
-    fontSize: 34,
+  progressHeroPercentage: {
+    fontSize: 38,
     fontWeight: '800',
-    letterSpacing: -1,
+    letterSpacing: -0.5,
     marginTop: 2,
-    lineHeight: 38,
+    lineHeight: 42,
   },
-  progressMotivation: {
-    fontSize: 12.5,
+  progressHeroMotivation: {
+    fontSize: 13,
     fontWeight: '600',
     marginTop: 2,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   progressBarTrack: {
-    height: 7,
+    height: 6.5,
     borderRadius: Radius.full,
     overflow: 'hidden',
     width: '100%',
@@ -475,188 +468,97 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: Radius.full,
   },
-  progressRight: {
+  progressHeroRight: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconBubble: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
   },
 
-  /* 2. Bento Box Navigation */
-  bentoSection: {
+  /* 3. Bento 2x2 Grid (Flat, Bigger Gradient Icons) */
+  bentoGrid: {
     gap: 12,
   },
-  bentoCardLarge: {
-    padding: 16,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-      },
-    }),
+  bentoGridRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
-  bentoCardLargeInner: {
+  bentoTile: {
+    flex: 1,
+    borderRadius: 20,
+    padding: 16,
+    height: 126,
+    justifyContent: 'space-between',
+  },
+  bentoTileBottom: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    justifyContent: 'space-between',
+    marginTop: 6,
   },
-  bentoIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bentoTextGroup: {
-    flex: 1,
-    gap: 2,
-  },
-  bentoTitle: {
-    fontSize: 16,
+  bentoTileTitle: {
+    fontSize: 15,
     fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+
+  /* 4. Continue Learning (Flat, Clean) */
+  continueSection: {
+    gap: 10,
+    marginTop: 2,
+  },
+  continueSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  continueSectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
     letterSpacing: -0.3,
   },
-  bentoSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
-  arrowCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bentoRow: {
+  continueCard: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  bentoCardSmall: {
-    flex: 1,
+    alignItems: 'center',
     padding: 14,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    gap: 10,
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-      },
-    }),
+    borderRadius: 20,
+    gap: 14,
   },
-  bentoSmallTextGroup: {
-    gap: 2,
-  },
-
-  /* 3. Key Stats Strip */
-  statsStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-  },
-  statItem: {
+  continueCardBody: {
     flex: 1,
+    gap: 3,
+  },
+  continueTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
   },
-  statItemValue: {
-    fontSize: 13.5,
+  continueCourseTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    flex: 1,
+    marginRight: 8,
+  },
+  continuePercentageText: {
+    fontSize: 12.5,
     fontWeight: '700',
   },
-  statItemLabel: {
-    fontSize: 11,
+  continueCourseSubtitle: {
+    fontSize: 12,
     fontWeight: '500',
+    marginBottom: 4,
   },
-  statItemDivider: {
-    width: 1,
-    height: 16,
+  continueProgressTrack: {
+    height: 4.5,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+    width: '100%',
   },
-
-  /* 4. Quick Continue */
-  continueCompactCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 12,
-  },
-  playIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  continueInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  continueTagText: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  continueMainTitle: {
-    fontSize: 13.5,
-    fontWeight: '600',
-  },
-  continueRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  continueProgressText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  /* 5. Quick Actions Row */
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  quickActionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-  },
-  quickActionText: {
-    fontSize: 12,
-    fontWeight: '600',
+  continueProgressFill: {
+    height: '100%',
+    borderRadius: Radius.full,
   },
 });
