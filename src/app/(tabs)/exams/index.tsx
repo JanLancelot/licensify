@@ -1,13 +1,11 @@
 import { useRouter } from 'expo-router';
 import {
   Award,
-  ChevronRight,
-  Clock,
-  FileCheck2,
-  Layers,
-  ShieldAlert,
-  ShieldCheck,
-  Target,
+  Compass,
+  Landmark,
+  PenTool,
+  Trophy,
+  Zap,
 } from 'lucide-react-native';
 import React from 'react';
 import {
@@ -18,89 +16,80 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
 import { useAppTheme } from '@/context/theme-context';
 
-export const PRACTICE_TESTS = [
+export const MODULAR_TESTS = [
   {
     id: 'area-1',
-    area: 'Area 1 • 30% Weight',
-    title: 'History, Theory, Planning & Laws',
-    description:
-      'History of Architecture, Theory of Design, Urban Planning & RA 9266.',
-    itemsCount: '50 Items',
-    timeLimit: '1.5 Hours',
-    passingRate: 'Passing: 70%',
-    status: 'Score: 84% • Passed',
-    statusType: 'passed',
+    title: 'Area 1',
+    subtitle: 'History & Theory',
+    itemsCount: '50 Questions',
+    icon: Landmark,
     gradient: ['#E58368', '#C85A32'] as [string, string],
   },
   {
     id: 'area-2',
-    area: 'Area 2 • 30% Weight',
-    title: 'Structural, Utilities & Building Materials',
-    description:
-      'Structural Conceptualization, Building Technology, MEPFS Systems & Estimation.',
-    itemsCount: '50 Items',
-    timeLimit: '1.5 Hours',
-    passingRate: 'Passing: 70%',
-    status: 'Ready to Start',
-    statusType: 'ready',
+    title: 'Area 2',
+    subtitle: 'Utilities & Tech',
+    itemsCount: '50 Questions',
+    icon: Compass,
     gradient: ['#FBBF24', '#D97706'] as [string, string],
   },
   {
     id: 'area-3',
-    area: 'Area 3 • 40% Weight',
-    title: 'Architectural Design & Site Planning',
-    description:
-      'Design scenarios, space programming, site planning, & NBCP Rule 7 & 8.',
-    itemsCount: '50 Items',
-    timeLimit: '2.0 Hours',
-    passingRate: 'Passing: 70%',
-    status: 'Ready to Start',
-    statusType: 'ready',
+    title: 'Area 3',
+    subtitle: 'Design & Laws',
+    itemsCount: '50 Questions',
+    icon: PenTool,
     gradient: ['#34D399', '#059669'] as [string, string],
+  },
+  {
+    id: 'all-modular',
+    title: 'Full Drill',
+    subtitle: 'All Subjects',
+    itemsCount: '100 Questions',
+    icon: Zap,
+    gradient: ['#A78BFA', '#7C3AED'] as [string, string],
   },
 ];
 
-export const MOCK_TESTS = [
+export const MOCK_SIMULATIONS = [
   {
     id: 'mock-day-1',
-    badge: 'Official Simulation',
-    title: 'ALE Day 1 Mock Board Exam',
-    description:
-      'Part 1: History & Planning (100 Qs) + Part 2: Structural & Utilities (100 Qs).',
-    itemsCount: '200 Items',
-    timeLimit: '6.0 Hours',
-    passingRate: 'Passing: 70% GWA',
-    gradient: ['#60A5FA', '#2563EB'] as [string, string],
+    title: 'Day 1 Mock Exam',
+    itemsCount: '200 Items • 6h',
+    icon: Trophy,
+    gradient: ['#38BDF8', '#0284C7'] as [string, string],
   },
   {
     id: 'mock-day-2',
-    badge: 'Design Problem',
-    title: 'ALE Day 2 Design & Site Planning',
-    description:
-      'Comprehensive design scenario, zoning compliance, & computations.',
-    itemsCount: 'Design Scenario',
-    timeLimit: '6.0 Hours',
-    passingRate: 'Passing: 70% GWA',
-    gradient: ['#F472B6', '#BE185D'] as [string, string],
+    title: 'Day 2 Design Exam',
+    itemsCount: 'Design Problem • 6h',
+    icon: Award,
+    gradient: ['#FB7185', '#E11D48'] as [string, string],
   },
 ];
 
-function GradientIconBox({
+/* Bento Squircle Gradient Icon */
+function BentoGradientIcon({
+  icon: IconComponent,
   colors: [startColor, endColor],
-  size = 46,
-  borderRadius = 14,
-  children,
+  size = 56,
+  borderRadius = 18,
 }: {
+  icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
   colors: [string, string];
   size?: number;
   borderRadius?: number;
-  children: React.ReactNode;
 }) {
-  const gradId = `grad_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
+  const gradId = `bento_exam_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
 
   return (
     <View
@@ -125,7 +114,7 @@ function GradientIconBox({
           fill={`url(#${gradId})`}
         />
       </Svg>
-      {children}
+      <IconComponent size={Math.round(size * 0.48)} color="#FFFFFF" strokeWidth={2.4} />
     </View>
   );
 }
@@ -146,152 +135,137 @@ export default function ExamsSelectionScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* 1. Header */}
+      {/* Top Header */}
       <View style={styles.header}>
-        <View style={styles.headerTexts}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Exams
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Modular tests & full ALE board simulations
-          </Text>
-        </View>
+        <Text style={[styles.title, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+          Exams
+        </Text>
       </View>
 
       <ScrollView
-        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* BLOCK 1: MODULAR PRACTICE TESTS */}
+        {/* ═════════════════════════════════════════════════════════════════════
+            SECTION 1: MODULAR TESTS (2-Column Bento Grid)
+           ═════════════════════════════════════════════════════════════════════ */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>
-            Modular Practice Tests
+          <Text style={[styles.sectionHeading, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+            MODULAR TESTS
           </Text>
 
-          <View style={styles.cardsList}>
-            {PRACTICE_TESTS.map((test) => (
-              <Pressable
-                key={test.id}
-                onPress={() => handleSelectExam(test.id)}
-                style={({ pressed }) => [
-                  styles.examCard,
-                  {
-                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
-                    opacity: pressed ? 0.88 : 1,
-                    transform: [{ scale: pressed ? 0.985 : 1 }],
-                  },
-                ]}>
-                <GradientIconBox
-                  colors={test.gradient}
-                  size={48}
-                  borderRadius={14}>
-                  <Target size={24} color="#FFFFFF" strokeWidth={2.2} />
-                </GradientIconBox>
+          <View style={styles.bentoGrid}>
+            {MODULAR_TESTS.map((test) => {
+              const IconComp = test.icon;
+              return (
+                <Pressable
+                  key={test.id}
+                  onPress={() => handleSelectExam(test.id)}
+                  style={({ pressed }) => [
+                    styles.bentoCard,
+                    {
+                      backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                      opacity: pressed ? 0.88 : 1,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    },
+                  ]}>
+                  {/* Centered Large Gradient Icon */}
+                  <BentoGradientIcon
+                    icon={IconComp}
+                    colors={test.gradient}
+                    size={56}
+                    borderRadius={18}
+                  />
 
-                <View style={styles.examCardInfo}>
-                  <View style={styles.tagRow}>
-                    <Text style={[styles.areaTagText, { color: colors.accent }]}>
-                      {test.area}
-                    </Text>
-                    <Text style={[styles.dotText, { color: colors.textSecondary }]}>
-                      •
+                  {/* Title & Subtitle */}
+                  <View style={styles.bentoInfo}>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.bentoTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                      {test.title}
                     </Text>
                     <Text
-                      style={[styles.timeText, { color: colors.textSecondary }]}>
+                      numberOfLines={1}
+                      style={[styles.bentoSubtitle, { color: colors.textSecondary }]}>
+                      {test.subtitle}
+                    </Text>
+                  </View>
+
+                  {/* Card Count Pill */}
+                  <View
+                    style={[
+                      styles.bentoCountPill,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(224, 122, 95, 0.18)'
+                          : '#F8EAE4',
+                      },
+                    ]}>
+                    <Text style={[styles.bentoCountText, { color: colors.accent }]}>
                       {test.itemsCount}
                     </Text>
                   </View>
-
-                  <Text
-                    style={[styles.examCardTitle, { color: colors.text }]}
-                    numberOfLines={1}>
-                    {test.title}
-                  </Text>
-
-                  <Text
-                    style={[styles.examCardDesc, { color: colors.textSecondary }]}
-                    numberOfLines={1}>
-                    {test.description}
-                  </Text>
-                </View>
-
-                <ChevronRight
-                  size={18}
-                  color={colors.textSecondary}
-                  strokeWidth={2.2}
-                />
-              </Pressable>
-            ))}
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
-        {/* BLOCK 2: MOCK BOARD EXAMS */}
+        {/* ═════════════════════════════════════════════════════════════════════
+            SECTION 2: MOCK SIMULATIONS (2-Column Bento Grid)
+           ═════════════════════════════════════════════════════════════════════ */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeading, { color: colors.text }]}>
-            Full Mock Simulations
+          <Text style={[styles.sectionHeading, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+            MOCK SIMULATIONS
           </Text>
 
-          <View style={styles.cardsList}>
-            {MOCK_TESTS.map((test) => (
-              <Pressable
-                key={test.id}
-                onPress={() => handleSelectExam(test.id)}
-                style={({ pressed }) => [
-                  styles.examCard,
-                  {
-                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
-                    opacity: pressed ? 0.88 : 1,
-                    transform: [{ scale: pressed ? 0.985 : 1 }],
-                  },
-                ]}>
-                <GradientIconBox
-                  colors={test.gradient}
-                  size={48}
-                  borderRadius={14}>
-                  <Award size={24} color="#FFFFFF" strokeWidth={2.2} />
-                </GradientIconBox>
+          <View style={styles.bentoGrid}>
+            {MOCK_SIMULATIONS.map((mock) => {
+              const IconComp = mock.icon;
+              return (
+                <Pressable
+                  key={mock.id}
+                  onPress={() => handleSelectExam(mock.id)}
+                  style={({ pressed }) => [
+                    styles.bentoCard,
+                    {
+                      backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                      opacity: pressed ? 0.88 : 1,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    },
+                  ]}>
+                  {/* Centered Large Gradient Icon */}
+                  <BentoGradientIcon
+                    icon={IconComp}
+                    colors={mock.gradient}
+                    size={56}
+                    borderRadius={18}
+                  />
 
-                <View style={styles.examCardInfo}>
-                  <View style={styles.tagRow}>
-                    <Text
-                      style={[
-                        styles.badgeTagText,
-                        { color: isDark ? '#60A5FA' : '#2563EB' },
-                      ]}>
-                      {test.badge}
-                    </Text>
-                    <Text style={[styles.dotText, { color: colors.textSecondary }]}>
-                      •
-                    </Text>
-                    <Text
-                      style={[styles.timeText, { color: colors.textSecondary }]}>
-                      {test.itemsCount} ({test.timeLimit})
+                  {/* Title */}
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.bentoTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                    {mock.title}
+                  </Text>
+
+                  {/* Meta Pill */}
+                  <View
+                    style={[
+                      styles.bentoCountPill,
+                      {
+                        backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                      },
+                    ]}>
+                    <Text style={[styles.bentoCountText, { color: colors.textSecondary }]}>
+                      {mock.itemsCount}
                     </Text>
                   </View>
-
-                  <Text
-                    style={[styles.examCardTitle, { color: colors.text }]}
-                    numberOfLines={1}>
-                    {test.title}
-                  </Text>
-
-                  <Text
-                    style={[styles.examCardDesc, { color: colors.textSecondary }]}
-                    numberOfLines={1}>
-                    {test.description}
-                  </Text>
-                </View>
-
-                <ChevronRight
-                  size={18}
-                  color={colors.textSecondary}
-                  strokeWidth={2.2}
-                />
-              </Pressable>
-            ))}
+                </Pressable>
+              );
+            })}
           </View>
         </View>
       </ScrollView>
@@ -303,88 +277,67 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    gap: 20,
-  },
-
-  /* Header */
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  headerTexts: {
-    gap: 2,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   title: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
-  subtitle: {
-    fontSize: 13,
-    fontWeight: '500',
+  contentContainer: {
+    paddingHorizontal: 16,
+    gap: 20,
+    paddingTop: 4,
   },
-
-  /* Section Structure */
   section: {
-    gap: 10,
+    gap: 12,
   },
   sectionHeading: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
+    paddingHorizontal: 4,
   },
-  cardsList: {
+  bentoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  bentoCard: {
+    width: '48%',
+    borderRadius: 22,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 10,
+    minHeight: 156,
   },
-  examCard: {
-    flexDirection: 'row',
+  bentoInfo: {
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 18,
-    gap: 14,
+    gap: 2,
+    width: '100%',
   },
-  examCardInfo: {
-    flex: 1,
-    gap: 3,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  areaTagText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-  badgeTagText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-  dotText: {
-    fontSize: 12,
-  },
-  timeText: {
-    fontSize: 11.5,
-    fontWeight: '500',
-  },
-  examCardTitle: {
+  bentoTitle: {
     fontSize: 14.5,
-    fontWeight: '700',
+    fontWeight: '800',
+    textAlign: 'center',
     letterSpacing: -0.2,
   },
-  examCardDesc: {
-    fontSize: 12,
+  bentoSubtitle: {
+    fontSize: 11.5,
     fontWeight: '500',
+    textAlign: 'center',
+  },
+  bentoCountPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  bentoCountText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
