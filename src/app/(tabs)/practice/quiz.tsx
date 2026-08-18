@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
-  Award,
+  ArrowRight,
   CheckCircle2,
   HelpCircle,
   RotateCcw,
+  Trophy,
   XCircle,
 } from 'lucide-react-native';
+import React, { useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -15,15 +17,19 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
-import { useTheme } from '@/hooks/use-theme';
-import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 import { QUESTION_BANK } from '@/data/quiz-questions';
 import { QuizQuestion } from '@/types/curriculum';
 
 export default function PracticeQuizScreen() {
-  const theme = useTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -33,7 +39,7 @@ export default function PracticeQuizScreen() {
   }>();
 
   const selectedArea = params.area || 'all';
-  const count = parseInt(params.count || '5', 10);
+  const count = parseInt(params.count || '10', 10);
 
   const getFilteredQuestions = () => {
     let pool = QUESTION_BANK;
@@ -89,27 +95,27 @@ export default function PracticeQuizScreen() {
   return (
     <SafeAreaView
       edges={['top', 'left', 'right', 'bottom']}
-      style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Top Bar */}
-      <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
+      style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* 1. Top Bar */}
+      <View style={styles.topBar}>
         <Pressable
           onPress={() => router.back()}
+          hitSlop={12}
           style={({ pressed }) => [
             styles.backBtn,
             {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
-              opacity: pressed ? 0.75 : 1,
+              backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+              opacity: pressed ? 0.7 : 1,
             },
           ]}>
-          <ArrowLeft size={18} color={theme.text} />
+          <ArrowLeft size={20} color={colors.text} strokeWidth={2.4} />
         </Pressable>
 
         <View style={styles.topCenter}>
-          <Text style={[styles.areaLabel, { color: theme.accent }]}>
-            {currentQ?.areaLabel || 'Practice Quiz'}
+          <Text style={[styles.areaLabel, { color: colors.accent }]}>
+            {currentQ?.areaLabel || 'Practice Drill'}
           </Text>
-          <Text style={[styles.counterText, { color: theme.textSecondary }]}>
+          <Text style={[styles.counterText, { color: colors.textSecondary }]}>
             Question {currentIdx + 1} of {questions.length}
           </Text>
         </View>
@@ -117,237 +123,338 @@ export default function PracticeQuizScreen() {
         <View style={styles.dummySpace} />
       </View>
 
-      {/* Progress Track */}
+      {/* 2. Smooth Progress Track */}
       <View
         style={[
           styles.track,
-          { backgroundColor: theme.backgroundSelected },
+          { backgroundColor: isDark ? '#23262F' : '#F0EBE8' },
         ]}>
         <View
           style={[
             styles.trackFill,
             {
               width: `${((currentIdx + 1) / (questions.length || 1)) * 100}%`,
-              backgroundColor: theme.accent,
+              backgroundColor: colors.accent,
             },
           ]}
         />
       </View>
 
-      {/* Finished Results Screen */}
+      {/* 3. Results Screen or Active Question Content */}
       {isQuizFinished ? (
-        <View style={styles.resultsWrapper}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.resultsScrollContent,
+            { paddingBottom: insets.bottom + 40 },
+          ]}>
           <View
             style={[
               styles.resultCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
-            <Award size={38} color={theme.accent} />
-            <Text style={[styles.resultHeading, { color: theme.text }]}>
+            {/* Award Gradient Icon */}
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+              }}>
+              <Svg width={64} height={64} style={StyleSheet.absoluteFill}>
+                <Defs>
+                  <LinearGradient id="award_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <Stop offset="0%" stopColor="#E58368" />
+                    <Stop offset="100%" stopColor="#C85A32" />
+                  </LinearGradient>
+                </Defs>
+                <Rect width={64} height={64} rx={22} fill="url(#award_grad)" />
+              </Svg>
+              <Trophy size={30} color="#FFFFFF" strokeWidth={2.2} />
+            </View>
+
+            <Text style={[styles.resultHeading, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
               Drill Completed!
             </Text>
-            <Text style={[styles.resultScoreText, { color: theme.accent }]}>
+
+            <Text style={[styles.resultScoreText, { color: colors.accent }]}>
               {Math.round((correctAnswersCount / (questions.length || 1)) * 100)}%
             </Text>
-            <Text style={[styles.resultSubtext, { color: theme.textSecondary }]}>
-              You got {correctAnswersCount} out of {questions.length} questions correct.
+
+            <Text style={[styles.resultSubtext, { color: colors.textSecondary }]}>
+              You answered {correctAnswersCount} out of {questions.length} questions correctly.
             </Text>
 
-            <View
-              style={[styles.resultDivider, { backgroundColor: theme.border }]}
-            />
+            {/* Score Stats Summary Grid */}
+            <View style={styles.statsRow}>
+              <View
+                style={[
+                  styles.statBox,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
+                <Text style={[styles.statValue, { color: '#10B981' }]}>
+                  {correctAnswersCount}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                  Correct
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.statBox,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
+                <Text style={[styles.statValue, { color: '#EF4444' }]}>
+                  {questions.length - correctAnswersCount}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                  Incorrect
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.statBox,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
+                <Text style={[styles.statValue, { color: colors.accent }]}>
+                  {questions.length}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                  Total Qs
+                </Text>
+              </View>
+            </View>
 
             <Pressable
               onPress={restartQuiz}
-              style={[styles.actionBtn, { backgroundColor: theme.accent }]}>
-              <RotateCcw size={15} color="#FFFFFF" />
-              <Text style={styles.actionBtnText}>Retake Quiz</Text>
+              style={({ pressed }) => [
+                styles.actionBtn,
+                {
+                  backgroundColor: colors.accent,
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.985 : 1 }],
+                },
+              ]}>
+              <RotateCcw size={16} color="#FFFFFF" strokeWidth={2.4} />
+              <Text style={styles.actionBtnText}>Retake Drill</Text>
             </Pressable>
 
             <Pressable
               onPress={() => router.back()}
-              style={[
+              style={({ pressed }) => [
                 styles.secondaryBtn,
                 {
-                  backgroundColor: theme.backgroundSelected,
-                  borderColor: theme.borderStrong,
+                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                  opacity: pressed ? 0.75 : 1,
                 },
               ]}>
-              <Text style={[styles.secondaryBtnText, { color: theme.text }]}>
-                Return to Practice Arena
+              <Text style={[styles.secondaryBtnText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                Return to Practice Hub
               </Text>
             </Pressable>
           </View>
-        </View>
+        </ScrollView>
       ) : (
-        /* Active Question Content */
-        <ScrollView
-          style={styles.scrollArea}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: insets.bottom + 40 },
-          ]}
-          showsVerticalScrollIndicator={false}>
-          {/* Question Box */}
-          <View
-            style={[
-              styles.questionBox,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-              },
-            ]}>
-            <Text style={[styles.questionText, { color: theme.text }]}>
-              {currentQ?.question}
-            </Text>
-          </View>
-
-          {/* Options List */}
-          <View style={styles.optionsContainer}>
-            {currentQ?.options.map((opt, idx) => {
-              const isSelected = selectedOption === idx;
-              const isCorrect = idx === currentQ.correctIndex;
-
-              let optBorder: string = theme.border;
-              let optBg: string = theme.backgroundElement;
-              const textColor: string = theme.text;
-
-              if (isAnswerSubmitted) {
-                if (isCorrect) {
-                  optBorder = '#10B981';
-                  optBg = 'rgba(16, 185, 129, 0.12)';
-                } else if (isSelected && !isCorrect) {
-                  optBorder = '#EF4444';
-                  optBg = 'rgba(239, 68, 68, 0.12)';
-                }
-              } else if (isSelected) {
-                optBorder = theme.accent;
-                optBg = theme.accentMuted;
-              }
-
-              return (
-                <Pressable
-                  key={idx}
-                  disabled={isAnswerSubmitted}
-                  onPress={() => handleSelectOption(idx)}
-                  style={({ pressed }) => [
-                    styles.optionItem,
-                    {
-                      backgroundColor: optBg,
-                      borderColor: optBorder,
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}>
-                  <View
-                    style={[
-                      styles.optionPill,
-                      {
-                        backgroundColor: isSelected
-                          ? theme.accent
-                          : theme.backgroundSelected,
-                        borderColor: theme.borderStrong,
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.optionPillText,
-                        {
-                          color: isSelected ? '#FFFFFF' : theme.textSecondary,
-                        },
-                      ]}>
-                      {String.fromCharCode(65 + idx)}
-                    </Text>
-                  </View>
-
-                  <Text style={[styles.optionLabel, { color: textColor }]}>
-                    {opt}
-                  </Text>
-
-                  {isAnswerSubmitted && isCorrect && (
-                    <CheckCircle2 size={18} color="#10B981" />
-                  )}
-                  {isAnswerSubmitted && isSelected && !isCorrect && (
-                    <XCircle size={18} color="#EF4444" />
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Instant Explanation Box */}
-          {isAnswerSubmitted && (
+        /* Active Question & Options Layout */
+        <View style={styles.quizLayoutWrapper}>
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: insets.bottom + 100 },
+            ]}
+            showsVerticalScrollIndicator={false}>
+            {/* Question Box */}
             <View
               style={[
-                styles.explanationContainer,
+                styles.questionBox,
                 {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.border,
+                  backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
                 },
               ]}>
-              <View style={styles.explanationTitleRow}>
-                <HelpCircle size={16} color={theme.accent} />
-                <Text
-                  style={[
-                    styles.explanationKickerText,
-                    { color: theme.accent },
-                  ]}>
-                  ARCHITECTURAL EXPLANATION & CITATION
-                </Text>
-              </View>
-
-              <Text style={[styles.explanationBodyText, { color: theme.text }]}>
-                {currentQ?.explanation}
+              <Text style={[styles.questionText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                {currentQ?.question}
               </Text>
+            </View>
 
+            {/* Options List */}
+            <View style={styles.optionsContainer}>
+              {currentQ?.options.map((opt, idx) => {
+                const isSelected = selectedOption === idx;
+                const isCorrect = idx === currentQ.correctIndex;
+
+                let optBg: string = isDark ? '#23262F' : '#FFFFFF';
+                let optBorder: string = 'transparent';
+                let pillBg: string = isDark ? '#1C1F26' : '#F0EBE8';
+                let pillTextColor: string = colors.textSecondary;
+
+                if (isAnswerSubmitted) {
+                  if (isCorrect) {
+                    optBg = isDark ? 'rgba(16, 185, 129, 0.16)' : '#E8F8F0';
+                    optBorder = '#10B981';
+                    pillBg = '#10B981';
+                    pillTextColor = '#FFFFFF';
+                  } else if (isSelected && !isCorrect) {
+                    optBg = isDark ? 'rgba(239, 68, 68, 0.16)' : '#FEECEB';
+                    optBorder = '#EF4444';
+                    pillBg = '#EF4444';
+                    pillTextColor = '#FFFFFF';
+                  }
+                } else if (isSelected) {
+                  optBg = isDark ? 'rgba(224, 122, 95, 0.22)' : '#F8EAE4';
+                  optBorder = colors.accent;
+                  pillBg = colors.accent;
+                  pillTextColor = '#FFFFFF';
+                }
+
+                return (
+                  <Pressable
+                    key={idx}
+                    disabled={isAnswerSubmitted}
+                    onPress={() => handleSelectOption(idx)}
+                    style={({ pressed }) => [
+                      styles.optionItem,
+                      {
+                        backgroundColor: optBg,
+                        borderColor: optBorder,
+                        borderWidth: optBorder !== 'transparent' ? 1.4 : 0,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}>
+                    <View
+                      style={[
+                        styles.optionPill,
+                        {
+                          backgroundColor: pillBg,
+                        },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.optionPillText,
+                          {
+                            color: pillTextColor,
+                          },
+                        ]}>
+                        {String.fromCharCode(65 + idx)}
+                      </Text>
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.optionLabel,
+                        {
+                          color: isDark ? '#F9FAFB' : '#0F172A',
+                          fontWeight: isSelected ? '700' : '500',
+                        },
+                      ]}>
+                      {opt}
+                    </Text>
+
+                    {isAnswerSubmitted && isCorrect && (
+                      <CheckCircle2 size={18} color="#10B981" />
+                    )}
+                    {isAnswerSubmitted && isSelected && !isCorrect && (
+                      <XCircle size={18} color="#EF4444" />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Instant Explanation Card */}
+            {isAnswerSubmitted && (
               <View
                 style={[
-                  styles.refContainer,
-                  { borderTopColor: theme.border },
+                  styles.explanationContainer,
+                  {
+                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                  },
                 ]}>
-                <Text style={[styles.refLabelText, { color: theme.textSecondary }]}>
-                  Legal / Technical Reference:
-                </Text>
-                <Text style={[styles.refValueText, { color: theme.accent }]}>
-                  {currentQ?.reference}
-                </Text>
-              </View>
-            </View>
-          )}
+                <View style={styles.explanationTitleRow}>
+                  <HelpCircle size={16} color={colors.accent} strokeWidth={2.4} />
+                  <Text
+                    style={[
+                      styles.explanationKickerText,
+                      { color: colors.accent },
+                    ]}>
+                    ARCHITECTURAL EXPLANATION & CITATION
+                  </Text>
+                </View>
 
-          {/* Action Button */}
-          <View style={styles.bottomActionWrapper}>
+                <Text style={[styles.explanationBody, { color: isDark ? '#E2E8F0' : '#1E293B' }]}>
+                  {currentQ?.explanation}
+                </Text>
+
+                {currentQ?.reference && (
+                  <View
+                    style={[
+                      styles.referenceBox,
+                      { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                    ]}>
+                    <Text style={[styles.referenceLabel, { color: colors.accent }]}>
+                      SOURCE / CODE SPEC:
+                    </Text>
+                    <Text style={[styles.referenceText, { color: colors.textSecondary }]}>
+                      {currentQ.reference}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Sticky Bottom Action Bar */}
+          <View
+            style={[
+              styles.bottomActionBar,
+              {
+                paddingBottom: Math.max(insets.bottom + 12, 16),
+              },
+            ]}>
             {!isAnswerSubmitted ? (
               <Pressable
                 disabled={selectedOption === null}
                 onPress={handleSubmitAnswer}
-                style={[
-                  styles.submitActionBtn,
+                style={({ pressed }) => [
+                  styles.bottomCtaBtn,
                   {
-                    backgroundColor: theme.accent,
-                    opacity: selectedOption === null ? 0.4 : 1,
+                    backgroundColor: selectedOption !== null ? colors.accent : isDark ? '#23262F' : '#E2E8F0',
+                    opacity: selectedOption === null ? 0.6 : pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}>
-                <Text style={styles.submitActionBtnText}>Check Answer</Text>
+                <Text
+                  style={[
+                    styles.bottomCtaBtnText,
+                    { color: selectedOption !== null ? '#FFFFFF' : colors.textSecondary },
+                  ]}>
+                  Submit Answer
+                </Text>
               </Pressable>
             ) : (
               <Pressable
                 onPress={handleNextQuestion}
-                style={[
-                  styles.submitActionBtn,
-                  { backgroundColor: theme.accent },
+                style={({ pressed }) => [
+                  styles.bottomCtaBtn,
+                  {
+                    backgroundColor: colors.accent,
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.985 : 1 }],
+                  },
                 ]}>
-                <Text style={styles.submitActionBtnText}>
-                  {currentIdx < questions.length - 1
-                    ? 'Next Question →'
-                    : 'View Quiz Results'}
+                <Text style={styles.bottomCtaBtnText}>
+                  {currentIdx < questions.length - 1 ? 'Next Question' : 'View Results'}
                 </Text>
+                <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.4} />
               </Pressable>
             )}
           </View>
-        </ScrollView>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -356,21 +463,19 @@ export default function PracticeQuizScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    minHeight: '100%',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -379,39 +484,47 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   areaLabel: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+    fontSize: 11.5,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   counterText: {
-    fontSize: 11.5,
+    fontSize: 13,
+    fontWeight: '600',
   },
   dummySpace: {
-    width: 36,
+    width: 40,
   },
   track: {
     height: 4,
     width: '100%',
+    position: 'relative',
   },
   trackFill: {
     height: '100%',
+    borderRadius: 2,
+  },
+  quizLayoutWrapper: {
+    flex: 1,
   },
   scrollArea: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    gap: 16,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 14,
   },
   questionBox: {
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    borderRadius: 22,
+    padding: 20,
   },
   questionText: {
-    fontSize: 15.5,
+    fontSize: 16.5,
     fontWeight: '700',
-    lineHeight: 22,
+    lineHeight: 24,
+    letterSpacing: -0.2,
   },
   optionsContainer: {
     gap: 10,
@@ -419,34 +532,32 @@ const styles = StyleSheet.create({
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     gap: 12,
   },
   optionPill: {
-    width: 26,
-    height: 26,
-    borderRadius: Radius.xs,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
   },
   optionPillText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
   },
   optionLabel: {
     flex: 1,
-    fontSize: 13.5,
-    fontWeight: '600',
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
   },
   explanationContainer: {
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    borderRadius: 20,
+    padding: 18,
     gap: 10,
+    marginTop: 4,
   },
   explanationTitleRow: {
     flexDirection: 'row',
@@ -454,97 +565,121 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   explanationKickerText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.9,
-  },
-  explanationBodyText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  refContainer: {
-    paddingTop: 8,
-    borderTopWidth: 1,
-    gap: 2,
-  },
-  refLabelText: {
-    fontSize: 10.5,
-  },
-  refValueText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  bottomActionWrapper: {
-    marginTop: 6,
-    marginBottom: 20,
-  },
-  submitActionBtn: {
-    paddingVertical: 14,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitActionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13.5,
-    fontWeight: '700',
-  },
-  resultsWrapper: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-  },
-  resultCard: {
-    padding: 24,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    alignItems: 'center',
-    gap: 12,
-  },
-  resultHeading: {
-    fontSize: 20,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: 0.6,
   },
-  resultScoreText: {
-    fontSize: 48,
-    fontWeight: '900',
-    letterSpacing: -1.5,
-    lineHeight: 52,
+  explanationBody: {
+    fontSize: 13.5,
+    lineHeight: 21,
   },
-  resultSubtext: {
-    fontSize: 13,
-    textAlign: 'center',
+  referenceBox: {
+    padding: 12,
+    borderRadius: 12,
+    gap: 4,
+    marginTop: 4,
   },
-  resultDivider: {
-    height: 1,
-    width: '100%',
-    marginVertical: 6,
+  referenceLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
-  actionBtn: {
-    width: '100%',
+  referenceText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  bottomActionBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  bottomCtaBtn: {
+    borderRadius: 16,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: Radius.sm,
+    gap: 8,
+  },
+  bottomCtaBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  resultsScrollContent: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resultCard: {
+    width: '100%',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    gap: 14,
+  },
+  resultHeading: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  resultScoreText: {
+    fontSize: 44,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  resultSubtext: {
+    fontSize: 13.5,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+    marginVertical: 6,
+  },
+  statBox: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  actionBtn: {
+    width: '100%',
+    borderRadius: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 4,
   },
   actionBtnText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
   },
   secondaryBtn: {
     width: '100%',
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
   },
   secondaryBtnText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
   },
 });

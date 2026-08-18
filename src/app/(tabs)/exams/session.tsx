@@ -1,28 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
-  Timer,
-  Flag,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
-  XCircle,
-  Award,
+  Flag,
   RotateCcw,
-  BookOpen,
+  Timer,
+  Trophy,
 } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
-import { useTheme } from '@/hooks/use-theme';
-import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 
 export interface Question {
   id: number;
@@ -84,7 +87,8 @@ const MOCK_QUESTIONS: Question[] = [
 export default function ExamSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const theme = useTheme();
+  const { colors, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({});
@@ -155,43 +159,44 @@ export default function ExamSessionScreen() {
   return (
     <SafeAreaView
       edges={['top', 'left', 'right', 'bottom']}
-      style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Top Header Bar */}
-      <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
+      style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* 1. Top Header Bar */}
+      <View style={styles.topBar}>
         <Pressable
           onPress={() => router.back()}
+          hitSlop={12}
           style={({ pressed }) => [
             styles.backButton,
             {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
-              opacity: pressed ? 0.8 : 1,
+              backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+              opacity: pressed ? 0.7 : 1,
             },
           ]}>
-          <ArrowLeft size={18} color={theme.text} />
+          <ArrowLeft size={20} color={colors.text} strokeWidth={2.4} />
         </Pressable>
 
         <View style={styles.headerTitles}>
-          <Text style={[styles.headerSubtitle, { color: theme.accent }]}>
-            {id ? String(id).toUpperCase() : 'AREA 1 MOCK'}
+          <Text style={[styles.headerSubtitle, { color: colors.accent }]}>
+            {id ? String(id).replace('-', ' ').toUpperCase() : 'BOARD EXAM'}
           </Text>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
+          <Text style={[styles.headerTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
             {isSubmitted ? 'Exam Results' : `Question ${currentIndex + 1} of ${MOCK_QUESTIONS.length}`}
           </Text>
         </View>
 
-        {/* Countdown Timer or Score badge */}
+        {/* Timer Badge */}
         {!isSubmitted ? (
           <View
             style={[
               styles.timerBadge,
               {
-                backgroundColor: theme.accentMuted,
-                borderColor: theme.border,
+                backgroundColor: isDark
+                  ? 'rgba(224, 122, 95, 0.18)'
+                  : '#F8EAE4',
               },
             ]}>
-            <Timer size={14} color={theme.accent} />
-            <Text style={[styles.timerText, { color: theme.accent }]}>
+            <Timer size={14} color={colors.accent} strokeWidth={2.2} />
+            <Text style={[styles.timerText, { color: colors.accent }]}>
               {formatTimer(secondsRemaining)}
             </Text>
           </View>
@@ -200,324 +205,340 @@ export default function ExamSessionScreen() {
             style={[
               styles.timerBadge,
               {
-                backgroundColor: isPassed ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                borderColor: isPassed ? '#22C55E' : '#EF4444',
+                backgroundColor: isPassed
+                  ? isDark
+                    ? 'rgba(16, 185, 129, 0.2)'
+                    : '#E8F8F0'
+                  : isDark
+                    ? 'rgba(239, 68, 68, 0.2)'
+                    : '#FEECEB',
               },
             ]}>
             <Text
               style={[
                 styles.timerText,
-                { color: isPassed ? '#22C55E' : '#EF4444' },
+                { color: isPassed ? '#10B981' : '#EF4444' },
               ]}>
-              {scorePercent}% {isPassed ? 'PASSED' : 'FAILED'}
+              {scorePercent}%
             </Text>
           </View>
         )}
       </View>
 
+      {/* Progress Track */}
+      <View
+        style={[
+          styles.track,
+          { backgroundColor: isDark ? '#23262F' : '#F0EBE8' },
+        ]}>
+        <View
+          style={[
+            styles.trackFill,
+            {
+              width: `${((currentIndex + 1) / (MOCK_QUESTIONS.length || 1)) * 100}%`,
+              backgroundColor: colors.accent,
+            },
+          ]}
+        />
+      </View>
+
       {!isSubmitted ? (
-        /* Active Question View */
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.content}>
-          {/* Question Item Card */}
-          <View
-            style={[
-              styles.questionCard,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: isFlagged ? theme.accent : theme.border,
-              },
-            ]}>
-            {/* Meta Row */}
-            <View style={styles.questionMetaRow}>
-              <View
-                style={[
-                  styles.topicPill,
-                  { backgroundColor: theme.accentMuted, borderColor: theme.border },
-                ]}>
-                <BookOpen size={12} color={theme.accent} />
-                <Text style={[styles.topicPillText, { color: theme.accent }]}>
-                  {currentQ.topic}
-                </Text>
-              </View>
-
-              <Pressable
-                onPress={handleToggleFlag}
-                style={({ pressed }) => [
-                  styles.flagBtn,
-                  isFlagged && { backgroundColor: theme.accentMuted },
-                  { opacity: pressed ? 0.8 : 1 },
-                ]}>
-                <Flag
-                  size={14}
-                  color={isFlagged ? theme.accent : theme.textSecondary}
-                  fill={isFlagged ? theme.accent : 'transparent'}
-                />
-                <Text
-                  style={[
-                    styles.flagText,
-                    { color: isFlagged ? theme.accent : theme.textSecondary },
-                  ]}>
-                  {isFlagged ? 'Flagged' : 'Flag'}
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* Question Text */}
-            <Text style={[styles.questionText, { color: theme.text }]}>
-              {currentQ.question}
-            </Text>
-          </View>
-
-          {/* Multiple Choices (ABCD) */}
-          <View style={styles.optionsContainer}>
-            {currentQ.options.map((opt) => {
-              const isSelected = userSelection === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => handleSelectOption(opt.key)}
-                  style={({ pressed }) => [
-                    styles.optionCard,
-                    {
-                      backgroundColor: isSelected
-                        ? theme.accentMuted
-                        : theme.backgroundElement,
-                      borderColor: isSelected ? theme.accent : theme.border,
-                      opacity: pressed ? 0.9 : 1,
-                    },
-                  ]}>
-                  <View
-                    style={[
-                      styles.keyBadge,
-                      {
-                        backgroundColor: isSelected
-                          ? theme.accent
-                          : theme.background,
-                        borderColor: isSelected ? theme.accent : theme.border,
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.keyText,
-                        { color: isSelected ? '#FFFFFF' : theme.text },
-                      ]}>
-                      {opt.key}
-                    </Text>
-                  </View>
-
-                  <Text
-                    style={[
-                      styles.optionText,
-                      {
-                        color: isSelected ? theme.accent : theme.text,
-                        fontWeight: isSelected ? '700' : '500',
-                      },
-                    ]}>
-                    {opt.text}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Bottom Navigation & Submit Bar */}
-          <View style={styles.navControls}>
-            <Pressable
-              onPress={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-              disabled={currentIndex === 0}
-              style={({ pressed }) => [
-                styles.navBtn,
+        /* Active Question Layout */
+        <View style={styles.sessionLayout}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: insets.bottom + 100 },
+            ]}
+            showsVerticalScrollIndicator={false}>
+            {/* Question Card */}
+            <View
+              style={[
+                styles.questionCard,
                 {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.border,
-                  opacity: currentIndex === 0 ? 0.4 : pressed ? 0.8 : 1,
+                  backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
                 },
               ]}>
-              <ChevronLeft size={16} color={theme.text} />
-              <Text style={[styles.navBtnText, { color: theme.text }]}>Prev</Text>
+              {/* Meta Row */}
+              <View style={styles.questionMetaRow}>
+                <View
+                  style={[
+                    styles.topicPill,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(224, 122, 95, 0.18)'
+                        : '#F8EAE4',
+                    },
+                  ]}>
+                  <BookOpen size={12} color={colors.accent} strokeWidth={2.2} />
+                  <Text style={[styles.topicPillText, { color: colors.accent }]}>
+                    {currentQ.topic}
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={handleToggleFlag}
+                  style={({ pressed }) => [
+                    styles.flagBtn,
+                    {
+                      backgroundColor: isFlagged
+                        ? isDark
+                          ? 'rgba(224, 122, 95, 0.25)'
+                          : '#F8EAE4'
+                        : isDark
+                          ? '#23262F'
+                          : '#FFFFFF',
+                      opacity: pressed ? 0.75 : 1,
+                    },
+                  ]}>
+                  <Flag
+                    size={14}
+                    color={isFlagged ? colors.accent : colors.textSecondary}
+                    fill={isFlagged ? colors.accent : 'transparent'}
+                  />
+                  <Text
+                    style={[
+                      styles.flagText,
+                      { color: isFlagged ? colors.accent : colors.textSecondary },
+                    ]}>
+                    {isFlagged ? 'Flagged' : 'Flag'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Question Text */}
+              <Text style={[styles.questionText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                {currentQ.question}
+              </Text>
+            </View>
+
+            {/* Options List */}
+            <View style={styles.optionsContainer}>
+              {currentQ.options.map((opt) => {
+                const isSelected = userSelection === opt.key;
+
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => handleSelectOption(opt.key)}
+                    style={({ pressed }) => [
+                      styles.optionCard,
+                      {
+                        backgroundColor: isSelected
+                          ? isDark
+                            ? 'rgba(224, 122, 95, 0.22)'
+                            : '#F8EAE4'
+                          : isDark
+                            ? '#23262F'
+                            : '#FFFFFF',
+                        borderColor: isSelected ? colors.accent : 'transparent',
+                        borderWidth: isSelected ? 1.4 : 0,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}>
+                    <View
+                      style={[
+                        styles.keyBadge,
+                        {
+                          backgroundColor: isSelected
+                            ? colors.accent
+                            : isDark
+                              ? '#1C1F26'
+                              : '#F0EBE8',
+                        },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.keyBadgeText,
+                          {
+                            color: isSelected ? '#FFFFFF' : colors.textSecondary,
+                          },
+                        ]}>
+                        {opt.key}
+                      </Text>
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.optionText,
+                        {
+                          color: isDark ? '#F9FAFB' : '#0F172A',
+                          fontWeight: isSelected ? '700' : '500',
+                        },
+                      ]}>
+                      {opt.text}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+
+          {/* Sticky Bottom Nav Bar */}
+          <View
+            style={[
+              styles.bottomBar,
+              { paddingBottom: Math.max(insets.bottom + 12, 16) },
+            ]}>
+            <Pressable
+              disabled={currentIndex === 0}
+              onPress={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
+              style={({ pressed }) => [
+                styles.navSquareBtn,
+                {
+                  backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                  opacity: currentIndex === 0 ? 0.35 : pressed ? 0.7 : 1,
+                },
+              ]}>
+              <ChevronLeft size={22} color={colors.text} />
             </Pressable>
 
             {currentIndex < MOCK_QUESTIONS.length - 1 ? (
               <Pressable
                 onPress={() => setCurrentIndex((prev) => prev + 1)}
                 style={({ pressed }) => [
-                  styles.navBtnPrimary,
+                  styles.navPrimaryBtn,
                   {
-                    backgroundColor: theme.accent,
-                    opacity: pressed ? 0.85 : 1,
+                    backgroundColor: colors.accent,
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}>
-                <Text style={styles.navBtnPrimaryText}>Next Question</Text>
-                <ChevronRight size={16} color="#FFFFFF" />
+                <Text style={styles.navPrimaryText}>Next Question</Text>
+                <ChevronRight size={18} color="#FFFFFF" strokeWidth={2.4} />
               </Pressable>
             ) : (
               <Pressable
                 onPress={handleSubmitExam}
                 style={({ pressed }) => [
-                  styles.navBtnPrimary,
+                  styles.navPrimaryBtn,
                   {
-                    backgroundColor: '#16A34A',
-                    opacity: pressed ? 0.85 : 1,
+                    backgroundColor: colors.accent,
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}>
-                <Text style={styles.navBtnPrimaryText}>Submit Exam</Text>
-                <CheckCircle2 size={16} color="#FFFFFF" />
+                <Text style={styles.navPrimaryText}>Submit Examination</Text>
               </Pressable>
             )}
           </View>
-        </ScrollView>
+        </View>
       ) : (
-        /* Results Overview View */
+        /* Results View */
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.content}>
-          {/* Result Score Card */}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.resultsContent,
+            { paddingBottom: insets.bottom + 40 },
+          ]}>
           <View
             style={[
               styles.resultsCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: isPassed ? '#22C55E' : '#EF4444',
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
+            {/* Award Gradient Icon */}
             <View
-              style={[
-                styles.resultIconBox,
-                {
-                  backgroundColor: isPassed
-                    ? 'rgba(34, 197, 94, 0.15)'
-                    : 'rgba(239, 68, 68, 0.15)',
-                },
-              ]}>
-              {isPassed ? (
-                <Award size={32} color="#22C55E" />
-              ) : (
-                <XCircle size={32} color="#EF4444" />
-              )}
+              style={{
+                width: 64,
+                height: 64,
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+              }}>
+              <Svg width={64} height={64} style={StyleSheet.absoluteFill}>
+                <Defs>
+                  <LinearGradient id="exam_award_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <Stop offset="0%" stopColor="#E58368" />
+                    <Stop offset="100%" stopColor="#C85A32" />
+                  </LinearGradient>
+                </Defs>
+                <Rect width={64} height={64} rx={22} fill="url(#exam_award_grad)" />
+              </Svg>
+              <Trophy size={30} color="#FFFFFF" strokeWidth={2.2} />
             </View>
 
-            <Text style={[styles.resultTitle, { color: theme.text }]}>
-              {isPassed ? 'Congratulations! You Passed!' : 'Needs Review & Practice'}
+            <Text style={[styles.resultHeading, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              {isPassed ? 'Examination Passed!' : 'Needs Review'}
             </Text>
-            <Text
-              style={[styles.resultSubtext, { color: theme.textSecondary }]}>
-              You scored {correctCount} out of {MOCK_QUESTIONS.length} questions ({scorePercent}%).
+
+            <Text style={[styles.resultScore, { color: isPassed ? '#10B981' : colors.accent }]}>
+              {scorePercent}%
             </Text>
-          </View>
 
-          {/* Answer Key Review */}
-          <Text style={[styles.sectionHeaderTitle, { color: theme.textSecondary }]}>
-            ANSWER REVIEW & EXPLANATIONS
-          </Text>
+            <Text style={[styles.resultSubtext, { color: colors.textSecondary }]}>
+              You correctly answered {correctCount} of {MOCK_QUESTIONS.length} questions (70% required to pass).
+            </Text>
 
-          <View style={styles.reviewList}>
-            {MOCK_QUESTIONS.map((q, idx) => {
-              const uAns = selectedAnswers[q.id];
-              const isCorrect = uAns === q.correct;
-              return (
-                <View
-                  key={q.id}
-                  style={[
-                    styles.reviewCard,
-                    {
-                      backgroundColor: theme.backgroundElement,
-                      borderColor: isCorrect ? '#22C55E' : '#EF4444',
-                    },
-                  ]}>
-                  <View style={styles.reviewHeader}>
-                    <Text style={[styles.reviewNumber, { color: theme.text }]}>
-                      Item {idx + 1}
-                    </Text>
-                    <View
-                      style={[
-                        styles.reviewTag,
-                        {
-                          backgroundColor: isCorrect
-                            ? 'rgba(34, 197, 94, 0.15)'
-                            : 'rgba(239, 68, 68, 0.15)',
-                        },
-                      ]}>
-                      <Text
-                        style={[
-                          styles.reviewTagText,
-                          { color: isCorrect ? '#22C55E' : '#EF4444' },
-                        ]}>
-                        {isCorrect ? 'Correct (+1.0)' : 'Incorrect (0.0)'}
-                      </Text>
-                    </View>
-                  </View>
+            <View style={styles.statsGrid}>
+              <View
+                style={[
+                  styles.statCard,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
+                <Text style={[styles.statNum, { color: '#10B981' }]}>
+                  {correctCount}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                  Correct
+                </Text>
+              </View>
 
-                  <Text style={[styles.reviewQuestion, { color: theme.text }]}>
-                    {q.question}
-                  </Text>
+              <View
+                style={[
+                  styles.statCard,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
+                <Text style={[styles.statNum, { color: '#EF4444' }]}>
+                  {MOCK_QUESTIONS.length - correctCount}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                  Incorrect
+                </Text>
+              </View>
 
-                  <View
-                    style={[
-                      styles.answerBox,
-                      {
-                        backgroundColor: theme.background,
-                        borderColor: theme.border,
-                      },
-                    ]}>
-                    <Text style={[styles.ansLine, { color: theme.text }]}>
-                      Your Answer: <Text style={{ fontWeight: '700' }}>{uAns || 'Unanswered'}</Text>
-                    </Text>
-                    <Text style={[styles.ansLine, { color: '#22C55E', fontWeight: '700' }]}>
-                      Correct Answer: {q.correct} — {q.options.find((o) => o.key === q.correct)?.text}
-                    </Text>
-                  </View>
+              <View
+                style={[
+                  styles.statCard,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
+                <Text style={[styles.statNum, { color: colors.accent }]}>
+                  {scorePercent}%
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                  Score
+                </Text>
+              </View>
+            </View>
 
-                  <Text
-                    style={[
-                      styles.explanationText,
-                      { color: theme.textSecondary },
-                    ]}>
-                    <Text style={{ fontWeight: '700', color: theme.text }}>
-                      Explanation:{' '}
-                    </Text>
-                    {q.explanation}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.resultsActions}>
             <Pressable
               onPress={handleRetake}
               style={({ pressed }) => [
                 styles.retakeBtn,
                 {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.border,
-                  opacity: pressed ? 0.8 : 1,
+                  backgroundColor: colors.accent,
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.985 : 1 }],
                 },
               ]}>
-              <RotateCcw size={16} color={theme.text} />
-              <Text style={[styles.retakeBtnText, { color: theme.text }]}>
-                Retake Exam
-              </Text>
+              <RotateCcw size={16} color="#FFFFFF" strokeWidth={2.4} />
+              <Text style={styles.retakeBtnText}>Retake Examination</Text>
             </Pressable>
 
             <Pressable
-              onPress={() => {
-                if (router.canDismiss?.()) {
-                  router.dismissAll();
-                } else {
-                  router.replace('/(tabs)/exams' as any);
-                }
-              }}
+              onPress={() => router.back()}
               style={({ pressed }) => [
-                styles.finishBtn,
+                styles.returnBtn,
                 {
-                  backgroundColor: theme.accent,
-                  opacity: pressed ? 0.85 : 1,
+                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                  opacity: pressed ? 0.75 : 1,
                 },
               ]}>
-              <Text style={styles.finishBtnText}>Finish & Return</Text>
+              <Text style={[styles.returnBtnText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                Return to Exams Hub
+              </Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -533,91 +554,103 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 10,
     gap: 12,
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitles: {
     flex: 1,
+    gap: 2,
   },
   headerSubtitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
   headerTitle: {
-    fontSize: 15.5,
+    fontSize: 14,
     fontWeight: '700',
   },
   timerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
+    borderRadius: 10,
   },
   timerText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 12.5,
+    fontWeight: '800',
+  },
+  track: {
+    height: 4,
+    width: '100%',
+  },
+  trackFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  sessionLayout: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: 18,
-    gap: 16,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 14,
   },
   questionCard: {
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 10,
+    borderRadius: 22,
+    padding: 18,
+    gap: 14,
   },
   questionMetaRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   topicPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4.5,
+    borderRadius: 8,
+    maxWidth: '70%',
   },
   topicPillText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
   },
   flagBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Radius.xs,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   flagText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   questionText: {
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 22,
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 23,
+    letterSpacing: -0.2,
   },
   optionsContainer: {
     gap: 10,
@@ -625,167 +658,131 @@ const styles = StyleSheet.create({
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     gap: 12,
   },
   keyBadge: {
     width: 32,
     height: 32,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  keyText: {
+  keyBadgeText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   optionText: {
-    fontSize: 13.5,
     flex: 1,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
   },
-  navControls: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
-  },
-  navBtn: {
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  navSquareBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
   },
-  navBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  navBtnPrimary: {
+  navPrimaryBtn: {
     flex: 1,
+    height: 48,
+    borderRadius: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 13,
-    borderRadius: Radius.md,
   },
-  navBtnPrimaryText: {
+  navPrimaryText: {
     color: '#FFFFFF',
-    fontSize: 13.5,
+    fontSize: 14.5,
     fontWeight: '700',
   },
-  resultsCard: {
+  resultsContent: {
     padding: 20,
-    borderRadius: Radius.lg,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    gap: 8,
-    textAlign: 'center',
-  },
-  resultIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
   },
-  resultTitle: {
+  resultsCard: {
+    width: '100%',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    gap: 14,
+  },
+  resultHeading: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  resultScore: {
+    fontSize: 44,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  resultSubtext: {
+    fontSize: 13.5,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+    marginVertical: 4,
+  },
+  statCard: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 3,
+  },
+  statNum: {
     fontSize: 18,
     fontWeight: '800',
   },
-  resultSubtext: {
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  sectionHeaderTitle: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginTop: 8,
-  },
-  reviewList: {
-    gap: 12,
-  },
-  reviewCard: {
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 8,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  reviewNumber: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  reviewTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.xs,
-  },
-  reviewTagText: {
+  statLabel: {
     fontSize: 11,
-    fontWeight: '700',
-  },
-  reviewQuestion: {
-    fontSize: 13.5,
     fontWeight: '600',
-    lineHeight: 19,
-  },
-  answerBox: {
-    padding: 10,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-    gap: 3,
-    marginTop: 4,
-  },
-  ansLine: {
-    fontSize: 12,
-  },
-  explanationText: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: 4,
-  },
-  resultsActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
   },
   retakeBtn: {
-    flex: 1,
+    width: '100%',
+    borderRadius: 16,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    gap: 8,
+    marginTop: 4,
   },
   retakeBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
-  finishBtn: {
-    flex: 1,
+  returnBtn: {
+    width: '100%',
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: Radius.md,
   },
-  finishBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+  returnBtnText: {
+    fontSize: 14,
     fontWeight: '700',
   },
 });

@@ -1,30 +1,82 @@
 import { useRouter } from 'expo-router';
 import {
-  ArrowRight,
   Award,
+  BookOpen,
+  Building2,
   ChevronRight,
-  Play,
-  Zap,
+  ClipboardList,
+  FileText,
+  Layers,
 } from 'lucide-react-native';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Radius } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme } from '@/context/theme-context';
+
+/* Reusable Gradient Squircle / Circle Container */
+function GradientIconBox({
+  colors: [startColor, endColor],
+  size = 54,
+  borderRadius = 16,
+  children,
+}: {
+  colors: [string, string];
+  size?: number;
+  borderRadius?: number;
+  children: React.ReactNode;
+}) {
+  const gradId = `grad_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startColor} />
+            <Stop offset="100%" stopColor={endColor} />
+          </LinearGradient>
+        </Defs>
+        <Rect
+          width={size}
+          height={size}
+          rx={borderRadius}
+          fill={`url(#${gradId})`}
+        />
+      </Svg>
+      {children}
+    </View>
+  );
+}
 
 export default function HomeScreen() {
-  const theme = useTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Clean Header */}
+      style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* 1. Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          Dashboard
+        <Text style={[styles.headerGreeting, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+          Good morning, User!
         </Text>
       </View>
 
@@ -35,392 +87,284 @@ export default function HomeScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* 1. OVERALL PROGRESS */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Overall Progress
-          </Text>
+        {/* 2. Light Terracotta Hero Progress Card with Right Icon */}
+        <View
+          style={[
+            styles.progressHeroCard,
+            {
+              backgroundColor: isDark ? '#2B1D19' : '#F8EBE5',
+            },
+          ]}>
+          {/* Left Column: Progress details */}
+          <View style={styles.progressHeroLeft}>
+            <Text
+              style={[
+                styles.progressHeroLabel,
+                { color: isDark ? '#F4A261' : '#B84922' },
+              ]}>
+              YOUR PROGRESS
+            </Text>
+            <Text
+              style={[
+                styles.progressHeroPercentage,
+                { color: isDark ? '#FFFFFF' : '#2D120B' },
+              ]}>
+              72%
+            </Text>
+            <Text
+              style={[
+                styles.progressHeroMotivation,
+                { color: isDark ? '#E07A5F' : '#A23F1C' },
+              ]}>
+              {"You're doing great!"}
+            </Text>
 
-          <View
-            style={[
-              styles.card,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-              },
-            ]}>
-            {/* Top Score Summary */}
-            <View style={styles.progressHero}>
-              <View>
-                <Text style={[styles.progressBigNumber, { color: theme.accent }]}>
-                  74%
-                </Text>
-                <Text style={[styles.progressSubLabel, { color: theme.textSecondary }]}>
-                  Overall Readiness Score
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.statusPill,
-                  {
-                    backgroundColor: theme.accentMuted,
-                    borderColor: theme.border,
-                  },
-                ]}>
-                <Award size={13} color={theme.accent} />
-                <Text style={[styles.statusPillText, { color: theme.accent }]}>
-                  On Track
-                </Text>
-              </View>
-            </View>
-
-            {/* Clean Progress Bar */}
+            {/* Progress Bar */}
             <View
               style={[
-                styles.track,
-                { backgroundColor: theme.backgroundSelected },
+                styles.progressBarTrack,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(255, 255, 255, 0.12)'
+                    : '#EAD5CC',
+                },
               ]}>
               <View
                 style={[
-                  styles.fill,
-                  { width: '74%', backgroundColor: theme.accent },
+                  styles.progressBarFill,
+                  { width: '72%', backgroundColor: colors.accent },
                 ]}
               />
             </View>
+          </View>
 
-            {/* 3 Key Stats */}
-            <View
-              style={[styles.statsRow, { borderTopColor: theme.border }]}>
-              <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: theme.text }]}>
-                  128h
-                </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                  Study Time
-                </Text>
-              </View>
-
-              <View
-                style={[styles.statDivider, { backgroundColor: theme.border }]}
-              />
-
-              <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: theme.text }]}>
-                  1,420
-                </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                  Answered
-                </Text>
-              </View>
-
-              <View
-                style={[styles.statDivider, { backgroundColor: theme.border }]}
-              />
-
-              <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: theme.accent }]}>
-                  84%
-                </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
-                  Accuracy
-                </Text>
-              </View>
-            </View>
+          {/* Right Column: Gradient Award Icon */}
+          <View style={styles.progressHeroRight}>
+            <GradientIconBox
+              colors={['#E58368', '#C85A32']}
+              size={68}
+              borderRadius={34}>
+              <Award size={34} color="#FFFFFF" strokeWidth={2.2} />
+            </GradientIconBox>
           </View>
         </View>
 
-        {/* 2. CONTINUE STUDYING */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Continue Studying
-          </Text>
-
-          <Pressable
-            onPress={() => router.push('/(tabs)/learn/practice-law' as any)}
-            style={({ pressed }) => [
-              styles.card,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}>
-            <View style={styles.continueHeaderRow}>
-              <Text
-                style={[styles.continueTag, { color: theme.accent }]}>
-                MODULE 3 • PRACTICE & LAWS
-              </Text>
-              <Text
-                style={[styles.continuePercent, { color: theme.textSecondary }]}>
-                65% Done
-              </Text>
-            </View>
-
-            <Text style={[styles.continueTitle, { color: theme.text }]}>
-              Rule 7 & 8: Classification of Occupancies
-            </Text>
-            <Text
-              style={[styles.continueSubtitle, { color: theme.textSecondary }]}>
-              Lesson 4 • NBCP PD 1096 Computations
-            </Text>
-
-            <View style={styles.continueFooter}>
-              <View
-                style={[
-                  styles.miniTrack,
-                  { backgroundColor: theme.backgroundSelected, flex: 1 },
-                ]}>
-                <View
-                  style={[
-                    styles.fill,
-                    { width: '65%', backgroundColor: theme.accent },
-                  ]}
-                />
-              </View>
-              <View
-                style={[
-                  styles.resumeButton,
-                  { backgroundColor: theme.accent },
-                ]}>
-                <Play size={11} color="#FFFFFF" fill="#FFFFFF" />
-                <Text style={styles.resumeButtonText}>Resume</Text>
-              </View>
-            </View>
-          </Pressable>
-        </View>
-
-        {/* 3. RECOMMENDED LESSONS */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Recommended Lessons
-            </Text>
+        {/* 3. Bento 2x2 Grid with Bigger Gradient Icons */}
+        <View style={styles.bentoGrid}>
+          {/* Row 1 */}
+          <View style={styles.bentoGridRow}>
+            {/* 1. Review (Learn) */}
             <Pressable
               onPress={() => router.push('/(tabs)/learn' as any)}
               style={({ pressed }) => [
-                styles.seeAllBtn,
-                { opacity: pressed ? 0.6 : 1 },
+                styles.bentoTile,
+                {
+                  backgroundColor: isDark ? '#261C19' : '#FDF4F0',
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
               ]}>
-              <Text style={[styles.seeAllText, { color: theme.accent }]}>
+              <GradientIconBox
+                colors={['#E58368', '#C85A32']}
+                size={50}
+                borderRadius={15}>
+                <BookOpen size={26} color="#FFFFFF" strokeWidth={2.2} />
+              </GradientIconBox>
+
+              <View style={styles.bentoTileBottom}>
+                <Text
+                  style={[
+                    styles.bentoTileTitle,
+                    { color: isDark ? '#F9FAFB' : '#1C1917' },
+                  ]}>
+                  Review
+                </Text>
+                <ChevronRight
+                  size={19}
+                  color={colors.accent}
+                  strokeWidth={2.4}
+                />
+              </View>
+            </Pressable>
+
+            {/* 2. Flashcards */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/practice/flashcards' as any)}
+              style={({ pressed }) => [
+                styles.bentoTile,
+                {
+                  backgroundColor: isDark ? '#281E15' : '#FEF8EE',
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}>
+              <GradientIconBox
+                colors={['#FBBF24', '#D97706']}
+                size={50}
+                borderRadius={15}>
+                <Layers size={26} color="#FFFFFF" strokeWidth={2.2} />
+              </GradientIconBox>
+
+              <View style={styles.bentoTileBottom}>
+                <Text
+                  style={[
+                    styles.bentoTileTitle,
+                    { color: isDark ? '#F9FAFB' : '#1C1917' },
+                  ]}>
+                  Flashcards
+                </Text>
+                <ChevronRight size={19} color="#D97706" strokeWidth={2.4} />
+              </View>
+            </Pressable>
+          </View>
+
+          {/* Row 2 */}
+          <View style={styles.bentoGridRow}>
+            {/* 3. Practice Quiz */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/practice/quiz' as any)}
+              style={({ pressed }) => [
+                styles.bentoTile,
+                {
+                  backgroundColor: isDark ? '#17261D' : '#F0F8F3',
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}>
+              <GradientIconBox
+                colors={['#34D399', '#059669']}
+                size={50}
+                borderRadius={15}>
+                <ClipboardList size={26} color="#FFFFFF" strokeWidth={2.2} />
+              </GradientIconBox>
+
+              <View style={styles.bentoTileBottom}>
+                <Text
+                  style={[
+                    styles.bentoTileTitle,
+                    { color: isDark ? '#F9FAFB' : '#1C1917' },
+                  ]}>
+                  Practice Quiz
+                </Text>
+                <ChevronRight size={19} color="#059669" strokeWidth={2.4} />
+              </View>
+            </Pressable>
+
+            {/* 4. Mock Exam */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/exams' as any)}
+              style={({ pressed }) => [
+                styles.bentoTile,
+                {
+                  backgroundColor: isDark ? '#261A23' : '#F9F1F6',
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}>
+              <GradientIconBox
+                colors={['#F472B6', '#BE185D']}
+                size={50}
+                borderRadius={15}>
+                <FileText size={26} color="#FFFFFF" strokeWidth={2.2} />
+              </GradientIconBox>
+
+              <View style={styles.bentoTileBottom}>
+                <Text
+                  style={[
+                    styles.bentoTileTitle,
+                    { color: isDark ? '#F9FAFB' : '#1C1917' },
+                  ]}>
+                  Mock Exam
+                </Text>
+                <ChevronRight size={19} color="#BE185D" strokeWidth={2.4} />
+              </View>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* 4. Continue Learning (Clean, Flat with Gradient Icon) */}
+        <View style={styles.continueSection}>
+          <View style={styles.continueSectionHeader}>
+            <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
+              Continue Learning
+            </Text>
+            <Pressable
+              onPress={() => router.push('/(tabs)/learn' as any)}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
+              <Text style={[styles.seeAllText, { color: colors.accent }]}>
                 See all
               </Text>
-              <ArrowRight size={13} color={theme.accent} />
             </Pressable>
           </View>
 
-          <View
-            style={[
-              styles.groupedCard,
+          <Pressable
+            onPress={() => router.push('/(tabs)/learn/building-tech' as any)}
+            style={({ pressed }) => [
+              styles.continueCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                opacity: pressed ? 0.88 : 1,
               },
             ]}>
-            {/* Lesson 1 */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/history' as any)}
-              style={({ pressed }) => [
-                styles.listItem,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <View style={styles.listItemLeft}>
-                <Text style={[styles.listMeta, { color: theme.accent }]}>
-                  Area 1 • 15 min
+            {/* Left Gradient Squircle Icon */}
+            <GradientIconBox
+              colors={['#E58368', '#C85A32']}
+              size={50}
+              borderRadius={15}>
+              <Building2 size={26} color="#FFFFFF" strokeWidth={2.2} />
+            </GradientIconBox>
+
+            {/* Middle Title & Progress */}
+            <View style={styles.continueCardBody}>
+              <View style={styles.continueTitleRow}>
+                <Text
+                  style={[styles.continueCourseTitle, { color: colors.text }]}
+                  numberOfLines={1}>
+                  Structural Analysis
                 </Text>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Classical Greek & Roman Orders
+                <Text
+                  style={[
+                    styles.continuePercentageText,
+                    { color: colors.accent },
+                  ]}>
+                  65%
                 </Text>
               </View>
-              <ChevronRight size={16} color={theme.textSecondary} />
-            </Pressable>
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
+              <Text
+                style={[
+                  styles.continueCourseSubtitle,
+                  { color: colors.textSecondary },
+                ]}>
+                Strength of Materials
+              </Text>
 
-            {/* Lesson 2 */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/building-tech' as any)}
-              style={({ pressed }) => [
-                styles.listItem,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <View style={styles.listItemLeft}>
-                <Text style={[styles.listMeta, { color: theme.accent }]}>
-                  Area 2 • 25 min
-                </Text>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Sanitary & Storm Drainage Systems
-                </Text>
-              </View>
-              <ChevronRight size={16} color={theme.textSecondary} />
-            </Pressable>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
-
-            {/* Lesson 3 */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/practice-law' as any)}
-              style={({ pressed }) => [
-                styles.listItem,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <View style={styles.listItemLeft}>
-                <Text style={[styles.listMeta, { color: theme.accent }]}>
-                  Area 3 • 20 min
-                </Text>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  RA 9266 Architecture Act & SPP 200
-                </Text>
-              </View>
-              <ChevronRight size={16} color={theme.textSecondary} />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* 4. WEAK SUBJECTS */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Weak Subjects
-          </Text>
-
-          <View
-            style={[
-              styles.groupedCard,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-              },
-            ]}>
-            {/* Weak Subject 1 */}
-            <View style={styles.weakItem}>
-              <View style={styles.weakItemInfo}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Building Utilities & MEPFS
-                </Text>
-                <Text style={[styles.weakMeta, { color: theme.textSecondary }]}>
-                  Area 2 • 48% accuracy on drills
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => router.push('/(tabs)/practice' as any)}
-                style={({ pressed }) => [
-                  styles.compactPracticeBtn,
+              {/* Progress Line */}
+              <View
+                style={[
+                  styles.continueProgressTrack,
                   {
-                    backgroundColor: theme.backgroundSelected,
-                    borderColor: theme.borderStrong,
-                    opacity: pressed ? 0.7 : 1,
+                    backgroundColor: isDark
+                      ? 'rgba(255, 255, 255, 0.12)'
+                      : '#E8DCD6',
                   },
                 ]}>
-                <Zap size={12} color={theme.accent} />
-                <Text style={[styles.compactPracticeText, { color: theme.text }]}>
-                  Practice
-                </Text>
-              </Pressable>
+                <View
+                  style={[
+                    styles.continueProgressFill,
+                    { width: '65%', backgroundColor: colors.accent },
+                  ]}
+                />
+              </View>
             </View>
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
+            {/* Right Action Chevron */}
+            <ChevronRight
+              size={19}
+              color={colors.textSecondary}
+              strokeWidth={2.2}
             />
-
-            {/* Weak Subject 2 */}
-            <View style={styles.weakItem}>
-              <View style={styles.weakItemInfo}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Structural Concepts & Trusses
-                </Text>
-                <Text style={[styles.weakMeta, { color: theme.textSecondary }]}>
-                  Area 2 • 55% accuracy on drills
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => router.push('/(tabs)/practice' as any)}
-                style={({ pressed }) => [
-                  styles.compactPracticeBtn,
-                  {
-                    backgroundColor: theme.backgroundSelected,
-                    borderColor: theme.borderStrong,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}>
-                <Zap size={12} color={theme.accent} />
-                <Text style={[styles.compactPracticeText, { color: theme.text }]}>
-                  Practice
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-
-        {/* 5. RECENT ACTIVITY */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            Recent Activity
-          </Text>
-
-          <View
-            style={[
-              styles.groupedCard,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-              },
-            ]}>
-            {/* Activity 1 */}
-            <View style={styles.activityRow}>
-              <View style={styles.activityMain}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  PRC ALE Area 1 Mock Simulation
-                </Text>
-                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
-                  Score: 86% • Passed
-                </Text>
-              </View>
-              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
-                2h ago
-              </Text>
-            </View>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
-
-            {/* Activity 2 */}
-            <View style={styles.activityRow}>
-              <View style={styles.activityMain}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Terms & Styles Flashcards
-                </Text>
-                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
-                  35 terms mastered
-                </Text>
-              </View>
-              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
-                Yesterday
-              </Text>
-            </View>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: theme.border }]}
-            />
-
-            {/* Activity 3 */}
-            <View style={styles.activityRow}>
-              <View style={styles.activityMain}>
-                <Text style={[styles.listTitle, { color: theme.text }]}>
-                  Rule 7 & 8 NBCP Computation Drill
-                </Text>
-                <Text style={[styles.activitySub, { color: theme.textSecondary }]}>
-                  Score: 90% (18/20)
-                </Text>
-              </View>
-              <Text style={[styles.activityTimestamp, { color: theme.textSecondary }]}>
-                2d ago
-              </Text>
-            </View>
-          </View>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -437,242 +381,153 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    gap: 22,
+    gap: 16,
   },
 
-  /* Header */
+  /* 1. Header */
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
-  title: {
-    fontSize: 24,
+  headerGreeting: {
+    fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
 
-  /* Section Structure */
-  section: {
-    gap: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  sectionHeaderRow: {
+  /* 2. Hero Progress Card (Lighter Terracotta, No Outlines, No Shadows) */
+  progressHeroCard: {
+    borderRadius: 22,
+    padding: 20,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  seeAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  seeAllText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  /* Clean Containers */
-  card: {
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 12,
-  },
-  groupedCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-
-  /* Progress Card */
-  progressHero: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  progressBigNumber: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -1,
-    lineHeight: 34,
-  },
-  progressSubLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  track: {
-    height: 6,
-    borderRadius: Radius.xs,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: Radius.xs,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-  },
-  statBox: {
-    alignItems: 'center',
+  progressHeroLeft: {
     flex: 1,
+    paddingRight: 14,
     gap: 2,
   },
-  statValue: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  statLabel: {
-    fontSize: 11,
-  },
-  statDivider: {
-    width: 1,
-    height: 20,
-  },
-
-  /* Continue Card */
-  continueHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  continueTag: {
-    fontSize: 10,
+  progressHeroLabel: {
+    fontSize: 11.5,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
-  continuePercent: {
-    fontSize: 11,
-    fontWeight: '600',
+  progressHeroPercentage: {
+    fontSize: 38,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginTop: 2,
+    lineHeight: 42,
   },
-  continueTitle: {
+  progressHeroMotivation: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  progressBarTrack: {
+    height: 6.5,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: Radius.full,
+  },
+  progressHeroRight: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* 3. Bento 2x2 Grid (Flat, Bigger Gradient Icons) */
+  bentoGrid: {
+    gap: 12,
+  },
+  bentoGridRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bentoTile: {
+    flex: 1,
+    borderRadius: 20,
+    padding: 16,
+    height: 126,
+    justifyContent: 'space-between',
+  },
+  bentoTileBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  bentoTileTitle: {
     fontSize: 15,
     fontWeight: '700',
-    marginTop: -4,
-  },
-  continueSubtitle: {
-    fontSize: 12,
-    marginTop: -8,
-  },
-  continueFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 4,
-  },
-  miniTrack: {
-    height: 4,
-    borderRadius: Radius.xs,
-    overflow: 'hidden',
-  },
-  resumeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.xs,
-  },
-  resumeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 11.5,
-    fontWeight: '700',
+    letterSpacing: -0.2,
   },
 
-  /* Grouped List Items (Recommended, Weak, Activity) */
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  listItemLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  listMeta: {
-    fontSize: 10.5,
-    fontWeight: '700',
-  },
-  listTitle: {
-    fontSize: 13.5,
-    fontWeight: '600',
-  },
-  itemDivider: {
-    height: 1,
-    marginHorizontal: 14,
-  },
-
-  /* Weak Subjects */
-  weakItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+  /* 4. Continue Learning (Flat, Clean) */
+  continueSection: {
     gap: 10,
+    marginTop: 2,
   },
-  weakItemInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  weakMeta: {
-    fontSize: 11.5,
-  },
-  compactPracticeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  compactPracticeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-
-  /* Recent Activity */
-  activityRow: {
+  continueSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
   },
-  activityMain: {
+  continueSectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  continueCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 20,
+    gap: 14,
+  },
+  continueCardBody: {
     flex: 1,
-    gap: 2,
+    gap: 3,
   },
-  activitySub: {
-    fontSize: 11.5,
+  continueTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  activityTimestamp: {
-    fontSize: 11,
+  continueCourseTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    flex: 1,
+    marginRight: 8,
+  },
+  continuePercentageText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  continueCourseSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  continueProgressTrack: {
+    height: 4.5,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  continueProgressFill: {
+    height: '100%',
+    borderRadius: Radius.full,
   },
 });

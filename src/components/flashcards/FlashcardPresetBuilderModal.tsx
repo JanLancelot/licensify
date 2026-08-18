@@ -13,13 +13,52 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from 'react-native-reanimated';
-import { Check, Plus, Shuffle, X } from 'lucide-react-native';
+import {
+  ArrowRight,
+  BookOpen,
+  Brain,
+  Check,
+  Compass,
+  Flame,
+  Landmark,
+  Layers,
+  Lightbulb,
+  PenTool,
+  Plus,
+  Shuffle,
+  Sparkles,
+  Target,
+  Trophy,
+  X,
+  Zap,
+} from 'lucide-react-native';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
-import { Radius } from '@/constants/theme';
-import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { PresetTopicItem } from '@/components/flashcards/PresetTopicItem';
+import { RotatingChevron } from '@/components/ui/RotatingChevron';
+import { useAppTheme } from '@/context/theme-context';
 import { SUBJECT_NOTES } from '@/data/curriculum';
 import { SubjectNote, Topic } from '@/types/curriculum';
+
+export const PRESET_ICONS = [
+  { id: 'Layers', name: 'Layers', icon: Layers, gradient: ['#E58368', '#C85A32'] as [string, string] },
+  { id: 'Sparkles', name: 'Sparkles', icon: Sparkles, gradient: ['#FBBF24', '#D97706'] as [string, string] },
+  { id: 'BookOpen', name: 'Book', icon: BookOpen, gradient: ['#38BDF8', '#0284C7'] as [string, string] },
+  { id: 'Compass', name: 'Compass', icon: Compass, gradient: ['#34D399', '#059669'] as [string, string] },
+  { id: 'Landmark', name: 'Landmark', icon: Landmark, gradient: ['#A78BFA', '#7C3AED'] as [string, string] },
+  { id: 'Flame', name: 'Flame', icon: Flame, gradient: ['#FB7185', '#E11D48'] as [string, string] },
+  { id: 'Zap', name: 'Zap', icon: Zap, gradient: ['#F59E0B', '#B45309'] as [string, string] },
+  { id: 'Brain', name: 'Brain', icon: Brain, gradient: ['#EC4899', '#BE185D'] as [string, string] },
+  { id: 'Lightbulb', name: 'Idea', icon: Lightbulb, gradient: ['#10B981', '#047857'] as [string, string] },
+  { id: 'Target', name: 'Target', icon: Target, gradient: ['#6366F1', '#4338CA'] as [string, string] },
+  { id: 'PenTool', name: 'Design', icon: PenTool, gradient: ['#14B8A6', '#0F766E'] as [string, string] },
+  { id: 'Trophy', name: 'Trophy', icon: Trophy, gradient: ['#EAB308', '#A16207'] as [string, string] },
+];
 
 export interface FlashcardPresetBuilderModalProps {
   visible: boolean;
@@ -38,9 +77,55 @@ export interface FlashcardPresetBuilderModalProps {
   setIsShuffled: (val: boolean) => void;
   customTitle: string;
   setCustomTitle: (val: string) => void;
+  selectedIconId: string;
+  setSelectedIconId: (val: string) => void;
   bottomInset: number;
-  theme: any;
+  theme?: any;
 }
+
+/* Subject Gradient Squircle */
+function SubjectGradientIcon({
+  icon: IconComponent,
+  colors: [startColor, endColor],
+  size = 44,
+}: {
+  icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
+  colors: [string, string];
+  size?: number;
+}) {
+  const gradId = `bld_subj_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startColor} />
+            <Stop offset="100%" stopColor={endColor} />
+          </LinearGradient>
+        </Defs>
+        <Rect width={size} height={size} rx={14} fill={`url(#${gradId})`} />
+      </Svg>
+      <IconComponent size={22} color="#FFFFFF" strokeWidth={2.2} />
+    </View>
+  );
+}
+
+const SUBJECT_GRADIENTS: [string, string][] = [
+  ['#E58368', '#C85A32'], // Terracotta
+  ['#FBBF24', '#D97706'], // Amber
+  ['#38BDF8', '#0284C7'], // Sky Blue
+  ['#34D399', '#059669'], // Emerald
+  ['#A78BFA', '#7C3AED'], // Violet
+  ['#FB7185', '#E11D48'], // Rose
+];
 
 export function FlashcardPresetBuilderModal({
   visible,
@@ -59,9 +144,12 @@ export function FlashcardPresetBuilderModal({
   setIsShuffled,
   customTitle,
   setCustomTitle,
+  selectedIconId,
+  setSelectedIconId,
   bottomInset,
-  theme,
 }: FlashcardPresetBuilderModalProps) {
+  const { colors, isDark } = useAppTheme();
+
   return (
     <Modal
       visible={visible}
@@ -75,47 +163,174 @@ export function FlashcardPresetBuilderModal({
           style={[
             styles.modalSheet,
             {
-              backgroundColor: theme.background,
-              borderColor: theme.border,
+              backgroundColor: colors.background,
               paddingBottom: Math.max(bottomInset + 12, 20),
             },
           ]}>
           {/* Sheet Handle */}
           <View style={styles.modalHandleBar}>
-            <View style={[styles.modalHandle, { backgroundColor: theme.borderStrong }]} />
+            <View
+              style={[
+                styles.modalHandle,
+                { backgroundColor: isDark ? '#374151' : '#D1D5DB' },
+              ]}
+            />
           </View>
 
           {/* Modal Header */}
-          <View
-            style={[
-              styles.modalHeader,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderBottomColor: theme.border,
-              },
-            ]}>
+          <View style={styles.modalHeader}>
             <View style={styles.modalHeaderTitleBox}>
-              <Text style={[styles.modalKicker, { color: theme.accent }]}>
-                {isEditing ? 'EDIT FLASHCARD PRESET' : 'FLASHCARD PRESET BUILDER'}
-              </Text>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>
-                {isEditing ? 'Modify Selection & Settings' : 'Select from Notes'}
+              <Text style={[styles.modalTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                FLASHCARD PRESETS
               </Text>
             </View>
 
-            <Pressable onPress={onClose} style={styles.modalCloseBtn}>
-              <X size={20} color={theme.text} />
+            <Pressable
+              onPress={onClose}
+              style={[
+                styles.modalCloseBtn,
+                { backgroundColor: isDark ? '#23262F' : '#F6F0ED' },
+              ]}>
+              <X size={18} color={colors.text} strokeWidth={2.4} />
             </Pressable>
           </View>
 
-          {/* Notes List with + Add Selection Buttons */}
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.modalNotesContent}>
+            {/* 1. Preset Title & Customization Card */}
+            <View
+              style={[
+                styles.configCard,
+                { backgroundColor: isDark ? '#1C1F26' : '#F6F0ED' },
+              ]}>
+              <Text style={[styles.fieldLabel, { color: colors.accent }]}>
+                PRESET TITLE (OPTIONAL)
+              </Text>
+              <TextInput
+                value={customTitle}
+                onChangeText={setCustomTitle}
+                placeholder="e.g., Structural & History Focus"
+                placeholderTextColor={colors.textSecondary}
+                style={[
+                  styles.titleInput,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                    color: isDark ? '#F9FAFB' : '#0F172A',
+                  },
+                ]}
+              />
+
+              {/* Icon Selection Row */}
+              <View style={styles.iconSelectionSection}>
+                <Text style={[styles.fieldLabel, { color: colors.accent }]}>
+                  CHOOSE PRESET ICON
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.iconScrollRow}>
+                  {PRESET_ICONS.map((item) => {
+                    const isSelected = selectedIconId === item.id;
+                    const IconComp = item.icon;
+                    const [startC, endC] = item.gradient;
+                    const gradId = `sel_icon_${item.id}`;
+
+                    return (
+                      <Pressable
+                        key={item.id}
+                        onPress={() => setSelectedIconId(item.id)}
+                        style={({ pressed }) => [
+                          styles.iconPickButton,
+                          {
+                            borderColor: isSelected ? colors.accent : 'transparent',
+                            backgroundColor: isSelected
+                              ? isDark
+                                ? 'rgba(224, 122, 95, 0.25)'
+                                : '#F8EAE4'
+                              : isDark
+                                ? '#23262F'
+                                : '#FFFFFF',
+                            opacity: pressed ? 0.75 : 1,
+                            transform: [{ scale: isSelected ? 1.05 : 1 }],
+                          },
+                        ]}>
+                        <View
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 12,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            position: 'relative',
+                          }}>
+                          <Svg width={36} height={36} style={StyleSheet.absoluteFill}>
+                            <Defs>
+                              <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <Stop offset="0%" stopColor={startC} />
+                                <Stop offset="100%" stopColor={endC} />
+                              </LinearGradient>
+                            </Defs>
+                            <Rect width={36} height={36} rx={12} fill={`url(#${gradId})`} />
+                          </Svg>
+                          <IconComp size={18} color="#FFFFFF" strokeWidth={2.4} />
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Shuffle Toggle Row */}
+              <Pressable
+                onPress={() => setIsShuffled(!isShuffled)}
+                style={styles.shuffleToggleRow}>
+                <View style={styles.shuffleLeft}>
+                  <Shuffle size={16} color={colors.accent} strokeWidth={2.2} />
+                  <Text style={[styles.shuffleLabel, { color: isDark ? '#E2E8F0' : '#1E293B' }]}>
+                    Shuffle Cards in Session
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.shuffleSwitchPill,
+                    {
+                      backgroundColor: isShuffled
+                        ? colors.accent
+                        : isDark
+                          ? '#23262F'
+                          : '#E2E8F0',
+                    },
+                  ]}>
+                  <View
+                    style={[
+                      styles.switchThumb,
+                      {
+                        transform: [{ translateX: isShuffled ? 18 : 2 }],
+                      },
+                    ]}
+                  />
+                </View>
+              </Pressable>
+            </View>
+
+            {/* 2. Section Subhead */}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Select Subjects & Lessons
+              </Text>
+              <Text style={[styles.selectedCountText, { color: colors.accent }]}>
+                {selectedLessonIds.size} Selected
+              </Text>
+            </View>
+
+            {/* 3. Subjects & Topics Accordion List */}
             <View style={styles.notesList}>
-              {SUBJECT_NOTES.map((subject) => {
+              {SUBJECT_NOTES.map((subject, sIdx) => {
                 const isSubjectOpen = !!expandedSubjects[subject.id];
                 const IconComponent = subject.icon;
+                const gradColors = SUBJECT_GRADIENTS[sIdx % SUBJECT_GRADIENTS.length];
                 const subjectLessonIds = subject.topics.flatMap((t) =>
                   t.lessons.map((l) => l.id)
                 );
@@ -127,9 +342,7 @@ export function FlashcardPresetBuilderModal({
                   selectedInSubjectCount === subjectLessonIds.length;
                 const isSomeSubjectSelected =
                   selectedInSubjectCount > 0 && !isAllSubjectSelected;
-                const hasSubjectSelected = selectedInSubjectCount > 0;
 
-                // Find index of the last topic in this subject that has selected lessons
                 const lastSelectedTopicIndex = subject.topics.reduce(
                   (lastIdx, topic, idx) => {
                     const hasSelected = topic.lessons.some((l) =>
@@ -143,126 +356,89 @@ export function FlashcardPresetBuilderModal({
                 return (
                   <Animated.View
                     key={subject.id}
-                    layout={LinearTransition.duration(200)}
+                    layout={LinearTransition.duration(240)}
                     style={[
                       styles.subjectCard,
                       {
-                        backgroundColor: hasSubjectSelected
-                          ? theme.backgroundSelected
-                          : theme.backgroundElement,
-                        borderColor: hasSubjectSelected
-                          ? theme.accent
-                          : theme.border,
-                        borderWidth: hasSubjectSelected ? 1.5 : 1,
+                        backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
                       },
                     ]}>
-                    {/* Subject Level Header */}
+                    {/* Subject Header Row */}
                     <View style={styles.subjectHeaderRow}>
                       <Pressable
                         onPress={() => toggleSubject(subject.id)}
-                        style={styles.subjectHeaderLeftArea}>
-                        <View
-                          style={[
-                            styles.circleLogo,
-                            {
-                              backgroundColor: hasSubjectSelected
-                                ? theme.accent
-                                : theme.accentMuted,
-                            },
-                          ]}>
-                          <IconComponent
-                            size={20}
-                            color={hasSubjectSelected ? '#FFFFFF' : theme.accent}
-                            strokeWidth={2.2}
-                          />
-                        </View>
+                        style={styles.subjectHeaderClickable}>
+                        {/* Prominent Left Icon */}
+                        <SubjectGradientIcon
+                          icon={IconComponent}
+                          colors={gradColors}
+                          size={44}
+                        />
 
-                        <View style={styles.subjectHeaderInfo}>
-                          <Text style={[styles.subjectTitle, { color: theme.text }]}>
-                            {subject.title}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.subjectSubtext,
-                              {
-                                color: hasSubjectSelected
-                                  ? theme.accent
-                                  : theme.textSecondary,
-                                fontWeight: hasSubjectSelected ? '700' : '400',
-                              },
-                            ]}>
-                            {hasSubjectSelected
-                              ? `${selectedInSubjectCount} of ${subjectLessonIds.length} Lessons Selected`
-                              : `${subject.topics.length} Topics • ${subjectLessonIds.length} Lessons`}
-                          </Text>
-                        </View>
+                        <Text
+                          numberOfLines={2}
+                          style={[
+                            styles.subjectTitle,
+                            { color: isDark ? '#F9FAFB' : '#0F172A' },
+                          ]}>
+                          {subject.title}
+                        </Text>
+
+                        <RotatingChevron
+                          isOpen={isSubjectOpen}
+                          color={colors.accent}
+                          size={18}
+                        />
                       </Pressable>
 
-                      {/* + Add Subject Button */}
+                      {/* Select All Subject Lessons Button */}
                       <Pressable
                         onPress={() => toggleSubjectSelection(subject)}
+                        hitSlop={8}
                         style={({ pressed }) => [
-                          styles.addCircleBtn,
+                          styles.subjectSelectAllBtn,
                           {
                             backgroundColor: isAllSubjectSelected
-                              ? theme.accent
+                              ? colors.accent
                               : isSomeSubjectSelected
-                              ? theme.accentMuted
-                              : theme.backgroundSelected,
-                            borderColor: isAllSubjectSelected || isSomeSubjectSelected
-                              ? theme.accent
-                              : theme.border,
+                                ? colors.accent
+                                : isDark
+                                  ? '#23262F'
+                                  : '#EBE5E1',
                             opacity: pressed ? 0.75 : 1,
                           },
                         ]}>
                         {isAllSubjectSelected ? (
                           <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                        ) : isSomeSubjectSelected ? (
+                          <Text style={styles.someSelectedMark}>-</Text>
                         ) : (
-                          <Plus
-                            size={14}
-                            color={isSomeSubjectSelected ? theme.accent : theme.text}
-                            strokeWidth={2.5}
-                          />
+                          <Plus size={14} color={colors.textSecondary} strokeWidth={2.4} />
                         )}
-                      </Pressable>
-
-                      {/* Chevron Expand */}
-                      <Pressable
-                        onPress={() => toggleSubject(subject.id)}
-                        style={styles.chevronPressable}>
-                        <RotatingChevron
-                          isOpen={isSubjectOpen}
-                          color={hasSubjectSelected ? theme.accent : theme.textSecondary}
-                          size={18}
-                        />
                       </Pressable>
                     </View>
 
-                    {/* Topic Level Accordion */}
+                    {/* Topics Dropdown */}
                     {isSubjectOpen && (
                       <Animated.View
-                        entering={FadeInDown.duration(200)}
-                        exiting={FadeOutUp.duration(160)}
-                        layout={LinearTransition.duration(200)}
-                        style={styles.topicsContainer}>
-                        {subject.topics.map((topic, tIdx) => {
-                          const isLastTopic = tIdx === subject.topics.length - 1;
-                          return (
-                            <PresetTopicItem
-                              key={topic.id}
-                              topic={topic}
-                              tIdx={tIdx}
-                              isLastTopic={isLastTopic}
-                              selectedLessonIds={selectedLessonIds}
-                              expandedTopics={expandedTopics}
-                              toggleTopic={toggleTopic}
-                              toggleTopicSelection={toggleTopicSelection}
-                              toggleLessonSelection={toggleLessonSelection}
-                              lastSelectedTopicIndex={lastSelectedTopicIndex}
-                              theme={theme}
-                            />
-                          );
-                        })}
+                        entering={FadeInDown.duration(220)}
+                        exiting={FadeOutUp.duration(180)}
+                        layout={LinearTransition.duration(240)}
+                        style={styles.topicsListWrapper}>
+                        {subject.topics.map((topic, tIdx) => (
+                          <PresetTopicItem
+                            key={topic.id}
+                            topic={topic}
+                            tIdx={tIdx}
+                            isLastTopic={tIdx === subject.topics.length - 1}
+                            selectedLessonIds={selectedLessonIds}
+                            expandedTopics={expandedTopics}
+                            toggleTopic={toggleTopic}
+                            toggleTopicSelection={toggleTopicSelection}
+                            toggleLessonSelection={toggleLessonSelection}
+                            lastSelectedTopicIndex={lastSelectedTopicIndex}
+                          />
+                        ))}
                       </Animated.View>
                     )}
                   </Animated.View>
@@ -271,88 +447,24 @@ export function FlashcardPresetBuilderModal({
             </View>
           </ScrollView>
 
-          {/* ── Modal Bottom Controls & Action Bar ──────────────────────── */}
-          <View
-            style={[
-              styles.modalBottomPanel,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderTopColor: theme.border,
-              },
-            ]}>
-            {/* Selected Summary and Shuffled Toggle */}
-            <View style={styles.optionsRow}>
-              <View style={styles.selectionCountBox}>
-                <Text style={[styles.selectionCountNumber, { color: theme.accent }]}>
-                  {selectedLessonIds.size}
-                </Text>
-                <Text style={[styles.selectionCountLabel, { color: theme.textSecondary }]}>
-                  Lessons selected
-                </Text>
-              </View>
-
-              {/* Shuffled Toggle */}
-              <Pressable
-                onPress={() => setIsShuffled(!isShuffled)}
-                style={[
-                  styles.toggleChip,
-                  {
-                    backgroundColor: isShuffled
-                      ? theme.accentMuted
-                      : theme.backgroundSelected,
-                    borderColor: isShuffled ? theme.accent : theme.border,
-                  },
-                ]}>
-                <Shuffle
-                  size={12}
-                  color={isShuffled ? theme.accent : theme.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.toggleChipText,
-                    { color: isShuffled ? theme.accent : theme.textSecondary },
-                  ]}>
-                  Shuffled
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* Custom Title Input */}
-            <TextInput
-              value={customTitle}
-              onChangeText={setCustomTitle}
-              placeholder="Custom Preset Title (Optional)"
-              placeholderTextColor={theme.textSecondary}
-              style={[
-                styles.titleInput,
-                {
-                  backgroundColor: theme.backgroundSelected,
-                  borderColor: theme.border,
-                  color: theme.text,
-                },
-              ]}
-            />
-
-            {/* Action Button (Add / Save) */}
+          {/* Bottom Submit CTA */}
+          <View style={styles.modalFooterBar}>
             <Pressable
               onPress={onSubmit}
               style={({ pressed }) => [
-                styles.createPresetActionBtn,
+                styles.submitBtn,
                 {
-                  backgroundColor: theme.accent,
+                  backgroundColor: colors.accent,
                   opacity: pressed ? 0.85 : 1,
+                  transform: [{ scale: pressed ? 0.985 : 1 }],
                 },
               ]}>
-              {isEditing ? (
-                <Check size={16} color="#FFFFFF" strokeWidth={2.5} />
-              ) : (
-                <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
-              )}
-              <Text style={styles.createPresetActionBtnText}>
+              <Text style={styles.submitBtnText}>
                 {isEditing
-                  ? `Save Changes (${selectedLessonIds.size} Lessons)`
-                  : `Add to Flashcards (${selectedLessonIds.size} Lessons)`}
+                  ? `Save Preset (${selectedLessonIds.size} Lessons)`
+                  : `Create Preset (${selectedLessonIds.size} Lessons)`}
               </Text>
+              <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.4} />
             </Pressable>
           </View>
         </View>
@@ -364,28 +476,27 @@ export function FlashcardPresetBuilderModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalDismissArea: {
     flex: 1,
   },
   modalSheet: {
-    maxHeight: '90%',
-    minHeight: '75%',
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    borderWidth: 1,
+    maxHeight: '92%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     overflow: 'hidden',
   },
   modalHandleBar: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingTop: 10,
+    paddingBottom: 4,
   },
   modalHandle: {
     width: 38,
     height: 4.5,
-    borderRadius: Radius.full,
+    borderRadius: 2.5,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -393,141 +504,164 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderBottomWidth: 1,
   },
   modalHeaderTitleBox: {
-    gap: 2,
-  },
-  modalKicker: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+    flex: 1,
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 19,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   modalCloseBtn: {
-    padding: 6,
-  },
-  modalNotesContent: {
-    padding: 16,
-    paddingBottom: 24,
-  },
-  notesList: {
-    gap: 12,
-  },
-  subjectCard: {
-    borderRadius: Radius.md,
-    overflow: 'hidden',
-  },
-  subjectHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    gap: 8,
-  },
-  subjectHeaderLeftArea: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  circleLogo: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  subjectHeaderInfo: {
-    flex: 1,
-    gap: 2,
+  modalNotesContent: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 24,
+    gap: 16,
   },
-  subjectTitle: {
+  configCard: {
+    borderRadius: 20,
+    padding: 16,
+    gap: 12,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  titleInput: {
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  iconSelectionSection: {
+    gap: 8,
+    paddingTop: 2,
+  },
+  iconScrollRow: {
+    gap: 10,
+    paddingVertical: 4,
+  },
+  iconPickButton: {
+    padding: 6,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shuffleToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+  },
+  shuffleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  shuffleLabel: {
     fontSize: 13.5,
+    fontWeight: '600',
+  },
+  shuffleSwitchPill: {
+    width: 42,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+  },
+  switchThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  selectedCountText: {
+    fontSize: 13,
     fontWeight: '700',
   },
-  subjectSubtext: {
-    fontSize: 11,
+  notesList: {
+    gap: 12,
   },
-  addCircleBtn: {
+  subjectCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  subjectHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  subjectHeaderClickable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  subjectTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    flex: 1,
+  },
+  subjectSelectAllBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
   },
-  chevronPressable: {
-    padding: 4,
-  },
-  topicsContainer: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.06)',
-    paddingLeft: 12,
-    paddingRight: 10,
-    paddingTop: 10,
-    paddingBottom: 2,
-    gap: 0,
-  },
-  modalBottomPanel: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    gap: 10,
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  selectionCountBox: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-    flex: 1,
-  },
-  selectionCountNumber: {
-    fontSize: 16,
+  someSelectedMark: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '800',
+    lineHeight: 14,
   },
-  selectionCountLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+  topicsListWrapper: {
+    paddingHorizontal: 14,
+    paddingTop: 4,
+    paddingBottom: 12,
+    gap: 4,
   },
-  toggleChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    borderWidth: 1,
+  modalFooterBar: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
-  toggleChipText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  titleInput: {
-    height: 40,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    fontSize: 13,
-  },
-  createPresetActionBtn: {
+  submitBtn: {
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 46,
-    borderRadius: Radius.xs,
   },
-  createPresetActionBtnText: {
+  submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 13.5,
+    fontSize: 15,
     fontWeight: '700',
   },
 });

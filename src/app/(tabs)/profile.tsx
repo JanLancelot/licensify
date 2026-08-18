@@ -1,6 +1,8 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useRouter } from 'expo-router';
 import {
+  Bell,
+  ChevronRight,
   Cloud,
   Flame,
   Lock,
@@ -11,9 +13,10 @@ import {
   Sun,
   Trophy,
   User,
-  Zap
+  Volume2,
+  Zap,
 } from 'lucide-react-native';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,13 +27,60 @@ import {
   StyleSheet,
   Switch,
   Text,
-  View
+  View,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
-import { Radius } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
+
+/* Gradient Squircle Icon */
+function ProfileGradientIcon({
+  icon: IconComponent,
+  colors: [startColor, endColor],
+  size = 46,
+  borderRadius = 15,
+}: {
+  icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
+  colors: [string, string];
+  size?: number;
+  borderRadius?: number;
+}) {
+  const gradId = `prof_grad_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startColor} />
+            <Stop offset="100%" stopColor={endColor} />
+          </LinearGradient>
+        </Defs>
+        <Rect
+          width={size}
+          height={size}
+          rx={borderRadius}
+          fill={`url(#${gradId})`}
+        />
+      </Svg>
+      <IconComponent size={Math.round(size * 0.48)} color="#FFFFFF" strokeWidth={2.2} />
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const { colors, themeMode, setThemeMode, isDark } = useAppTheme();
@@ -43,7 +93,7 @@ export default function ProfileScreen() {
     const doSignOut = async () => {
       setIsSigningOut(true);
       try {
-        await new Promise((resolve) => setTimeout(resolve, 650));
+        await new Promise((resolve) => setTimeout(resolve, 600));
         await signOut();
         router.replace('/(auth)/login' as any);
       } catch (e) {
@@ -57,18 +107,16 @@ export default function ProfileScreen() {
         doSignOut();
       }
     } else {
-      Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      Alert.alert('Sign Out', 'Are you sure you want to sign out of your account?', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign Out', style: 'destructive', onPress: doSignOut },
       ]);
     }
   };
 
-  // Settings & Notifications State
+  // Settings State
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(true);
-  const [weeklyReport, setWeeklyReport] = useState(true);
-  const [examAlerts, setExamAlerts] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const themeOptions: { mode: ThemeMode; label: string; icon: typeof Sun }[] = [
@@ -77,15 +125,11 @@ export default function ProfileScreen() {
     { mode: 'dark', label: 'Dark', icon: Moon },
   ];
 
-  const handleToggleDarkMode = (value: boolean) => {
-    setThemeMode(value ? 'dark' : 'light');
-  };
-
   const handleManualSync = () => {
     setIsSyncing(true);
     setTimeout(() => {
       setIsSyncing(false);
-      Alert.alert('Database Synced', 'Your study progress, quiz history, and flashcards are up to date.');
+      Alert.alert('Database Synced', 'Your study progress, presets, and quiz history are up to date.');
     }, 800);
   };
 
@@ -95,7 +139,11 @@ export default function ProfileScreen() {
       'Are you sure you want to reset your quiz history and practice analytics? This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Reset', style: 'destructive', onPress: () => Alert.alert('Stats Reset', 'Your analytics have been reset.') },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => Alert.alert('Stats Reset', 'Your analytics have been reset.'),
+        },
       ]
     );
   };
@@ -104,42 +152,36 @@ export default function ProfileScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* Header */}
+      {/* 1. Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
+        <Text style={[styles.title, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
           Profile
         </Text>
       </View>
 
       <ScrollView
-        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* 1. PROFILE CARD */}
+        {/* 2. USER PROFILE CARD */}
         <View
           style={[
             styles.profileCard,
             {
-              backgroundColor: colors.backgroundElement,
-              borderColor: colors.border,
+              backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
             },
           ]}>
-          <View
-            style={[
-              styles.avatar,
-              {
-                backgroundColor: colors.accentMuted,
-                borderColor: colors.border,
-              },
-            ]}>
-            <User size={26} color={colors.accent} />
-          </View>
+          <ProfileGradientIcon
+            icon={User}
+            colors={['#E58368', '#C85A32']}
+            size={60}
+            borderRadius={20}
+          />
 
           <View style={styles.profileInfo}>
-            <Text style={[styles.name, { color: colors.text }]}>
+            <Text style={[styles.name, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
               Engr. Board Examinee
             </Text>
             <Text style={[styles.role, { color: colors.textSecondary }]}>
@@ -148,9 +190,9 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* 2. STUDY STREAK & OVERALL STATISTICS */}
+        {/* 3. STUDY STREAK & OVERALL STATISTICS */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
             Overall Statistics
           </Text>
 
@@ -158,43 +200,35 @@ export default function ProfileScreen() {
             style={[
               styles.groupedCard,
               {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
-            {/* Streak Row */}
+            {/* Streak Banner */}
             <View style={styles.streakRow}>
-              <View style={styles.streakLeft}>
-                <View
-                  style={[
-                    styles.streakIconBox,
-                    {
-                      backgroundColor: colors.accentMuted,
-                      borderColor: colors.border,
-                    },
-                  ]}>
-                  <Flame size={20} color={colors.accent} />
-                </View>
-                <View>
-                  <Text style={[styles.streakCount, { color: colors.text }]}>
-                    14-Day Study Streak
-                  </Text>
-                  <Text
-                    style={[styles.streakSub, { color: colors.textSecondary }]}>
-                    6 days until 20-Day Streak Milestone badge
-                  </Text>
-                </View>
+              <ProfileGradientIcon
+                icon={Flame}
+                colors={['#F59E0B', '#D97706']}
+                size={42}
+                borderRadius={14}
+              />
+              <View style={styles.streakInfo}>
+                <Text style={[styles.streakCount, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                  14-Day Study Streak
+                </Text>
+                <Text style={[styles.streakSub, { color: colors.textSecondary }]}>
+                  6 days until 20-Day Streak Milestone badge
+                </Text>
               </View>
             </View>
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
-
             {/* 3 Core Stats Row */}
             <View style={styles.statsRow}>
-              <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: colors.text }]}>
+              <View
+                style={[
+                  styles.statPillCard,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
+                <Text style={[styles.statValue, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
                   128h
                 </Text>
                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
@@ -203,11 +237,11 @@ export default function ProfileScreen() {
               </View>
 
               <View
-                style={[styles.statDivider, { backgroundColor: colors.border }]}
-              />
-
-              <View style={styles.statBox}>
-                <Text style={[styles.statValue, { color: colors.text }]}>
+                style={[
+                  styles.statPillCard,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
+                <Text style={[styles.statValue, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
                   1,420
                 </Text>
                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
@@ -216,10 +250,10 @@ export default function ProfileScreen() {
               </View>
 
               <View
-                style={[styles.statDivider, { backgroundColor: colors.border }]}
-              />
-
-              <View style={styles.statBox}>
+                style={[
+                  styles.statPillCard,
+                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                ]}>
                 <Text style={[styles.statValue, { color: colors.accent }]}>
                   84%
                 </Text>
@@ -231,38 +265,32 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* 3. ACHIEVEMENTS */}
+        {/* 4. ACHIEVEMENTS */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
             Achievements
           </Text>
 
-          <View
-            style={[
-              styles.groupedCard,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
-            ]}>
+          <View style={styles.achievementsList}>
             {/* Achievement 1 */}
-            <View style={styles.achievementRow}>
-              <View
-                style={[
-                  styles.achieveIconBox,
-                  {
-                    backgroundColor: colors.accentMuted,
-                    borderColor: colors.border,
-                  },
-                ]}>
-                <Trophy size={16} color={colors.accent} />
-              </View>
+            <View
+              style={[
+                styles.achievementCard,
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                },
+              ]}>
+              <ProfileGradientIcon
+                icon={Trophy}
+                colors={['#E58368', '#C85A32']}
+                size={44}
+                borderRadius={14}
+              />
               <View style={styles.achieveInfo}>
-                <Text style={[styles.achieveTitle, { color: colors.text }]}>
+                <Text style={[styles.achieveTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
                   Code Master (Rule 7 & 8)
                 </Text>
-                <Text
-                  style={[styles.achieveDesc, { color: colors.textSecondary }]}>
+                <Text style={[styles.achieveDesc, { color: colors.textSecondary }]}>
                   Answered 100+ NBCP calculation questions correctly.
                 </Text>
               </View>
@@ -270,8 +298,9 @@ export default function ProfileScreen() {
                 style={[
                   styles.unlockedBadge,
                   {
-                    backgroundColor: colors.accentMuted,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? 'rgba(224, 122, 95, 0.2)'
+                      : '#F8EAE4',
                   },
                 ]}>
                 <Text style={[styles.unlockedText, { color: colors.accent }]}>
@@ -280,28 +309,25 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
-
             {/* Achievement 2 */}
-            <View style={styles.achievementRow}>
-              <View
-                style={[
-                  styles.achieveIconBox,
-                  {
-                    backgroundColor: colors.accentMuted,
-                    borderColor: colors.border,
-                  },
-                ]}>
-                <Zap size={16} color={colors.accent} />
-              </View>
+            <View
+              style={[
+                styles.achievementCard,
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                },
+              ]}>
+              <ProfileGradientIcon
+                icon={Zap}
+                colors={['#FBBF24', '#D97706']}
+                size={44}
+                borderRadius={14}
+              />
               <View style={styles.achieveInfo}>
-                <Text style={[styles.achieveTitle, { color: colors.text }]}>
+                <Text style={[styles.achieveTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
                   Rapid Recall
                 </Text>
-                <Text
-                  style={[styles.achieveDesc, { color: colors.textSecondary }]}>
+                <Text style={[styles.achieveDesc, { color: colors.textSecondary }]}>
                   Finished a 20-item drill in under 10 mins with &gt;85% score.
                 </Text>
               </View>
@@ -309,8 +335,9 @@ export default function ProfileScreen() {
                 style={[
                   styles.unlockedBadge,
                   {
-                    backgroundColor: colors.accentMuted,
-                    borderColor: colors.border,
+                    backgroundColor: isDark
+                      ? 'rgba(224, 122, 95, 0.2)'
+                      : '#F8EAE4',
                   },
                 ]}>
                 <Text style={[styles.unlockedText, { color: colors.accent }]}>
@@ -319,79 +346,52 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
-
             {/* Achievement 3 (In Progress) */}
-            <View style={styles.achievementRow}>
+            <View
+              style={[
+                styles.achievementCard,
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                },
+              ]}>
               <View
                 style={[
-                  styles.achieveIconBox,
-                  {
-                    backgroundColor: colors.backgroundSelected,
-                    borderColor: colors.border,
-                  },
+                  styles.lockedIconBox,
+                  { backgroundColor: isDark ? '#23262F' : '#E8E2DE' },
                 ]}>
-                <Lock size={15} color={colors.textSecondary} />
+                <Lock size={18} color={colors.textSecondary} strokeWidth={2.2} />
               </View>
               <View style={styles.achieveInfo}>
-                <Text style={[styles.achieveTitle, { color: colors.text }]}>
+                <Text style={[styles.achieveTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
                   Area 1 Specialist
                 </Text>
-                <Text
-                  style={[styles.achieveDesc, { color: colors.textSecondary }]}>
+                <Text style={[styles.achieveDesc, { color: colors.textSecondary }]}>
                   Score 85%+ on three Area 1 Mock Tests (Progress: 2/3).
                 </Text>
               </View>
-              <Text
-                style={[styles.progressAchieveText, { color: colors.textSecondary }]}>
+              <Text style={[styles.progressAchieveText, { color: colors.accent }]}>
                 2/3 Done
               </Text>
             </View>
           </View>
         </View>
 
-        {/* 4. SETTINGS */}
+        {/* 5. SETTINGS & PREFERENCES */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Settings
+          <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+            Preferences
           </Text>
 
           <View
             style={[
               styles.groupedCard,
               {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
-            {/* Dark Mode Switch */}
-            <View style={styles.settingSwitchRow}>
-              <View style={styles.settingLabelBox}>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>
-                  Dark Mode
-                </Text>
-                <Text
-                  style={[styles.settingDesc, { color: colors.textSecondary }]}>
-                  Switch between dark and light architectural interface.
-                </Text>
-              </View>
-              <Switch
-                value={isDark}
-                onValueChange={handleToggleDarkMode}
-                trackColor={{ false: colors.border, true: colors.accent }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
-
-            {/* 3-Way Mode Segment */}
-            <View style={styles.themeSelectorRow}>
-              <Text style={[styles.themeLabel, { color: colors.textSecondary }]}>
+            {/* Theme Mode Selector */}
+            <View style={styles.themeSelectorBox}>
+              <Text style={[styles.fieldLabel, { color: colors.accent }]}>
                 THEME MODE
               </Text>
               <View style={styles.themeOptionsGroup}>
@@ -402,27 +402,28 @@ export default function ProfileScreen() {
                     <Pressable
                       key={opt.mode}
                       onPress={() => setThemeMode(opt.mode)}
-                      style={[
+                      style={({ pressed }) => [
                         styles.themeOptionBtn,
                         {
                           backgroundColor: isSelected
                             ? colors.accent
-                            : colors.backgroundSelected,
-                          borderColor: isSelected
-                            ? colors.accent
-                            : colors.borderStrong,
+                            : isDark
+                              ? '#23262F'
+                              : '#FFFFFF',
+                          opacity: pressed ? 0.8 : 1,
                         },
                       ]}>
                       <Icon
-                        size={13}
+                        size={15}
                         color={isSelected ? '#FFFFFF' : colors.textSecondary}
+                        strokeWidth={2.4}
                       />
                       <Text
                         style={[
                           styles.themeOptionBtnText,
                           {
-                            color:
-                              isSelected ? '#FFFFFF' : colors.textSecondary,
+                            color: isSelected ? '#FFFFFF' : isDark ? '#E2E8F0' : '#1E293B',
+                            fontWeight: isSelected ? '800' : '600',
                           },
                         ]}>
                         {opt.label}
@@ -433,251 +434,184 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
+            <View style={[styles.itemDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />
 
             {/* Sound & Haptics */}
-            <View style={styles.settingSwitchRow}>
-              <View style={styles.settingLabelBox}>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>
-                  Sound & Drill Feedback
-                </Text>
-                <Text
-                  style={[styles.settingDesc, { color: colors.textSecondary }]}>
-                  Play audio cues on correct and incorrect quiz answers.
-                </Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingLeft}>
+                <View
+                  style={[
+                    styles.settingIconCircle,
+                    { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                  ]}>
+                  <Volume2 size={16} color={colors.accent} strokeWidth={2.2} />
+                </View>
+                <View style={styles.settingTextGroup}>
+                  <Text style={[styles.settingTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                    Sound & Drill Feedback
+                  </Text>
+                  <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>
+                    Audio cues on quiz answers
+                  </Text>
+                </View>
               </View>
               <Switch
                 value={soundEnabled}
                 onValueChange={setSoundEnabled}
-                trackColor={{ false: colors.border, true: colors.accent }}
+                trackColor={{ false: isDark ? '#374151' : '#D1D5DB', true: colors.accent }}
                 thumbColor="#FFFFFF"
               />
             </View>
-          </View>
-        </View>
 
-        {/* 5. NOTIFICATIONS */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Notifications
-          </Text>
+            <View style={[styles.itemDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />
 
-          <View
-            style={[
-              styles.groupedCard,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
-            ]}>
             {/* Daily Reminder */}
-            <View style={styles.settingSwitchRow}>
-              <View style={styles.settingLabelBox}>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>
-                  Daily Study Reminder
-                </Text>
-                <Text
-                  style={[styles.settingDesc, { color: colors.textSecondary }]}>
-                  Scheduled alert at 8:00 PM to maintain your daily streak.
-                </Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingLeft}>
+                <View
+                  style={[
+                    styles.settingIconCircle,
+                    { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+                  ]}>
+                  <Bell size={16} color={colors.accent} strokeWidth={2.2} />
+                </View>
+                <View style={styles.settingTextGroup}>
+                  <Text style={[styles.settingTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                    Daily Study Reminder
+                  </Text>
+                  <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>
+                    Notifications for study streak
+                  </Text>
+                </View>
               </View>
               <Switch
                 value={dailyReminder}
                 onValueChange={setDailyReminder}
-                trackColor={{ false: colors.border, true: colors.accent }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
-
-            {/* Weekly Summary */}
-            <View style={styles.settingSwitchRow}>
-              <View style={styles.settingLabelBox}>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>
-                  Weekly Readiness Report
-                </Text>
-                <Text
-                  style={[styles.settingDesc, { color: colors.textSecondary }]}>
-                  Receive weekly analytics on syllabus coverage and weak topics.
-                </Text>
-              </View>
-              <Switch
-                value={weeklyReport}
-                onValueChange={setWeeklyReport}
-                trackColor={{ false: colors.border, true: colors.accent }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
-
-            {/* Exam Alerts */}
-            <View style={styles.settingSwitchRow}>
-              <View style={styles.settingLabelBox}>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>
-                  PRC Exam Schedule Alerts
-                </Text>
-                <Text
-                  style={[styles.settingDesc, { color: colors.textSecondary }]}>
-                  Updates regarding official PRC ALE deadlines and schedules.
-                </Text>
-              </View>
-              <Switch
-                value={examAlerts}
-                onValueChange={setExamAlerts}
-                trackColor={{ false: colors.border, true: colors.accent }}
+                trackColor={{ false: isDark ? '#374151' : '#D1D5DB', true: colors.accent }}
                 thumbColor="#FFFFFF"
               />
             </View>
           </View>
         </View>
 
-        {/* 6. ACCOUNT */}
+        {/* 6. DATA MANAGEMENT */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Account
+          <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+            Data & Sync
           </Text>
 
           <View
             style={[
               styles.groupedCard,
               {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
-            {/* Sync Row */}
-            <View style={styles.accountActionRow}>
-              <View style={styles.accountInfoBox}>
-                <Text style={[styles.accountLabel, { color: colors.text }]}>
-                  Cloud Backup & Local Sync
-                </Text>
-                <Text
+            {/* Sync Cloud */}
+            <Pressable
+              onPress={handleManualSync}
+              disabled={isSyncing}
+              style={({ pressed }) => [
+                styles.actionLinkRow,
+                { opacity: pressed ? 0.75 : 1 },
+              ]}>
+              <View style={styles.actionLinkLeft}>
+                <View
                   style={[
-                    styles.accountSubtext,
-                    { color: colors.textSecondary },
+                    styles.settingIconCircle,
+                    { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
                   ]}>
-                  {isSyncing ? 'Syncing...' : 'Local SQLite Synced • Online'}
-                </Text>
+                  <Cloud size={16} color={colors.accent} strokeWidth={2.2} />
+                </View>
+                <View style={styles.settingTextGroup}>
+                  <Text style={[styles.settingTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                    Sync with Cloud
+                  </Text>
+                  <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>
+                    {isSyncing ? 'Syncing...' : 'Keep presets and progress backed up'}
+                  </Text>
+                </View>
               </View>
-              <Pressable
-                disabled={isSyncing}
-                onPress={handleManualSync}
-                style={({ pressed }) => [
-                  styles.syncBtn,
-                  {
-                    backgroundColor: colors.backgroundSelected,
-                    borderColor: colors.borderStrong,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}>
-                <Cloud size={13} color={colors.accent} />
-                <Text style={[styles.syncBtnText, { color: colors.text }]}>
-                  Sync Now
-                </Text>
-              </Pressable>
-            </View>
+              {isSyncing ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <ChevronRight size={18} color={colors.accent} strokeWidth={2.2} />
+              )}
+            </Pressable>
 
-            <View
-              style={[styles.itemDivider, { backgroundColor: colors.border }]}
-            />
+            <View style={[styles.itemDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]} />
 
-            {/* Reset Stats Option */}
+            {/* Reset Stats */}
             <Pressable
               onPress={handleResetProgress}
               style={({ pressed }) => [
-                styles.accountLinkRow,
-                { opacity: pressed ? 0.7 : 1 },
+                styles.actionLinkRow,
+                { opacity: pressed ? 0.75 : 1 },
               ]}>
-              <View style={styles.accountLinkInfo}>
-                <Text style={[styles.resetText, { color: '#EF4444' }]}>
-                  Reset Study Analytics
-                </Text>
-                <Text
+              <View style={styles.actionLinkLeft}>
+                <View
                   style={[
-                    styles.accountSubtext,
-                    { color: colors.textSecondary },
+                    styles.settingIconCircle,
+                    { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
                   ]}>
-                  Clear recorded drill logs and accuracy percentages.
-                </Text>
+                  <RotateCcw size={16} color="#EF4444" strokeWidth={2.2} />
+                </View>
+                <View style={styles.settingTextGroup}>
+                  <Text style={[styles.settingTitle, { color: '#EF4444' }]}>
+                    Reset Study Statistics
+                  </Text>
+                  <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>
+                    Clear quiz records and performance history
+                  </Text>
+                </View>
               </View>
-              <RotateCcw size={15} color="#EF4444" />
+              <ChevronRight size={18} color={colors.textSecondary} strokeWidth={2.2} />
             </Pressable>
           </View>
         </View>
 
-        {/* Standalone Rectangle Block Logout Button */}
+        {/* 7. SIGN OUT BUTTON */}
         <Pressable
           onPress={handleSignOut}
           disabled={isSigningOut}
           style={({ pressed }) => [
-            styles.logoutBlockBtn,
+            styles.signOutBtn,
             {
-              backgroundColor: isDark
-                ? 'rgba(239, 68, 68, 0.12)'
-                : 'rgba(239, 68, 68, 0.07)',
-              borderColor: isDark
-                ? 'rgba(239, 68, 68, 0.3)'
-                : 'rgba(239, 68, 68, 0.2)',
-              opacity: pressed || isSigningOut ? 0.75 : 1,
-              transform: [{ scale: pressed ? 0.99 : 1 }],
+              backgroundColor: isDark ? '#261C19' : '#FAF3F0',
+              opacity: pressed ? 0.8 : 1,
+              transform: [{ scale: pressed ? 0.985 : 1 }],
             },
           ]}>
-          <LogOut size={17} color="#EF4444" strokeWidth={2.2} />
-          <Text style={styles.logoutBlockBtnText}>
-            Sign Out
-          </Text>
+          {isSigningOut ? (
+            <ActivityIndicator size="small" color={colors.accent} />
+          ) : (
+            <>
+              <LogOut size={18} color={colors.accent} strokeWidth={2.4} />
+              <Text style={[styles.signOutBtnText, { color: colors.accent }]}>
+                Sign Out
+              </Text>
+            </>
+          )}
         </Pressable>
       </ScrollView>
 
-      {/* Signing Out Animated Loading Modal */}
-      <Modal
-        visible={isSigningOut}
-        transparent
-        animationType="fade"
-        statusBarTranslucent>
-        <View style={styles.signingOutBackdrop}>
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(200)}
+      {/* Signing Out Full-Screen Loading Overlay */}
+      <Modal visible={isSigningOut} transparent animationType="fade">
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(200)}
+          style={styles.loadingOverlay}>
+          <View
             style={[
-              styles.signingOutCard,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: colors.border,
-              },
+              styles.loadingBox,
+              { backgroundColor: isDark ? '#1C1F26' : '#FFFFFF' },
             ]}>
-            <View
-              style={[
-                styles.signingOutIconCircle,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(239, 68, 68, 0.15)'
-                    : 'rgba(239, 68, 68, 0.1)',
-                },
-              ]}>
-              <LogOut size={26} color="#EF4444" strokeWidth={2.2} />
-            </View>
-
-            <View style={styles.signingOutTextCol}>
-              <Text style={[styles.signingOutTitle, { color: colors.text }]}>
-                Signing Out...
-              </Text>
-              <Text style={[styles.signingOutSubtitle, { color: colors.textSecondary }]}>
-                Securing session and clearing account data
-              </Text>
-            </View>
-
-            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 2 }} />
-          </Animated.View>
-        </View>
+            <ActivityIndicator size="large" color={colors.accent} />
+            <Text style={[styles.loadingTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              Signing Out...
+            </Text>
+          </View>
+        </Animated.View>
       </Modal>
     </SafeAreaView>
   );
@@ -687,200 +621,141 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    gap: 22,
-  },
-
-  /* Header */
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
-
-  /* Profile Card */
+  contentContainer: {
+    paddingHorizontal: 16,
+    gap: 18,
+  },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 14,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
+    padding: 18,
+    borderRadius: 24,
+    gap: 16,
   },
   profileInfo: {
     flex: 1,
-    gap: 3,
+    gap: 4,
   },
   name: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
   role: {
-    fontSize: 11.5,
-    lineHeight: 15,
+    fontSize: 12.5,
+    fontWeight: '500',
   },
-
-  /* Section Structure */
   section: {
     gap: 10,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    paddingHorizontal: 4,
   },
   groupedCard: {
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    overflow: 'hidden',
+    borderRadius: 22,
+    padding: 16,
+    gap: 14,
   },
-  itemDivider: {
-    height: 1,
-    marginHorizontal: 16,
-  },
-
-  /* Overall Statistics & Streak */
   streakRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  streakLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  streakIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
+  streakInfo: {
+    flex: 1,
+    gap: 2,
   },
   streakCount: {
     fontSize: 15,
     fontWeight: '800',
+    letterSpacing: -0.2,
   },
   streakSub: {
-    fontSize: 11.5,
-    marginTop: 1,
+    fontSize: 12,
+    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    gap: 10,
   },
-  statBox: {
-    alignItems: 'center',
+  statPillCard: {
     flex: 1,
-    gap: 2,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 3,
   },
   statValue: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '800',
   },
   statLabel: {
     fontSize: 11,
+    fontWeight: '600',
   },
-  statDivider: {
-    width: 1,
-    height: 22,
+  achievementsList: {
+    gap: 10,
   },
-
-  /* Achievements */
-  achievementRow: {
+  achievementCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    padding: 14,
+    borderRadius: 20,
     gap: 12,
-  },
-  achieveIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
   },
   achieveInfo: {
     flex: 1,
     gap: 2,
   },
   achieveTitle: {
-    fontSize: 13.5,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   achieveDesc: {
     fontSize: 11.5,
-    lineHeight: 15,
+    lineHeight: 16,
   },
   unlockedBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   unlockedText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
+  },
+  lockedIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   progressAchieveText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
-  /* Settings & Notifications */
-  settingSwitchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    gap: 12,
-  },
-  settingLabelBox: {
-    flex: 1,
-    gap: 2,
-  },
-  settingTitle: {
-    fontSize: 13.5,
+    fontSize: 11.5,
     fontWeight: '700',
   },
-  settingDesc: {
-    fontSize: 11.5,
-    lineHeight: 15,
-  },
-  themeSelectorRow: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  themeSelectorBox: {
     gap: 8,
   },
-  themeLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
   themeOptionsGroup: {
     flexDirection: 'row',
@@ -892,123 +767,88 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   themeOptionBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 12.5,
   },
-
-  /* Account */
-  accountActionRow: {
+  itemDivider: {
+    height: 1,
+    marginVertical: 2,
+  },
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    gap: 10,
+    paddingVertical: 4,
   },
-  accountInfoBox: {
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+    paddingRight: 10,
+  },
+  settingIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingTextGroup: {
     flex: 1,
     gap: 2,
   },
-  accountLabel: {
-    fontSize: 13.5,
+  settingTitle: {
+    fontSize: 14,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
-  accountSubtext: {
+  settingDesc: {
     fontSize: 11.5,
   },
-  syncBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
-  },
-  syncBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  accountLinkRow: {
+  actionLinkRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    gap: 10,
+    paddingVertical: 4,
   },
-  accountLinkInfo: {
+  actionLinkLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     flex: 1,
-    gap: 2,
   },
-  resetText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-  },
-  logoutBlockBtn: {
+  signOutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    paddingVertical: 16,
+    borderRadius: 18,
     marginTop: 4,
   },
-  logoutBlockBtnText: {
-    fontSize: 14.5,
+  signOutBtnText: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#EF4444',
-    letterSpacing: 0.2,
   },
-
-  /* Signing Out Animated Modal */
-  signingOutBackdrop: {
+  loadingOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-  },
-  signingOutCard: {
-    width: '100%',
-    maxWidth: 320,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    gap: 14,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-  },
-  signingOutIconCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signingOutTextCol: {
+  loadingBox: {
+    padding: 24,
+    borderRadius: 20,
     alignItems: 'center',
-    gap: 4,
+    gap: 12,
+    width: 180,
   },
-  signingOutTitle: {
-    fontSize: 16.5,
+  loadingTitle: {
+    fontSize: 14,
     fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  signingOutSubtitle: {
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 16,
   },
 });

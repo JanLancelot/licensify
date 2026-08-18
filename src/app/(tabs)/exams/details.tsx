@@ -1,25 +1,141 @@
-import React from 'react';
-import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
-  Timer,
-  FileCheck2,
+  Award,
   CheckCircle,
+  Compass,
+  Landmark,
+  PenTool,
   Play,
   ShieldCheck,
+  Timer,
+  Trophy,
 } from 'lucide-react-native';
+import React from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
-import { useTheme } from '@/hooks/use-theme';
-import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
+
+/* Gradient Squircle Icon */
+function ExamDetailGradientIcon({
+  icon: IconComponent,
+  colors: [startColor, endColor],
+  size = 56,
+  borderRadius = 18,
+}: {
+  icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
+  colors: [string, string];
+  size?: number;
+  borderRadius?: number;
+}) {
+  const gradId = `exam_det_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startColor} />
+            <Stop offset="100%" stopColor={endColor} />
+          </LinearGradient>
+        </Defs>
+        <Rect
+          width={size}
+          height={size}
+          rx={borderRadius}
+          fill={`url(#${gradId})`}
+        />
+      </Svg>
+      <IconComponent size={Math.round(size * 0.48)} color="#FFFFFF" strokeWidth={2.3} />
+    </View>
+  );
+}
 
 export default function ExamDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const theme = useTheme();
+  const { colors, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   const examId = id || 'area-1';
+
+  const getExamMetadata = () => {
+    switch (examId) {
+      case 'area-2':
+        return {
+          title: 'Area 2: Structural & Utilities',
+          subtitle: 'Building Technology, MEPFS Systems & Estimation',
+          icon: Compass,
+          gradient: ['#FBBF24', '#D97706'] as [string, string],
+          duration: '1.5 Hours',
+          items: '50 Questions',
+          passing: '70% Passing GWA',
+        };
+      case 'area-3':
+        return {
+          title: 'Area 3: Design & Site Planning',
+          subtitle: 'Design Scenarios, Zoning & NBCP Rule 7/8',
+          icon: PenTool,
+          gradient: ['#34D399', '#059669'] as [string, string],
+          duration: '2.0 Hours',
+          items: '50 Questions',
+          passing: '70% Passing GWA',
+        };
+      case 'mock-day-1':
+        return {
+          title: 'ALE Day 1 Mock Board Exam',
+          subtitle: 'Part 1 (History & Planning) + Part 2 (Structural & Utilities)',
+          icon: Trophy,
+          gradient: ['#38BDF8', '#0284C7'] as [string, string],
+          duration: '6.0 Hours',
+          items: '200 Questions',
+          passing: '70% Passing GWA',
+        };
+      case 'mock-day-2':
+        return {
+          title: 'ALE Day 2 Design & Site Planning',
+          subtitle: 'Comprehensive architectural problem simulation',
+          icon: Award,
+          gradient: ['#FB7185', '#E11D48'] as [string, string],
+          duration: '6.0 Hours',
+          items: 'Design Scenario',
+          passing: '70% Passing GWA',
+        };
+      default:
+        return {
+          title: 'Area 1: History, Theory & Laws',
+          subtitle: 'History of Architecture, Theory of Design & RA 9266',
+          icon: Landmark,
+          gradient: ['#E58368', '#C85A32'] as [string, string],
+          duration: '1.5 Hours',
+          items: '50 Questions',
+          passing: '70% Passing GWA',
+        };
+    }
+  };
+
+  const examMeta = getExamMetadata();
+  const IconComp = examMeta.icon;
 
   const handleStartSession = () => {
     router.push({
@@ -30,123 +146,119 @@ export default function ExamDetailsScreen() {
 
   return (
     <SafeAreaView
-      edges={['top', 'left', 'right', 'bottom']}
-      style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      {/* Top Header */}
-      <View style={[styles.topBar, { borderBottomColor: theme.border }]}>
+      edges={['top', 'left', 'right']}
+      style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* 1. Top Header Bar */}
+      <View style={styles.topBar}>
         <Pressable
           onPress={() => router.back()}
+          hitSlop={12}
           style={({ pressed }) => [
             styles.backButton,
             {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
-              opacity: pressed ? 0.8 : 1,
+              backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+              opacity: pressed ? 0.7 : 1,
             },
           ]}>
-          <ArrowLeft size={18} color={theme.text} />
+          <ArrowLeft size={20} color={colors.text} strokeWidth={2.4} />
         </Pressable>
 
         <View style={styles.headerTitles}>
-          <Text style={[styles.headerSubtitle, { color: theme.accent }]}>
-            BOARD EXAM BRIEFING
-          </Text>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            Exam Instructions
+          <Text style={[styles.headerTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+            Board Exam Briefing
           </Text>
         </View>
       </View>
 
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}>
-        {/* Title Hero */}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + 80 },
+        ]}>
+        {/* 2. Hero Overview Card */}
         <View
           style={[
             styles.heroCard,
             {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.border,
+              backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
             },
           ]}>
-          <View
-            style={[
-              styles.iconBox,
-              { backgroundColor: theme.accentMuted, borderColor: theme.border },
-            ]}>
-            <FileCheck2 size={24} color={theme.accent} />
-          </View>
-          <Text style={[styles.examHeading, { color: theme.text }]}>
-            {examId === 'area-2'
-              ? 'Area 2: Structural, Utilities & Building Materials'
-              : examId === 'area-3'
-              ? 'Area 3: Architectural Design & Site Planning'
-              : 'Area 1: History, Theory, Planning & Laws'}
-          </Text>
-          <Text style={[styles.examSubtext, { color: theme.textSecondary }]}>
-            Official PRC Architecture Licensure Examination format simulation.
-          </Text>
+          <ExamDetailGradientIcon
+            icon={IconComp}
+            colors={examMeta.gradient}
+            size={58}
+            borderRadius={20}
+          />
 
-          {/* Quick Details Pills */}
+          <View style={styles.heroInfo}>
+            <Text style={[styles.examHeading, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              {examMeta.title}
+            </Text>
+            <Text style={[styles.examSubtext, { color: colors.textSecondary }]}>
+              {examMeta.subtitle}
+            </Text>
+          </View>
+
+          {/* Quick Stats Badges Row */}
           <View style={styles.pillsRow}>
             <View
               style={[
-                styles.pill,
-                { backgroundColor: theme.background, borderColor: theme.border },
+                styles.statPill,
+                { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
               ]}>
-              <Timer size={13} color={theme.accent} />
-              <Text style={[styles.pillText, { color: theme.text }]}>
-                30 Mins (Demo)
+              <Timer size={14} color={colors.accent} strokeWidth={2.2} />
+              <Text style={[styles.statPillText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                {examMeta.duration}
               </Text>
             </View>
 
             <View
               style={[
-                styles.pill,
-                { backgroundColor: theme.background, borderColor: theme.border },
+                styles.statPill,
+                { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
               ]}>
-              <CheckCircle size={13} color={theme.accent} />
-              <Text style={[styles.pillText, { color: theme.text }]}>
-                3 Multiple Choice Items
+              <CheckCircle size={14} color={colors.accent} strokeWidth={2.2} />
+              <Text style={[styles.statPillText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                {examMeta.items}
               </Text>
             </View>
 
             <View
               style={[
-                styles.pill,
-                { backgroundColor: theme.background, borderColor: theme.border },
+                styles.statPill,
+                { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
               ]}>
-              <ShieldCheck size={13} color={theme.accent} />
-              <Text style={[styles.pillText, { color: theme.text }]}>
-                70% Passing Score
+              <ShieldCheck size={14} color={colors.accent} strokeWidth={2.2} />
+              <Text style={[styles.statPillText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                {examMeta.passing}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Rules & Guidelines */}
+        {/* 3. Guidelines & Rules Card */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-            IMPORTANT GUIDELINES
+          <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+            EXAM GUIDELINES
           </Text>
 
           <View
             style={[
               styles.guidelineCard,
               {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
+                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
             <View style={styles.ruleItem}>
               <View
                 style={[
                   styles.ruleBullet,
-                  { backgroundColor: theme.accent },
+                  { backgroundColor: colors.accent },
                 ]}
               />
-              <Text style={[styles.ruleText, { color: theme.text }]}>
-                Each question has 4 options (A, B, C, D). Only one is correct.
+              <Text style={[styles.ruleText, { color: isDark ? '#E2E8F0' : '#1E293B' }]}>
+                Each question has 4 multiple-choice options (A, B, C, D) with exactly one correct answer.
               </Text>
             </View>
 
@@ -154,11 +266,11 @@ export default function ExamDetailsScreen() {
               <View
                 style={[
                   styles.ruleBullet,
-                  { backgroundColor: theme.accent },
+                  { backgroundColor: colors.accent },
                 ]}
               />
-              <Text style={[styles.ruleText, { color: theme.text }]}>
-                You can flag questions for review and navigate freely between items before final submission.
+              <Text style={[styles.ruleText, { color: isDark ? '#E2E8F0' : '#1E293B' }]}>
+                You can flag items for review and navigate back and forth freely before final submission.
               </Text>
             </View>
 
@@ -166,24 +278,25 @@ export default function ExamDetailsScreen() {
               <View
                 style={[
                   styles.ruleBullet,
-                  { backgroundColor: theme.accent },
+                  { backgroundColor: colors.accent },
                 ]}
               />
-              <Text style={[styles.ruleText, { color: theme.text }]}>
-                Timer runs continuously once started. Answers will be scored instantly upon completion.
+              <Text style={[styles.ruleText, { color: isDark ? '#E2E8F0' : '#1E293B' }]}>
+                Timer runs continuously once started. Complete answers are graded instantly upon finish.
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Start Button */}
+        {/* 4. Start Button */}
         <Pressable
           onPress={handleStartSession}
           style={({ pressed }) => [
             styles.startBtn,
             {
-              backgroundColor: theme.accent,
-              opacity: pressed ? 0.88 : 1,
+              backgroundColor: colors.accent,
+              opacity: pressed ? 0.9 : 1,
+              transform: [{ scale: pressed ? 0.985 : 1 }],
             },
           ]}>
           <Play size={18} color="#FFFFFF" fill="#FFFFFF" />
@@ -201,123 +314,112 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 14,
   },
   backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitles: {
     flex: 1,
   },
-  headerSubtitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  scrollView: {
-    flex: 1,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   content: {
-    padding: 20,
-    gap: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 18,
   },
   heroCard: {
-    padding: 18,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    gap: 10,
+    padding: 20,
+    borderRadius: 24,
+    gap: 14,
+    alignItems: 'flex-start',
   },
-  iconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
+  heroInfo: {
+    gap: 4,
   },
   examHeading: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
-    lineHeight: 24,
+    letterSpacing: -0.3,
+    lineHeight: 25,
   },
   examSubtext: {
     fontSize: 13,
     lineHeight: 18,
+    fontWeight: '500',
   },
   pillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 2,
   },
-  pill: {
+  statPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.xs,
-    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
-  pillText: {
-    fontSize: 11.5,
-    fontWeight: '600',
+  statPillText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   section: {
-    gap: 8,
+    gap: 10,
   },
   sectionTitle: {
-    fontSize: 10.5,
-    fontWeight: '700',
-    letterSpacing: 1,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    paddingHorizontal: 4,
   },
   guidelineCard: {
-    padding: 16,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    gap: 12,
+    padding: 18,
+    borderRadius: 22,
+    gap: 14,
   },
   ruleItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
   },
   ruleBullet: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginTop: 6,
+    marginTop: 7,
   },
   ruleText: {
-    fontSize: 13,
-    lineHeight: 18,
     flex: 1,
+    fontSize: 13.5,
+    lineHeight: 20,
+    fontWeight: '400',
   },
   startBtn: {
+    borderRadius: 16,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 15,
-    borderRadius: Radius.md,
-    marginTop: 8,
+    marginTop: 4,
   },
   startBtnText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
-    letterSpacing: 0.3,
   },
 });
