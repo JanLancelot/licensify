@@ -224,7 +224,7 @@ export function FlashcardPresetBuilderModal({
               {/* Icon Selection Row */}
               <View style={styles.iconSelectionSection}>
                 <Text style={[styles.fieldLabel, { color: colors.accent }]}>
-                  CHOOSE DECK ICON
+                  CHOOSE PRESET ICON
                 </Text>
                 <ScrollView
                   horizontal
@@ -275,9 +275,6 @@ export function FlashcardPresetBuilderModal({
                           </Svg>
                           <IconComp size={18} color="#FFFFFF" strokeWidth={2.4} />
                         </View>
-                        {isSelected && (
-                          <View style={[styles.iconSelectedDot, { backgroundColor: colors.accent }]} />
-                        )}
                       </Pressable>
                     );
                   })}
@@ -560,14 +557,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-  },
-  iconSelectedDot: {
-    position: 'absolute',
-    bottom: -3,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
   },
   shuffleToggleRow: {
     flexDirection: 'row',

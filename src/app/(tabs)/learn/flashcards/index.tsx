@@ -144,7 +144,7 @@ export default function FlashcardsHubScreen() {
 
     const finalTitle =
       customTitle.trim() ||
-      `Custom Deck ${customPresets.length + 1}`;
+      `Custom Preset ${customPresets.length + 1}`;
 
     const newPreset: FlashcardPreset = {
       id: `preset-${Date.now()}`,
@@ -349,7 +349,7 @@ export default function FlashcardsHubScreen() {
               </Pressable>
             ))}
 
-            {/* Dashed Add New Deck Card */}
+            {/* Dashed Add New Preset Card */}
             <Pressable
               onPress={handleOpenAddModal}
               style={({ pressed }) => [
@@ -370,7 +370,7 @@ export default function FlashcardsHubScreen() {
                 <Plus size={24} color={colors.accent} strokeWidth={2.4} />
               </View>
               <Text style={[styles.dashedAddText, { color: colors.textSecondary }]}>
-                New Deck
+                New Preset
               </Text>
             </Pressable>
           </View>
