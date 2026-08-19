@@ -2,23 +2,23 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  LinearTransition,
+    FadeInDown,
+    FadeOutUp,
+    LinearTransition,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
-  Defs,
-  LinearGradient,
-  Rect,
-  Stop,
+    Defs,
+    LinearGradient,
+    Rect,
+    Stop,
 } from 'react-native-svg';
 
 import { LessonDetailModal } from '@/components/notes/LessonDetailModal';
@@ -45,9 +45,11 @@ function SubjectGradientIcon({
       style={{
         width: size,
         height: size,
+        borderRadius: size / 2,
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
+        overflow: 'hidden',
       }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Defs>
@@ -59,7 +61,7 @@ function SubjectGradientIcon({
         <Rect
           width={size}
           height={size}
-          rx={16}
+          rx={size / 2}
           fill={`url(#${gradId})`}
         />
       </Svg>

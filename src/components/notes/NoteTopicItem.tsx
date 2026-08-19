@@ -1,11 +1,10 @@
-import React from 'react';
+import { ChevronRight, FileText } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  LinearTransition,
+    FadeInDown,
+    FadeOutUp,
+    LinearTransition,
 } from 'react-native-reanimated';
-import { ChevronRight, FileText } from 'lucide-react-native';
 
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
