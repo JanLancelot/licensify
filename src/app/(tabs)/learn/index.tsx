@@ -1,304 +1,360 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  LayoutChangeEvent,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  View
+  useWindowDimensions,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Circle,
   Defs,
+  Ellipse,
   LinearGradient,
   Path,
-  Stop
+  RadialGradient,
+  Stop,
 } from 'react-native-svg';
 
 import { useAppTheme } from '@/context/theme-context';
 
-/* 1. Standalone Gradient-Filled Open Book Vector Icon */
-function GradientFilledBookIcon({ size = 150 }: { size?: number }) {
+/* 1. 3D Glossy Open Book Vector Icon with Drop Shadow */
+function Glowing3DBookIcon({ size = 118 }: { size?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 80 80" fill="none">
       <Defs>
-        <LinearGradient id="bookGradFill" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#F89B7F" />
-          <Stop offset="45%" stopColor="#E07A5F" />
-          <Stop offset="100%" stopColor="#C85A32" />
+        <LinearGradient id="bookLeft3D" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor="#FFA68B" />
+          <Stop offset="40%" stopColor="#F16841" />
+          <Stop offset="100%" stopColor="#C9441D" />
+        </LinearGradient>
+        <LinearGradient id="bookRight3D" x1="100%" y1="0%" x2="0%" y2="100%">
+          <Stop offset="0%" stopColor="#FFA68B" />
+          <Stop offset="40%" stopColor="#F16841" />
+          <Stop offset="100%" stopColor="#C9441D" />
+        </LinearGradient>
+        <LinearGradient id="bookShine" x1="0%" y1="0%" x2="0%" y2="100%">
+          <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.45" />
+          <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
         </LinearGradient>
       </Defs>
 
-      {/* Left Page (Solid Terracotta Gradient Fill) */}
-      <Path
-        d="M 30 14 C 20 10 10 11 6 13.5 C 4.8 14.3 4 15.6 4 17 L 4 47 C 4 48.6 5.2 49.8 6.8 49 C 11.5 46.5 20.5 46 30 50 Z"
-        fill="url(#bookGradFill)"
+      {/* Ambient Soft Drop Shadow */}
+      <Ellipse
+        cx="40"
+        cy="66"
+        rx="28"
+        ry="5.5"
+        fill="rgba(180, 60, 30, 0.22)"
       />
 
-      {/* Right Page (Solid Terracotta Gradient Fill) */}
+      {/* Left Page */}
       <Path
-        d="M 34 14 C 44 10 54 11 58 13.5 C 59.2 14.3 60 15.6 60 17 L 60 47 C 60 48.6 58.8 49.8 57.2 49 C 52.5 46.5 43.5 46 34 50 Z"
-        fill="url(#bookGradFill)"
+        d="M 37.5 16 C 25.5 10.5 13 11.5 7.5 15 C 5.8 16 4.8 17.7 4.8 19.7 L 4.8 56 C 4.8 58 6.5 59.5 8.5 58.5 C 14.5 55.5 25.5 55 37.5 59.5 Z"
+        fill="url(#bookLeft3D)"
       />
 
-      {/* Subtle Inner Page Detail Lines in White */}
+      {/* Right Page */}
       <Path
-        d="M 12 25 C 18 23 23 23 27 25"
+        d="M 42.5 16 C 54.5 10.5 67 11.5 72.5 15 C 74.2 16 75.2 17.7 75.2 19.7 L 75.2 56 C 75.2 58 73.5 59.5 71.5 58.5 C 65.5 55.5 54.5 55 42.5 59.5 Z"
+        fill="url(#bookRight3D)"
+      />
+
+      {/* Left Page Top Shine Highlight */}
+      <Path
+        d="M 37.5 16 C 25.5 10.5 13 11.5 7.5 15 C 5.8 16 4.8 17.7 4.8 19.7 L 4.8 28 C 12 25 24 24.5 37.5 28 Z"
+        fill="url(#bookShine)"
+      />
+
+      {/* Left Page 3 Curved White Lines */}
+      <Path
+        d="M 14 26 C 20.5 23 27 23 32 26"
         stroke="#FFFFFF"
-        strokeWidth="2.5"
+        strokeWidth="3.2"
         strokeLinecap="round"
-        opacity="0.85"
+        opacity="0.95"
       />
       <Path
-        d="M 12 33 C 18 31 23 31 27 33"
+        d="M 14 34.5 C 20.5 31.5 27 31.5 32 34.5"
         stroke="#FFFFFF"
-        strokeWidth="2.5"
+        strokeWidth="3.2"
         strokeLinecap="round"
-        opacity="0.85"
+        opacity="0.95"
       />
       <Path
-        d="M 37 25 C 41 23 46 23 52 25"
+        d="M 14 43 C 20.5 40 27 40 32 43"
         stroke="#FFFFFF"
-        strokeWidth="2.5"
+        strokeWidth="3.2"
         strokeLinecap="round"
-        opacity="0.85"
+        opacity="0.95"
+      />
+
+      {/* Right Page 3 Curved White Lines */}
+      <Path
+        d="M 48 26 C 53 23 59.5 23 66 26"
+        stroke="#FFFFFF"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        opacity="0.95"
       />
       <Path
-        d="M 37 33 C 41 31 46 31 52 33"
+        d="M 48 34.5 C 53 31.5 59.5 31.5 66 34.5"
         stroke="#FFFFFF"
-        strokeWidth="2.5"
+        strokeWidth="3.2"
         strokeLinecap="round"
-        opacity="0.85"
+        opacity="0.95"
+      />
+      <Path
+        d="M 48 43 C 53 40 59.5 40 66 43"
+        stroke="#FFFFFF"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        opacity="0.95"
       />
     </Svg>
   );
 }
 
-/* 2. Standalone Gradient-Filled Stacked Flashcards Vector Icon */
-function GradientFilledFlashcardsIcon({ size = 150 }: { size?: number }) {
+/* 2. 3D Glossy Stacked Flashcards Vector Icon with Depth */
+function Glowing3DFlashcardsIcon({ size = 118 }: { size?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+    <Svg width={size} height={size} viewBox="0 0 80 80" fill="none">
       <Defs>
-        <LinearGradient id="cardsGradFill" x1="0%" y1="0%" x2="100%" y2="100%">
+        <LinearGradient id="topCard3D" x1="0%" y1="0%" x2="100%" y2="100%">
           <Stop offset="0%" stopColor="#FDE68A" />
-          <Stop offset="50%" stopColor="#FBBF24" />
-          <Stop offset="100%" stopColor="#D97706" />
+          <Stop offset="40%" stopColor="#FBBF24" />
+          <Stop offset="100%" stopColor="#E67E0A" />
+        </LinearGradient>
+        <LinearGradient id="midCard3D" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor="#FFF4D0" stopOpacity="0.95" />
+          <Stop offset="50%" stopColor="#FCD34D" stopOpacity="0.9" />
+          <Stop offset="100%" stopColor="#F59E0B" stopOpacity="0.85" />
+        </LinearGradient>
+        <LinearGradient id="botCard3D" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor="#FFF4D0" stopOpacity="0.8" />
+          <Stop offset="50%" stopColor="#FBBF24" stopOpacity="0.75" />
+          <Stop offset="100%" stopColor="#D97706" stopOpacity="0.7" />
         </LinearGradient>
       </Defs>
 
+      {/* Ambient Soft Drop Shadow */}
+      <Ellipse
+        cx="40"
+        cy="68"
+        rx="27"
+        ry="5.5"
+        fill="rgba(217, 119, 6, 0.24)"
+      />
+
       {/* Bottom Layer Card */}
       <Path
-        d="M 12 43 L 32 53 L 52 43 L 32 33 Z"
-        fill="url(#cardsGradFill)"
-        opacity="0.5"
+        d="M 37.5 37.5 C 38.8 36.8 41.2 36.8 42.5 37.5 L 66 50 C 68 51.2 68 53 66 54.2 L 42.5 66.5 C 41.2 67.2 38.8 67.2 37.5 66.5 L 14 54.2 C 12 53 12 51.2 14 50 Z"
+        fill="url(#botCard3D)"
+      />
+      {/* Bottom Card White Edge Rim */}
+      <Path
+        d="M 14 50 L 37.5 37.5 C 38.8 36.8 41.2 36.8 42.5 37.5 L 66 50"
+        stroke="#FFFFFF"
+        strokeWidth="1.6"
+        opacity="0.85"
       />
 
       {/* Middle Layer Card */}
       <Path
-        d="M 12 31 L 32 41 L 52 31 L 32 21 Z"
-        fill="url(#cardsGradFill)"
-        opacity="0.8"
+        d="M 37.5 24.5 C 38.8 23.8 41.2 23.8 42.5 24.5 L 66 37 C 68 38.2 68 40 66 41.2 L 42.5 53.5 C 41.2 54.2 38.8 54.2 37.5 53.5 L 14 41.2 C 12 40 12 38.2 14 37 Z"
+        fill="url(#midCard3D)"
+      />
+      {/* Middle Card White Edge Rim */}
+      <Path
+        d="M 14 37 L 37.5 24.5 C 38.8 23.8 41.2 23.8 42.5 24.5 L 66 37"
+        stroke="#FFFFFF"
+        strokeWidth="1.8"
+        opacity="0.9"
       />
 
       {/* Top Layer Card */}
       <Path
-        d="M 12 19 L 32 29 L 52 19 L 32 9 Z"
-        fill="url(#cardsGradFill)"
+        d="M 37.5 11.5 C 38.8 10.8 41.2 10.8 42.5 11.5 L 66 24 C 68 25.2 68 27 66 28.2 L 42.5 40.5 C 41.2 41.2 38.8 41.2 37.5 40.5 L 14 28.2 C 12 27 12 25.2 14 24 Z"
+        fill="url(#topCard3D)"
       />
 
-      {/* Subtle Top Card Detail Lines in White */}
+      {/* White Chevron on Top Card */}
       <Path
-        d="M 23 19 L 32 23.5 L 41 19"
+        d="M 28 23 L 40 29.5 L 52 23"
         stroke="#FFFFFF"
-        strokeWidth="2.8"
+        strokeWidth="4.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        opacity="0.9"
+        opacity="0.98"
       />
     </Svg>
   );
 }
 
-/* Dynamic Responsive Card Background that harmonizes with centered layout */
-function DynamicCardBackground({
-  width,
-  height,
-  color,
+/* 3D Orb Background with Radial Illumination, Specular Glow & Sparkles */
+function GlowingOrbBackground({
+  size,
+  isDark,
+  themeType,
 }: {
-  width: number;
-  height: number;
-  color: string;
+  size: number;
+  isDark: boolean;
+  themeType: 'notes' | 'flashcards';
 }) {
-  if (width <= 0 || height <= 0) return null;
+  if (size <= 0) return null;
 
-  // Concentric rings center behind the icon
-  const centerX = width * 0.5;
-  const centerY = height * 0.34;
-  const dotStartX = width - 58;
-  const dotStartY = 24;
+  const half = size / 2;
+  const isNotes = themeType === 'notes';
+
+  // Gradient definitions tailored for 3D sphere/orb depth
+  const gradId = `orb_${themeType}_${isDark ? 'dark' : 'light'}`;
+  const rimColor = isNotes
+    ? isDark
+      ? '#593226'
+      : '#FFD7C5'
+    : isDark
+      ? '#59441D'
+      : '#FDE4A4';
+
+  const stopColors = isNotes
+    ? isDark
+      ? ['#38221B', '#2C1812', '#1E0E0A', '#160905']
+      : ['#FFFFFF', '#FFF3EB', '#FEE2D4', '#FDCBB7']
+    : isDark
+      ? ['#3B2E15', '#2E220D', '#201607', '#170E03']
+      : ['#FFFFFD', '#FFF8E4', '#FEEDB9', '#FDD892'];
 
   return (
-    <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
+    <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
       <Defs>
-        <LinearGradient id={`ambient_${color.replace(/[^a-zA-Z0-9]/g, '')}`} x1="100%" y1="0%" x2="0%" y2="100%">
-          <Stop offset="0%" stopColor={color} stopOpacity="0.18" />
-          <Stop offset="50%" stopColor={color} stopOpacity="0.06" />
-          <Stop offset="100%" stopColor={color} stopOpacity="0.0" />
-        </LinearGradient>
-        <LinearGradient id={`ambient_btm_${color.replace(/[^a-zA-Z0-9]/g, '')}`} x1="0%" y1="100%" x2="100%" y2="0%">
-          <Stop offset="0%" stopColor={color} stopOpacity="0.12" />
-          <Stop offset="100%" stopColor={color} stopOpacity="0.0" />
-        </LinearGradient>
+        {/* Main 3D Spherical Radial Gradient */}
+        <RadialGradient
+          id={gradId}
+          cx="50%"
+          cy="38%"
+          rx="62%"
+          ry="62%"
+          fx="48%"
+          fy="30%">
+          <Stop offset="0%" stopColor={stopColors[0]} stopOpacity="1" />
+          <Stop offset="42%" stopColor={stopColors[1]} stopOpacity="1" />
+          <Stop offset="82%" stopColor={stopColors[2]} stopOpacity="1" />
+          <Stop offset="100%" stopColor={stopColors[3]} stopOpacity="1" />
+        </RadialGradient>
       </Defs>
 
-      {/* Ambient Corner Glows */}
+      {/* Base 3D Radial Fill */}
+      <Circle cx={half} cy={half} r={half} fill={`url(#${gradId})`} />
+
+      {/* Outer Soft Ambient Ring Halo */}
+      <Circle
+        cx={half}
+        cy={half}
+        r={half - 1.5}
+        stroke={rimColor}
+        strokeWidth={3}
+        fill="none"
+        opacity={isDark ? 0.7 : 0.85}
+      />
+
+      {/* Inner Specular Light Edge Rim */}
+      <Circle
+        cx={half}
+        cy={half}
+        r={half - 4.5}
+        stroke="#FFFFFF"
+        strokeWidth={1.5}
+        fill="none"
+        opacity={isDark ? 0.08 : 0.45}
+      />
+
+      {/* Subtle Magical Sparkles / Micro Stars */}
+      {/* Sparkle 1: Top Left */}
+      <Circle
+        cx={half * 0.42}
+        cy={half * 0.58}
+        r={2.2}
+        fill="#FFFFFF"
+        opacity={isDark ? 0.45 : 0.8}
+      />
       <Path
-        d={`M ${width * 0.4} 0 Q ${width * 0.65} ${height * 0.4} ${width} ${height * 0.6} L ${width} 0 Z`}
-        fill={`url(#ambient_${color.replace(/[^a-zA-Z0-9]/g, '')})`}
-      />
-      <Path
-        d={`M 0 ${height * 0.6} Q ${width * 0.3} ${height * 0.75} 0 ${height} Z`}
-        fill={`url(#ambient_btm_${color.replace(/[^a-zA-Z0-9]/g, '')})`}
+        d={`M ${half * 0.42} ${half * 0.58 - 5} Q ${half * 0.42} ${half * 0.58} ${half * 0.42 + 5} ${half * 0.58} Q ${half * 0.42} ${half * 0.58} ${half * 0.42} ${half * 0.58 + 5} Q ${half * 0.42} ${half * 0.58} ${half * 0.42 - 5} ${half * 0.58} Z`}
+        fill="#FFFFFF"
+        opacity={isDark ? 0.35 : 0.65}
       />
 
-      {/* 3x3 Dot Grid Top Right */}
-      {[0, 1, 2].map((col) =>
-        [0, 1, 2].map((row) => (
-          <Circle
-            key={`dot_tr_${col}_${row}`}
-            cx={dotStartX + col * 15}
-            cy={dotStartY + row * 15}
-            r="2.2"
-            fill={color}
-            opacity="0.28"
-          />
-        ))
-      )}
+      {/* Sparkle 2: Bottom Left */}
+      <Circle
+        cx={half * 0.35}
+        cy={half * 1.48}
+        r={1.8}
+        fill="#FFFFFF"
+        opacity={isDark ? 0.35 : 0.6}
+      />
 
-      {/* 3x2 Dot Grid Bottom Left */}
-      {[0, 1, 2].map((col) =>
-        [0, 1].map((row) => (
-          <Circle
-            key={`dot_bl_${col}_${row}`}
-            cx={24 + col * 15}
-            cy={height - 38 + row * 15}
-            r="2.2"
-            fill={color}
-            opacity="0.22"
-          />
-        ))
-      )}
-
-      {/* Concentric Halo Rings Radiating from Behind the Center Icon */}
+      {/* Sparkle 3: Top Right */}
       <Circle
-        cx={centerX}
-        cy={centerY}
-        r={75}
-        stroke={color}
-        strokeWidth="1.3"
-        opacity="0.22"
-        fill="none"
-      />
-      <Circle
-        cx={centerX}
-        cy={centerY}
-        r={120}
-        stroke={color}
-        strokeWidth="1.2"
-        opacity="0.15"
-        fill="none"
-      />
-      <Circle
-        cx={centerX}
-        cy={centerY}
-        r={175}
-        stroke={color}
-        strokeWidth="1.1"
-        opacity="0.10"
-        fill="none"
-      />
-      <Circle
-        cx={centerX}
-        cy={centerY}
-        r={240}
-        stroke={color}
-        strokeWidth="1.0"
-        opacity="0.06"
-        fill="none"
+        cx={half * 1.62}
+        cy={half * 0.62}
+        r={1.5}
+        fill="#FFFFFF"
+        opacity={isDark ? 0.35 : 0.55}
       />
     </Svg>
   );
 }
 
-/* Individual Learn Hero Card with Centered Layout */
-function LearnHeroCard({
+/* Circular Learn Hero Button */
+function LearnCircularButton({
   title,
-  subtitle,
+  size,
   iconComponent,
-  accentColor,
-  backgroundColor,
+  themeType,
   isDark,
   onPress,
 }: {
   title: string;
-  subtitle: string;
+  size: number;
   iconComponent: React.ReactNode;
-  accentColor: string;
-  backgroundColor: string;
+  themeType: 'notes' | 'flashcards';
   isDark: boolean;
   onPress: () => void;
 }) {
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-
-  const handleLayout = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    if (width > 0 && height > 0) {
-      setDimensions({ width, height });
-    }
-  };
-
   return (
     <Pressable
       onPress={onPress}
-      onLayout={handleLayout}
       style={({ pressed }) => [
-        styles.learnHeroCard,
+        styles.circularHeroBtn,
         {
-          backgroundColor,
-          opacity: pressed ? 0.9 : 1,
-          transform: [{ scale: pressed ? 0.985 : 1 }],
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          opacity: pressed ? 0.92 : 1,
+          transform: [{ scale: pressed ? 0.965 : 1 }],
         },
       ]}>
-      {/* 100% Fully Fitted Background SVG */}
-      <DynamicCardBackground
-        width={dimensions.width}
-        height={dimensions.height}
-        color={accentColor}
+      {/* 3D Orb Background with Ambient Halo & Sparkles */}
+      <GlowingOrbBackground
+        size={size}
+        isDark={isDark}
+        themeType={themeType}
       />
 
-      {/* Centered Content Block (Icon nicely paired with Text) */}
-      <View style={styles.cardCenterContent}>
-        <View style={styles.iconCenterBox}>
-          {iconComponent}
-        </View>
+      {/* Centered Content */}
+      <View style={styles.circleCenterContent}>
+        <View style={styles.iconCenterBox}>{iconComponent}</View>
 
-        <View style={styles.cardTextGroup}>
-          <Text
-            style={[
-              styles.cardTitle,
-              { color: isDark ? '#F9FAFB' : '#0F172A' },
-            ]}>
-            {title}
-          </Text>
-          <Text
-            style={[
-              styles.cardSubtitle,
-              { color: isDark ? '#9CA3AF' : '#64748B' },
-            ]}>
-            {subtitle}
-          </Text>
-        </View>
+        <Text
+          style={[
+            styles.cardTitle,
+            { color: isDark ? '#FFFFFF' : '#141D2E' },
+          ]}>
+          {title}
+        </Text>
       </View>
     </Pressable>
   );
@@ -308,6 +364,11 @@ export default function LearnScreen() {
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+
+  // Balanced circle diameter (~285px)
+  const circleSize = Math.min(Math.max(width * 0.74, 270), 290);
+  const iconSize = Math.round(circleSize * 0.46); // ~132px
 
   return (
     <SafeAreaView
@@ -315,39 +376,36 @@ export default function LearnScreen() {
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* 1. Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          Learn
-        </Text>
+        <Text style={[styles.title, { color: colors.text }]}>Learn</Text>
       </View>
 
-      {/* 2. Two Hero Cards filling the vertical space */}
-      <View
-        style={[
-          styles.fillContainer,
+      {/* 2. Scrollable container with balanced circle buttons */}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
           { paddingBottom: insets.bottom + 84 },
-        ]}>
-        {/* CARD 1: COMPREHENSIVE NOTES */}
-        <LearnHeroCard
-          title="Comprehensive Notes"
-          subtitle="In-depth coverage of all topics you need to know."
-          iconComponent={<GradientFilledBookIcon size={150} />}
-          accentColor={colors.accent}
-          backgroundColor={isDark ? '#261C19' : '#FAF3F0'}
+        ]}
+        showsVerticalScrollIndicator={false}>
+        {/* CIRCLE 1: COMPREHENSIVE NOTES */}
+        <LearnCircularButton
+          title={'Comprehensive\nNotes'}
+          size={circleSize}
+          iconComponent={<Glowing3DBookIcon size={iconSize} />}
+          themeType="notes"
           isDark={isDark}
           onPress={() => router.push('/(tabs)/learn/notes' as any)}
         />
 
-        {/* CARD 2: FLASHCARDS */}
-        <LearnHeroCard
+        {/* CIRCLE 2: FLASHCARDS */}
+        <LearnCircularButton
           title="Flashcards"
-          subtitle="Review key concepts with smart flashcards."
-          iconComponent={<GradientFilledFlashcardsIcon size={150} />}
-          accentColor="#D97706"
-          backgroundColor={isDark ? '#281E15' : '#FEF8EE'}
+          size={circleSize}
+          iconComponent={<Glowing3DFlashcardsIcon size={iconSize} />}
+          themeType="flashcards"
           isDark={isDark}
           onPress={() => router.push('/(tabs)/learn/flashcards' as any)}
         />
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -359,53 +417,60 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 10,
+    paddingBottom: 4,
   },
   title: {
     fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
-  fillContainer: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    gap: 16,
+    paddingTop: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20,
   },
-  learnHeroCard: {
-    flex: 1,
-    borderRadius: 26,
-    padding: 24,
+  circularHeroBtn: {
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+      },
+    }),
   },
-  cardCenterContent: {
+  circleCenterContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 8,
     zIndex: 2,
   },
   iconCenterBox: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cardTextGroup: {
-    alignItems: 'center',
-    gap: 4,
-    maxWidth: '85%',
+    marginTop: -4,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.4,
+    lineHeight: 28,
     textAlign: 'center',
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
-    textAlign: 'center',
+    maxWidth: '90%',
   },
 });
+
+
