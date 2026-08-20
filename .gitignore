@@ -51,3 +51,7 @@ admin/.next/
 out/
 admin/out/
 
+# Vercel
+.vercel
+
+
