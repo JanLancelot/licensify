@@ -176,7 +176,13 @@ export default function ProfileScreen() {
       setUserName(editNameInput.trim());
     }
     if (editEmailInput.trim()) {
-      setUserEmail(editEmailInput.trim());
+      let email = editEmailInput.trim().toLowerCase();
+      if (!email.includes('@')) {
+        email = `${email}@gmail.com`;
+      } else if (!email.includes('.')) {
+        email = `${email}.com`;
+      }
+      setUserEmail(email);
     }
     setIsEditProfileVisible(false);
   };
@@ -684,15 +690,19 @@ export default function ProfileScreen() {
                         ]}>
                         <IconComp size={20} color={item.iconColor} strokeWidth={2.3} />
                       </View>
-                      <View style={{ flex: 1, gap: 2 }}>
+                      <View style={{ flex: 1, gap: 2, alignItems: 'flex-start' }}>
                         <Text
                           style={[
-                            styles.achieveBoxTitle,
+                            styles.seeAllItemTitle,
                             { color: isDark ? '#F9FAFB' : '#111827' },
                           ]}>
                           {item.title}
                         </Text>
-                        <Text style={{ fontSize: 11.5, color: colors.textSecondary }}>
+                        <Text
+                          style={[
+                            styles.seeAllItemCategory,
+                            { color: colors.textSecondary },
+                          ]}>
                           {item.category}
                         </Text>
                       </View>
@@ -1035,6 +1045,17 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     gap: 12,
+  },
+  seeAllItemTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    textAlign: 'left',
+  },
+  seeAllItemCategory: {
+    fontSize: 11.5,
+    fontWeight: '500',
+    textAlign: 'left',
   },
   loadingOverlay: {
     flex: 1,
