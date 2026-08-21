@@ -2,9 +2,7 @@ import { useRouter } from 'expo-router';
 import {
   Award,
   BookOpen,
-  ChevronRight,
   Compass,
-  History,
   Layers,
   Play,
   Zap,
