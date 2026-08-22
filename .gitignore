@@ -48,6 +48,8 @@ example
 # Next.js
 .next/
 admin/.next/
+dist/
+admin/dist/
 out/
 admin/out/
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -60,6 +61,45 @@ export const PRESET_ICONS = [
   { id: 'Trophy', name: 'Trophy', icon: Trophy, gradient: ['#EAB308', '#A16207'] as [string, string] },
 ];
 
+export const SUBJECT_PALETTES = [
+  {
+    bg: '#EDE9FE',
+    darkBg: 'rgba(139, 92, 246, 0.22)',
+    icon: '#7C3AED',
+    darkIcon: '#C4B5FD',
+  }, // Lavender / Purple
+  {
+    bg: '#FCE7F3',
+    darkBg: 'rgba(236, 72, 153, 0.22)',
+    icon: '#DB2777',
+    darkIcon: '#F472B6',
+  }, // Soft Pink
+  {
+    bg: '#E0E7FF',
+    darkBg: 'rgba(99, 102, 241, 0.22)',
+    icon: '#4F46E5',
+    darkIcon: '#A5B4FC',
+  }, // Indigo / Violet
+  {
+    bg: '#FFEDD5',
+    darkBg: 'rgba(249, 115, 22, 0.22)',
+    icon: '#EA580C',
+    darkIcon: '#FDBA74',
+  }, // Peach / Orange
+  {
+    bg: '#E0F2FE',
+    darkBg: 'rgba(14, 165, 233, 0.22)',
+    icon: '#0284C7',
+    darkIcon: '#7DD3FC',
+  }, // Sky Blue / Cyan
+  {
+    bg: '#D1FAE5',
+    darkBg: 'rgba(16, 185, 129, 0.22)',
+    icon: '#059669',
+    darkIcon: '#6EE7B7',
+  }, // Mint / Emerald
+];
+
 export interface FlashcardPresetBuilderModalProps {
   visible: boolean;
   isEditing?: boolean;
@@ -82,50 +122,6 @@ export interface FlashcardPresetBuilderModalProps {
   bottomInset: number;
   theme?: any;
 }
-
-/* Subject Gradient Squircle */
-function SubjectGradientIcon({
-  icon: IconComponent,
-  colors: [startColor, endColor],
-  size = 44,
-}: {
-  icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
-  colors: [string, string];
-  size?: number;
-}) {
-  const gradId = `bld_subj_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
-
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-      }}>
-      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={startColor} />
-            <Stop offset="100%" stopColor={endColor} />
-          </LinearGradient>
-        </Defs>
-        <Rect width={size} height={size} rx={14} fill={`url(#${gradId})`} />
-      </Svg>
-      <IconComponent size={22} color="#FFFFFF" strokeWidth={2.2} />
-    </View>
-  );
-}
-
-const SUBJECT_GRADIENTS: [string, string][] = [
-  ['#E58368', '#C85A32'], // Terracotta
-  ['#FBBF24', '#D97706'], // Amber
-  ['#38BDF8', '#0284C7'], // Sky Blue
-  ['#34D399', '#059669'], // Emerald
-  ['#A78BFA', '#7C3AED'], // Violet
-  ['#FB7185', '#E11D48'], // Rose
-];
 
 export function FlashcardPresetBuilderModal({
   visible,
@@ -180,8 +176,8 @@ export function FlashcardPresetBuilderModal({
           {/* Modal Header */}
           <View style={styles.modalHeader}>
             <View style={styles.modalHeaderTitleBox}>
-              <Text style={[styles.modalTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                FLASHCARD PRESETS
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {isEditing ? 'Edit Flashcard Preset' : 'New Flashcard Preset'}
               </Text>
             </View>
 
@@ -189,7 +185,7 @@ export function FlashcardPresetBuilderModal({
               onPress={onClose}
               style={[
                 styles.modalCloseBtn,
-                { backgroundColor: isDark ? '#23262F' : '#F6F0ED' },
+                { backgroundColor: isDark ? '#23262F' : '#F3F4F6' },
               ]}>
               <X size={18} color={colors.text} strokeWidth={2.4} />
             </Pressable>
@@ -198,13 +194,16 @@ export function FlashcardPresetBuilderModal({
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.modalNotesContent}>
-            {/* 1. Preset Title & Customization Card */}
+            {/* 1. Preset Title & Customization Card Box */}
             <View
               style={[
                 styles.configCard,
-                { backgroundColor: isDark ? '#1C1F26' : '#F6F0ED' },
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                },
               ]}>
-              <Text style={[styles.fieldLabel, { color: colors.accent }]}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
                 PRESET TITLE (OPTIONAL)
               </Text>
               <TextInput
@@ -215,16 +214,17 @@ export function FlashcardPresetBuilderModal({
                 style={[
                   styles.titleInput,
                   {
-                    backgroundColor: isDark ? '#23262F' : '#FFFFFF',
-                    color: isDark ? '#F9FAFB' : '#0F172A',
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                    color: isDark ? '#F9FAFB' : '#111827',
                   },
                 ]}
               />
 
               {/* Icon Selection Row */}
               <View style={styles.iconSelectionSection}>
-                <Text style={[styles.fieldLabel, { color: colors.accent }]}>
-                  CHOOSE PRESET ICON
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+                  PRESET ICON
                 </Text>
                 <ScrollView
                   horizontal
@@ -250,7 +250,7 @@ export function FlashcardPresetBuilderModal({
                                 : '#F8EAE4'
                               : isDark
                                 ? '#23262F'
-                                : '#FFFFFF',
+                                : '#F9FAFB',
                             opacity: pressed ? 0.75 : 1,
                             transform: [{ scale: isSelected ? 1.05 : 1 }],
                           },
@@ -325,12 +325,13 @@ export function FlashcardPresetBuilderModal({
               </Text>
             </View>
 
-            {/* 3. Subjects & Topics Accordion List */}
+            {/* 3. Subjects & Topics List (Matching Comprehensive Notes style) */}
             <View style={styles.notesList}>
               {SUBJECT_NOTES.map((subject, sIdx) => {
                 const isSubjectOpen = !!expandedSubjects[subject.id];
                 const IconComponent = subject.icon;
-                const gradColors = SUBJECT_GRADIENTS[sIdx % SUBJECT_GRADIENTS.length];
+                const palette = SUBJECT_PALETTES[sIdx % SUBJECT_PALETTES.length];
+
                 const subjectLessonIds = subject.topics.flatMap((t) =>
                   t.lessons.map((l) => l.id)
                 );
@@ -343,24 +344,21 @@ export function FlashcardPresetBuilderModal({
                 const isSomeSubjectSelected =
                   selectedInSubjectCount > 0 && !isAllSubjectSelected;
 
-                const lastSelectedTopicIndex = subject.topics.reduce(
-                  (lastIdx, topic, idx) => {
-                    const hasSelected = topic.lessons.some((l) =>
-                      selectedLessonIds.has(l.id)
-                    );
-                    return hasSelected ? idx : lastIdx;
-                  },
-                  -1
-                );
-
                 return (
                   <Animated.View
                     key={subject.id}
                     layout={LinearTransition.duration(240)}
                     style={[
-                      styles.subjectCard,
+                      styles.subjectCardBox,
                       {
-                        backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                        backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                        borderColor: isDark
+                          ? isSubjectOpen
+                            ? 'rgba(255, 255, 255, 0.15)'
+                            : 'rgba(255, 255, 255, 0.07)'
+                          : isSubjectOpen
+                            ? 'rgba(0, 0, 0, 0.09)'
+                            : 'rgba(0, 0, 0, 0.05)',
                       },
                     ]}>
                     {/* Subject Header Row */}
@@ -368,27 +366,39 @@ export function FlashcardPresetBuilderModal({
                       <Pressable
                         onPress={() => toggleSubject(subject.id)}
                         style={styles.subjectHeaderClickable}>
-                        {/* Prominent Left Icon */}
-                        <SubjectGradientIcon
-                          icon={IconComponent}
-                          colors={gradColors}
-                          size={44}
-                        />
+                        {/* Circular Pastel Icon Badge */}
+                        <View
+                          style={[
+                            styles.subjectIconBadge,
+                            {
+                              backgroundColor: isDark ? palette.darkBg : palette.bg,
+                            },
+                          ]}>
+                          <IconComponent
+                            size={20}
+                            color={isDark ? palette.darkIcon : palette.icon}
+                            strokeWidth={2.2}
+                          />
+                        </View>
 
+                        {/* Clean Subject Title */}
                         <Text
                           numberOfLines={2}
                           style={[
                             styles.subjectTitle,
-                            { color: isDark ? '#F9FAFB' : '#0F172A' },
+                            { color: isDark ? '#F9FAFB' : '#111827' },
                           ]}>
                           {subject.title}
                         </Text>
 
-                        <RotatingChevron
-                          isOpen={isSubjectOpen}
-                          color={colors.accent}
-                          size={18}
-                        />
+                        {/* Rotating Chevron */}
+                        <View style={styles.chevronWrapper}>
+                          <RotatingChevron
+                            isOpen={isSubjectOpen}
+                            color={isDark ? '#9CA3AF' : '#4B5563'}
+                            size={20}
+                          />
+                        </View>
                       </Pressable>
 
                       {/* Select All Subject Lessons Button */}
@@ -404,7 +414,12 @@ export function FlashcardPresetBuilderModal({
                                 ? colors.accent
                                 : isDark
                                   ? '#23262F'
-                                  : '#EBE5E1',
+                                  : '#F3F4F6',
+                            borderColor: isAllSubjectSelected || isSomeSubjectSelected
+                              ? colors.accent
+                              : isDark
+                                ? 'rgba(255, 255, 255, 0.1)'
+                                : '#E5E7EB',
                             opacity: pressed ? 0.75 : 1,
                           },
                         ]}>
@@ -418,13 +433,20 @@ export function FlashcardPresetBuilderModal({
                       </Pressable>
                     </View>
 
-                    {/* Topics Dropdown */}
+                    {/* Topics Dropdown inside Subject */}
                     {isSubjectOpen && (
                       <Animated.View
                         entering={FadeInDown.duration(220)}
                         exiting={FadeOutUp.duration(180)}
                         layout={LinearTransition.duration(240)}
-                        style={styles.topicsListWrapper}>
+                        style={[
+                          styles.topicsListWrapper,
+                          {
+                            borderTopColor: isDark
+                              ? 'rgba(255, 255, 255, 0.06)'
+                              : 'rgba(0, 0, 0, 0.05)',
+                          },
+                        ]}>
                         {subject.topics.map((topic, tIdx) => (
                           <PresetTopicItem
                             key={topic.id}
@@ -436,7 +458,7 @@ export function FlashcardPresetBuilderModal({
                             toggleTopic={toggleTopic}
                             toggleTopicSelection={toggleTopicSelection}
                             toggleLessonSelection={toggleLessonSelection}
-                            lastSelectedTopicIndex={lastSelectedTopicIndex}
+                            parentPalette={palette}
                           />
                         ))}
                       </Animated.View>
@@ -503,33 +525,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   modalHeaderTitleBox: {
     flex: 1,
   },
   modalTitle: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
   modalCloseBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalNotesContent: {
     paddingHorizontal: 16,
-    paddingTop: 10,
     paddingBottom: 24,
     gap: 16,
   },
   configCard: {
     borderRadius: 20,
+    borderWidth: 1,
     padding: 16,
-    gap: 12,
+    gap: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+      },
+    }),
   },
   fieldLabel: {
     fontSize: 11,
@@ -537,26 +574,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   titleInput: {
-    borderRadius: 14,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
     paddingHorizontal: 14,
-    paddingVertical: 12,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   iconSelectionSection: {
     gap: 8,
-    paddingTop: 2,
   },
   iconScrollRow: {
-    gap: 10,
-    paddingVertical: 4,
+    gap: 8,
+    paddingVertical: 2,
   },
   iconPickButton: {
-    padding: 6,
-    borderRadius: 16,
+    padding: 3,
+    borderRadius: 15,
     borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   shuffleToggleRow: {
     flexDirection: 'row',
@@ -567,7 +602,7 @@ const styles = StyleSheet.create({
   shuffleLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   shuffleLabel: {
     fontSize: 13.5,
@@ -578,6 +613,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     justifyContent: 'center',
+    padding: 2,
   },
   switchThumb: {
     width: 20,
@@ -594,7 +630,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   selectedCountText: {
     fontSize: 13,
@@ -603,34 +639,60 @@ const styles = StyleSheet.create({
   notesList: {
     gap: 12,
   },
-  subjectCard: {
-    borderRadius: 20,
+  subjectCardBox: {
+    borderRadius: 18,
+    borderWidth: 1,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+      },
+    }),
   },
   subjectHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 14,
-    gap: 12,
+    gap: 10,
   },
   subjectHeaderClickable: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
     gap: 12,
   },
+  subjectIconBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   subjectTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: -0.3,
     flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    lineHeight: 20,
+  },
+  chevronWrapper: {
+    padding: 2,
   },
   subjectSelectAllBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -641,23 +703,23 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   topicsListWrapper: {
-    paddingHorizontal: 14,
-    paddingTop: 4,
+    paddingHorizontal: 12,
+    paddingTop: 8,
     paddingBottom: 12,
-    gap: 4,
+    borderTopWidth: 1,
+    gap: 6,
   },
   modalFooterBar: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   submitBtn: {
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    height: 50,
+    borderRadius: 16,
   },
   submitBtnText: {
     color: '#FFFFFF',
