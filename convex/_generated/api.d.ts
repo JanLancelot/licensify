@@ -16,6 +16,7 @@ import type * as authHelpers from "../authHelpers.js";
 import type * as crons from "../crons.js";
 import type * as flashcards from "../flashcards.js";
 import type * as http from "../http.js";
+import type * as lessons from "../lessons.js";
 import type * as materials from "../materials.js";
 import type * as notifications from "../notifications.js";
 import type * as questions from "../questions.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   flashcards: typeof flashcards;
   http: typeof http;
+  lessons: typeof lessons;
   materials: typeof materials;
   notifications: typeof notifications;
   questions: typeof questions;

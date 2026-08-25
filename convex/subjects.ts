@@ -50,6 +50,43 @@ export const getSubjectWithTopics = query({
 });
 
 /**
+ * Fetches a single subject by document ID, with its nested published topics and lessons.
+ */
+export const getSubjectWithHierarchy = query({
+  args: { subjectId: v.id("subjects") },
+  handler: async (ctx, args) => {
+    const subject = await ctx.db.get(args.subjectId);
+    if (!subject) return null;
+
+    const topics = await ctx.db
+      .query("topics")
+      .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId))
+      .filter((q) => q.eq(q.field("isPublished"), true))
+      .collect();
+
+    const topicsWithLessons = await Promise.all(
+      topics.map(async (topic) => {
+        const lessons = await ctx.db
+          .query("lessons")
+          .withIndex("by_topic_and_order", (q) => q.eq("topicId", topic._id))
+          .filter((q) => q.eq(q.field("isPublished"), true))
+          .collect();
+
+        return {
+          ...topic,
+          lessons,
+        };
+      })
+    );
+
+    return {
+      ...subject,
+      topics: topicsWithLessons,
+    };
+  },
+});
+
+/**
  * Mutation: Create a new Board Exam Subject (Requires content_manager or admin role).
  */
 export const createSubject = mutation({

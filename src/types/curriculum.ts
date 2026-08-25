@@ -2,6 +2,9 @@ import React from 'react';
 
 export interface Lesson {
   id: string;
+  lessonId?: string;
+  topicId?: string;
+  subjectId?: string;
   lessonNumber: number;
   title: string;
   duration: string;
@@ -11,6 +14,8 @@ export interface Lesson {
 
 export interface Topic {
   id: string;
+  topicId?: string;
+  subjectId?: string;
   topicNumber: number;
   title: string;
   lessons: Lesson[];
@@ -18,6 +23,7 @@ export interface Topic {
 
 export interface SubjectNote {
   id: string;
+  subjectId?: string;
   subjectNumber: number;
   title: string;
   area: string;
@@ -28,6 +34,9 @@ export interface SubjectNote {
 
 export interface FlashcardItem {
   id: string;
+  subjectId?: string;
+  topicId?: string;
+  lessonId?: string;
   subjectTitle: string;
   topicTitle: string;
   lessonTitle: string;
