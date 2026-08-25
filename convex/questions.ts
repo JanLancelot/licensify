@@ -38,6 +38,7 @@ export const createQuestion = mutation({
   args: {
     subjectId: v.id("subjects"),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
     question: v.string(),
     questionImageId: v.optional(v.id("_storage")),
     choices: v.array(
@@ -69,6 +70,7 @@ export const createQuestion = mutation({
     const questionId = await ctx.db.insert("questions", {
       subjectId: args.subjectId,
       topicId: args.topicId,
+      lessonId: args.lessonId,
       question: args.question,
       questionImageId: args.questionImageId,
       choices: args.choices,
@@ -86,12 +88,13 @@ export const createQuestion = mutation({
 });
 
 /**
- * Admin query: List questions with optional filtering by subject, topic, difficulty, or search text.
+ * Admin query: List questions with optional filtering by subject, topic, lesson, difficulty, or search text.
  */
 export const listAllQuestionsAdmin = query({
   args: {
     subjectId: v.optional(v.id("subjects")),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
     difficulty: v.optional(v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"))),
     search: v.optional(v.string()),
   },
@@ -101,11 +104,14 @@ export const listAllQuestionsAdmin = query({
 
     await requireContentManager(ctx);
 
-
     let questionsQuery = ctx.db.query("questions");
 
     let questions;
-    if (args.subjectId) {
+    if (args.lessonId) {
+      questions = await questionsQuery
+        .withIndex("by_lesson", (q) => q.eq("lessonId", args.lessonId!))
+        .collect();
+    } else if (args.subjectId) {
       questions = await questionsQuery
         .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId!))
         .collect();
@@ -160,6 +166,7 @@ export const updateQuestion = mutation({
     questionId: v.id("questions"),
     subjectId: v.optional(v.id("subjects")),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
     question: v.optional(v.string()),
     questionImageId: v.optional(v.id("_storage")),
     choices: v.optional(
@@ -200,6 +207,7 @@ export const updateQuestion = mutation({
     await ctx.db.patch(args.questionId, {
       ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
       ...(args.topicId !== undefined && { topicId: args.topicId }),
+      ...(args.lessonId !== undefined && { lessonId: args.lessonId }),
       ...(args.question !== undefined && { question: args.question }),
       ...(args.questionImageId !== undefined && { questionImageId: args.questionImageId }),
       ...(args.choices !== undefined && { choices: args.choices }),

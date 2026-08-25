@@ -26,10 +26,21 @@ export const subjects = sqliteTable('subjects', {
   order: integer('order').notNull().default(0),
 });
 
+export const branches = sqliteTable('branches', {
+  id: text('id').primaryKey(),
+  convexId: text('convex_id').unique(),
+  subjectId: text('subject_id').references(() => subjects.id).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  order: integer('order').notNull().default(0),
+  isPublished: integer('is_published', { mode: 'boolean' }).notNull().default(true),
+});
+
 export const topics = sqliteTable('topics', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
   subjectId: text('subject_id').references(() => subjects.id).notNull(),
+  branchId: text('branch_id').references(() => branches.id),
   name: text('name').notNull(),
   description: text('description'),
   order: integer('order').notNull().default(0),
@@ -40,6 +51,7 @@ export const lessons = sqliteTable('lessons', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
   subjectId: text('subject_id').references(() => subjects.id).notNull(),
+  branchId: text('branch_id').references(() => branches.id),
   topicId: text('topic_id').references(() => topics.id).notNull(),
   name: text('name').notNull(),
   description: text('description'),
@@ -51,13 +63,13 @@ export const materials = sqliteTable('materials', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
   subjectId: text('subject_id').references(() => subjects.id).notNull(),
+  branchId: text('branch_id').references(() => branches.id),
   topicId: text('topic_id').references(() => topics.id),
   lessonId: text('lesson_id').references(() => lessons.id),
   title: text('title').notNull(),
   description: text('description'),
   type: text('type').notNull(), // 'article', 'pdf', 'image', 'document'
   content: text('content'), // For offline articles
-  // For files like PDFs, you would typically download them to local FS and store the local path here:
   localFileUri: text('local_file_uri'), 
 });
 
@@ -65,6 +77,7 @@ export const flashcards = sqliteTable('flashcards', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
   subjectId: text('subject_id').references(() => subjects.id).notNull(),
+  branchId: text('branch_id').references(() => branches.id),
   topicId: text('topic_id').references(() => topics.id),
   lessonId: text('lesson_id').references(() => lessons.id),
   front: text('front').notNull(),
@@ -78,18 +91,15 @@ export const questions = sqliteTable('questions', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
   subjectId: text('subject_id').references(() => subjects.id).notNull(),
+  branchId: text('branch_id').references(() => branches.id),
   topicId: text('topic_id').references(() => topics.id),
   lessonId: text('lesson_id').references(() => lessons.id),
   question: text('question').notNull(),
   
-  // Stored as JSON string [{id, text, imageId}]
   choices: text('choices', { mode: 'json' }).notNull(),
-  
-  // Only the encrypted hash is stored locally to prevent cheating
   correctChoiceHash: text('correct_choice_hash'),
-  explanation: text('explanation'), // Optional: could be omitted for security until synced
-  
-  difficulty: text('difficulty').notNull(), // 'easy', 'medium', 'hard'
+  explanation: text('explanation'),
+  difficulty: text('difficulty').notNull(),
 });
 
 export const quizzes = sqliteTable('quizzes', {
@@ -97,8 +107,9 @@ export const quizzes = sqliteTable('quizzes', {
   convexId: text('convex_id').unique(),
   title: text('title').notNull(),
   description: text('description'),
-  type: text('type').notNull(), // 'practice', 'mock_exam'
+  type: text('type').notNull(),
   subjectId: text('subject_id').references(() => subjects.id),
+  branchId: text('branch_id').references(() => branches.id),
   topicId: text('topic_id').references(() => topics.id),
   lessonId: text('lesson_id').references(() => lessons.id),
   

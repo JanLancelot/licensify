@@ -23,7 +23,9 @@ import { Modal } from "@/components/ui/Modal";
 
 export default function MaterialsPage() {
   const subjects = useQuery(api.subjects.listAllSubjects);
+  const branches = useQuery((api as any).branches?.listAllBranchesAdmin, {});
   const topics = useQuery(api.topics.listAllTopicsAdmin, {});
+  const lessons = useQuery(api.lessons.listAllLessonsAdmin, {});
   const materials = useQuery(api.materials.listAllMaterialsAdmin, {});
   const { success, error: showError } = useToast();
 
@@ -44,7 +46,9 @@ export default function MaterialsPage() {
 
   // Form State
   const [formSubjectId, setFormSubjectId] = useState<Id<"subjects"> | "">("");
+  const [formBranchId, setFormBranchId] = useState<string>("");
   const [formTopicId, setFormTopicId] = useState<Id<"topics"> | "">("");
+  const [formLessonId, setFormLessonId] = useState<Id<"lessons"> | "">("");
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formType, setFormType] = useState<"article" | "pdf" | "image" | "document">("article");
@@ -59,6 +63,7 @@ export default function MaterialsPage() {
     setEditingMaterial(null);
     setFormSubjectId((subjects && subjects[0]?._id) || "");
     setFormTopicId("");
+    setFormLessonId("");
     setFormTitle("");
     setFormDescription("");
     setFormType("article");
@@ -72,6 +77,7 @@ export default function MaterialsPage() {
     setEditingMaterial(m);
     setFormSubjectId(m.subjectId);
     setFormTopicId(m.topicId || "");
+    setFormLessonId(m.lessonId || "");
     setFormTitle(m.title);
     setFormDescription(m.description || "");
     setFormType(m.type);
@@ -117,6 +123,7 @@ export default function MaterialsPage() {
           materialId: editingMaterial._id,
           subjectId: formSubjectId as Id<"subjects">,
           topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
           title: formTitle.trim(),
           description: formDescription.trim() || undefined,
           type: formType,
@@ -129,6 +136,7 @@ export default function MaterialsPage() {
         await createMaterial({
           subjectId: formSubjectId as Id<"subjects">,
           topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
           title: formTitle.trim(),
           description: formDescription.trim() || undefined,
           type: formType,
@@ -373,16 +381,17 @@ export default function MaterialsPage() {
         }
       >
         <form id="material-form" onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                Board Exam Subject
+                Subject Area
               </label>
               <select
                 value={formSubjectId}
                 onChange={(e) => {
                   setFormSubjectId(e.target.value as Id<"subjects">);
                   setFormTopicId("");
+                  setFormLessonId("");
                 }}
                 required
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
@@ -401,7 +410,10 @@ export default function MaterialsPage() {
               </label>
               <select
                 value={formTopicId}
-                onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
+                onChange={(e) => {
+                  setFormTopicId(e.target.value as Id<"topics">);
+                  setFormLessonId("");
+                }}
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
               >
                 <option value="">-- General / Subject Level --</option>
@@ -410,6 +422,26 @@ export default function MaterialsPage() {
                     {t.name}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Detailed Lesson (Optional)
+              </label>
+              <select
+                value={formLessonId}
+                onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              >
+                <option value="">-- Topic Level --</option>
+                {(lessons || [])
+                  .filter((l: any) => l.topicId === formTopicId)
+                  .map((l: any) => (
+                    <option key={l._id} value={l._id}>
+                      {l.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

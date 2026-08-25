@@ -69,6 +69,7 @@ export const createMaterial = mutation({
   args: {
     subjectId: v.id("subjects"),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
     title: v.string(),
     description: v.optional(v.string()),
     type: v.union(
@@ -88,6 +89,7 @@ export const createMaterial = mutation({
     const materialId = await ctx.db.insert("materials", {
       subjectId: args.subjectId,
       topicId: args.topicId,
+      lessonId: args.lessonId,
       title: args.title,
       description: args.description,
       type: args.type,
@@ -104,12 +106,13 @@ export const createMaterial = mutation({
 });
 
 /**
- * Admin query: Fetch all materials (including drafts), optionally filtered by subject or topic.
+ * Admin query: Fetch all materials (including drafts), optionally filtered by subject, topic, or lesson.
  */
 export const listAllMaterialsAdmin = query({
   args: {
     subjectId: v.optional(v.id("subjects")),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -117,9 +120,13 @@ export const listAllMaterialsAdmin = query({
 
     await requireContentManager(ctx);
 
-
     let materials;
-    if (args.subjectId) {
+    if (args.lessonId) {
+      materials = await ctx.db
+        .query("materials")
+        .withIndex("by_lesson", (q) => q.eq("lessonId", args.lessonId!))
+        .collect();
+    } else if (args.subjectId) {
       materials = await ctx.db
         .query("materials")
         .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId!))
@@ -135,6 +142,9 @@ export const listAllMaterialsAdmin = query({
 
     if (args.subjectId && args.topicId) {
       materials = materials.filter((m) => m.topicId === args.topicId);
+    }
+    if (args.lessonId) {
+      materials = materials.filter((m) => m.lessonId === args.lessonId);
     }
 
     return await Promise.all(
@@ -157,6 +167,7 @@ export const updateMaterial = mutation({
     materialId: v.id("materials"),
     subjectId: v.optional(v.id("subjects")),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     type: v.optional(
@@ -178,6 +189,7 @@ export const updateMaterial = mutation({
     await ctx.db.patch(args.materialId, {
       ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
       ...(args.topicId !== undefined && { topicId: args.topicId }),
+      ...(args.lessonId !== undefined && { lessonId: args.lessonId }),
       ...(args.title !== undefined && { title: args.title }),
       ...(args.description !== undefined && { description: args.description }),
       ...(args.type !== undefined && { type: args.type }),

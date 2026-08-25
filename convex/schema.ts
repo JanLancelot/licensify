@@ -65,7 +65,7 @@ export default defineSchema({
     .index("by_published", ["isPublished"])
     .index("by_order", ["order"]),
 
-  topics: defineTable({
+  branches: defineTable({
     subjectId: v.id("subjects"),
     name: v.string(),
     description: v.optional(v.string()),
@@ -78,8 +78,24 @@ export default defineSchema({
     .index("by_subject", ["subjectId"])
     .index("by_subject_and_order", ["subjectId", "order"]),
 
+  topics: defineTable({
+    subjectId: v.id("subjects"),
+    branchId: v.optional(v.id("branches")),
+    name: v.string(),
+    description: v.optional(v.string()),
+    order: v.number(),
+    isPublished: v.boolean(),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_subject", ["subjectId"])
+    .index("by_branch", ["branchId"])
+    .index("by_subject_and_order", ["subjectId", "order"]),
+
   lessons: defineTable({
     subjectId: v.id("subjects"),
+    branchId: v.optional(v.id("branches")),
     topicId: v.id("topics"),
     name: v.string(),
     description: v.optional(v.string()),
@@ -90,11 +106,13 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_topic", ["topicId"])
+    .index("by_branch", ["branchId"])
     .index("by_topic_and_order", ["topicId", "order"])
     .index("by_subject", ["subjectId"]),
 
   materials: defineTable({
     subjectId: v.id("subjects"),
+    branchId: v.optional(v.id("branches")),
     topicId: v.optional(v.id("topics")),
     lessonId: v.optional(v.id("lessons")),
 
@@ -118,11 +136,13 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_subject", ["subjectId"])
+    .index("by_branch", ["branchId"])
     .index("by_topic", ["topicId"])
     .index("by_lesson", ["lessonId"]),
 
   flashcards: defineTable({
     subjectId: v.id("subjects"),
+    branchId: v.optional(v.id("branches")),
     topicId: v.optional(v.id("topics")),
     lessonId: v.optional(v.id("lessons")),
 
@@ -138,6 +158,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_subject", ["subjectId"])
+    .index("by_branch", ["branchId"])
     .index("by_topic", ["topicId"])
     .index("by_lesson", ["lessonId"]),
 
@@ -146,6 +167,7 @@ export default defineSchema({
   // ---------------------------------------------------------------------------
   questions: defineTable({
     subjectId: v.id("subjects"),
+    branchId: v.optional(v.id("branches")),
     topicId: v.optional(v.id("topics")),
     lessonId: v.optional(v.id("lessons")),
 
@@ -177,6 +199,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_subject", ["subjectId"])
+    .index("by_branch", ["branchId"])
     .index("by_topic", ["topicId"])
     .index("by_lesson", ["lessonId"])
     .index("by_difficulty", ["difficulty"]),
@@ -191,6 +214,7 @@ export default defineSchema({
     ),
 
     subjectId: v.optional(v.id("subjects")),
+    branchId: v.optional(v.id("branches")),
     topicId: v.optional(v.id("topics")),
     lessonId: v.optional(v.id("lessons")),
 
@@ -208,6 +232,7 @@ export default defineSchema({
   })
     .index("by_type", ["type"])
     .index("by_subject", ["subjectId"])
+    .index("by_branch", ["branchId"])
     .index("by_topic", ["topicId"])
     .index("by_lesson", ["lessonId"]),
 

@@ -46,6 +46,7 @@ export const getLessonById = query({
 export const createLesson = mutation({
   args: {
     subjectId: v.id("subjects"),
+    branchId: v.optional(v.id("branches")),
     topicId: v.id("topics"),
     name: v.string(),
     description: v.optional(v.string()),
@@ -58,6 +59,7 @@ export const createLesson = mutation({
 
     const lessonId = await ctx.db.insert("lessons", {
       subjectId: args.subjectId,
+      branchId: args.branchId,
       topicId: args.topicId,
       name: args.name,
       description: args.description,
@@ -77,6 +79,7 @@ export const createLesson = mutation({
 export const updateLesson = mutation({
   args: {
     lessonId: v.id("lessons"),
+    branchId: v.optional(v.id("branches")),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     order: v.optional(v.number()),
@@ -87,6 +90,7 @@ export const updateLesson = mutation({
     const now = Date.now();
 
     await ctx.db.patch(args.lessonId, {
+      ...(args.branchId !== undefined && { branchId: args.branchId }),
       ...(args.name !== undefined && { name: args.name }),
       ...(args.description !== undefined && { description: args.description }),
       ...(args.order !== undefined && { order: args.order }),

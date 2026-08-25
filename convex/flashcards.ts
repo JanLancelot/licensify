@@ -58,6 +58,7 @@ export const createFlashcard = mutation({
   args: {
     subjectId: v.id("subjects"),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
     front: v.string(),
     back: v.string(),
     imageId: v.optional(v.id("_storage")),
@@ -70,6 +71,7 @@ export const createFlashcard = mutation({
     const flashcardId = await ctx.db.insert("flashcards", {
       subjectId: args.subjectId,
       topicId: args.topicId,
+      lessonId: args.lessonId,
       front: args.front,
       back: args.back,
       imageId: args.imageId,
@@ -102,6 +104,7 @@ export const listAllFlashcardsAdmin = query({
   args: {
     subjectId: v.optional(v.id("subjects")),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -109,9 +112,13 @@ export const listAllFlashcardsAdmin = query({
 
     await requireContentManager(ctx);
 
-
     let cards;
-    if (args.subjectId) {
+    if (args.lessonId) {
+      cards = await ctx.db
+        .query("flashcards")
+        .withIndex("by_lesson", (q) => q.eq("lessonId", args.lessonId!))
+        .collect();
+    } else if (args.subjectId) {
       cards = await ctx.db
         .query("flashcards")
         .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId!))
@@ -127,6 +134,9 @@ export const listAllFlashcardsAdmin = query({
 
     if (args.subjectId && args.topicId) {
       cards = cards.filter((c) => c.topicId === args.topicId);
+    }
+    if (args.lessonId) {
+      cards = cards.filter((c) => c.lessonId === args.lessonId);
     }
 
     return await Promise.all(
@@ -149,6 +159,7 @@ export const updateFlashcard = mutation({
     flashcardId: v.id("flashcards"),
     subjectId: v.optional(v.id("subjects")),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
     front: v.optional(v.string()),
     back: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
@@ -161,6 +172,7 @@ export const updateFlashcard = mutation({
     await ctx.db.patch(args.flashcardId, {
       ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
       ...(args.topicId !== undefined && { topicId: args.topicId }),
+      ...(args.lessonId !== undefined && { lessonId: args.lessonId }),
       ...(args.front !== undefined && { front: args.front }),
       ...(args.back !== undefined && { back: args.back }),
       ...(args.imageId !== undefined && { imageId: args.imageId }),

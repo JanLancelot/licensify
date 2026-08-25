@@ -32,6 +32,7 @@ export const getTopicById = query({
 export const createTopic = mutation({
   args: {
     subjectId: v.id("subjects"),
+    branchId: v.optional(v.id("branches")),
     name: v.string(),
     description: v.optional(v.string()),
     order: v.number(),
@@ -43,6 +44,7 @@ export const createTopic = mutation({
 
     const topicId = await ctx.db.insert("topics", {
       subjectId: args.subjectId,
+      branchId: args.branchId,
       name: args.name,
       description: args.description,
       order: args.order,
@@ -61,6 +63,8 @@ export const createTopic = mutation({
 export const updateTopic = mutation({
   args: {
     topicId: v.id("topics"),
+    subjectId: v.optional(v.id("subjects")),
+    branchId: v.optional(v.union(v.id("branches"), v.null())),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     order: v.optional(v.number()),
@@ -70,13 +74,33 @@ export const updateTopic = mutation({
     await requireContentManager(ctx);
     const now = Date.now();
 
+    const targetBranchId = args.branchId === null ? undefined : args.branchId;
+
     await ctx.db.patch(args.topicId, {
+      ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
+      ...(args.branchId !== undefined && { branchId: targetBranchId }),
       ...(args.name !== undefined && { name: args.name }),
       ...(args.description !== undefined && { description: args.description }),
       ...(args.order !== undefined && { order: args.order }),
       ...(args.isPublished !== undefined && { isPublished: args.isPublished }),
       updatedAt: now,
     });
+
+    // Cascade update subjectId and branchId to all lessons under this topic
+    if (args.subjectId !== undefined || args.branchId !== undefined) {
+      const topicLessons = await ctx.db
+        .query("lessons")
+        .withIndex("by_topic", (q) => q.eq("topicId", args.topicId))
+        .collect();
+
+      for (const les of topicLessons) {
+        await ctx.db.patch(les._id, {
+          ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
+          ...(args.branchId !== undefined && { branchId: targetBranchId }),
+          updatedAt: now,
+        });
+      }
+    }
 
     return { success: true };
   },
