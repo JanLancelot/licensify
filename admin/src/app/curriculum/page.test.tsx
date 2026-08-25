@@ -56,7 +56,7 @@ describe("Curriculum Hierarchy Page", () => {
     fireEvent.click(newSubjectBtn);
 
     expect(screen.getByText("New Board Exam Subject")).toBeInTheDocument();
-    const nameInput = screen.getByPlaceholderText(/History of Architecture/i);
+    const nameInput = screen.getByPlaceholderText(/Theory of Architecture/i);
     fireEvent.change(nameInput, { target: { value: "Building Technology" } });
 
     const submitBtn = screen.getByRole("button", { name: /^Create Subject$/i });
