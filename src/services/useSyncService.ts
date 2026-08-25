@@ -80,7 +80,33 @@ export function useSyncService() {
                 },
               });
 
-              // Fetch materials by topic
+              // Fetch lessons under topic
+              const topicLessons = await convex.query(api.lessons.listLessonsByTopic as any, {
+                topicId: top._id,
+              });
+
+              if (topicLessons && topicLessons.length > 0) {
+                for (const les of topicLessons) {
+                  await db.insert(schema.lessons).values({
+                    id: les._id,
+                    convexId: les._id,
+                    subjectId: sub._id,
+                    topicId: top._id,
+                    name: les.name,
+                    description: les.description,
+                    order: les.order,
+                    isPublished: les.isPublished,
+                  }).onConflictDoUpdate({
+                    target: schema.lessons.id,
+                    set: {
+                      name: les.name,
+                      description: les.description,
+                      order: les.order,
+                      isPublished: les.isPublished,
+                    },
+                  });
+                }
+              }
               const topicMaterials = await convex.query(api.materials.listMaterialsByTopic as any, {
                 topicId: top._id,
               });

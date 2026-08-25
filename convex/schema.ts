@@ -78,9 +78,25 @@ export default defineSchema({
     .index("by_subject", ["subjectId"])
     .index("by_subject_and_order", ["subjectId", "order"]),
 
+  lessons: defineTable({
+    subjectId: v.id("subjects"),
+    topicId: v.id("topics"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    order: v.number(),
+    isPublished: v.boolean(),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_topic", ["topicId"])
+    .index("by_topic_and_order", ["topicId", "order"])
+    .index("by_subject", ["subjectId"]),
+
   materials: defineTable({
     subjectId: v.id("subjects"),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
 
     title: v.string(),
     description: v.optional(v.string()),
@@ -102,11 +118,13 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_subject", ["subjectId"])
-    .index("by_topic", ["topicId"]),
+    .index("by_topic", ["topicId"])
+    .index("by_lesson", ["lessonId"]),
 
   flashcards: defineTable({
     subjectId: v.id("subjects"),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
 
     front: v.string(),
     back: v.string(),
@@ -120,7 +138,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_subject", ["subjectId"])
-    .index("by_topic", ["topicId"]),
+    .index("by_topic", ["topicId"])
+    .index("by_lesson", ["lessonId"]),
 
   // ---------------------------------------------------------------------------
   // 3. ASSESSMENTS
@@ -128,6 +147,7 @@ export default defineSchema({
   questions: defineTable({
     subjectId: v.id("subjects"),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
 
     question: v.string(),
     questionImageId: v.optional(v.id("_storage")),
@@ -158,6 +178,7 @@ export default defineSchema({
   })
     .index("by_subject", ["subjectId"])
     .index("by_topic", ["topicId"])
+    .index("by_lesson", ["lessonId"])
     .index("by_difficulty", ["difficulty"]),
 
   quizzes: defineTable({
@@ -171,6 +192,7 @@ export default defineSchema({
 
     subjectId: v.optional(v.id("subjects")),
     topicId: v.optional(v.id("topics")),
+    lessonId: v.optional(v.id("lessons")),
 
     // Ordered list of question document references
     questionIds: v.array(v.id("questions")),
@@ -186,7 +208,8 @@ export default defineSchema({
   })
     .index("by_type", ["type"])
     .index("by_subject", ["subjectId"])
-    .index("by_topic", ["topicId"]),
+    .index("by_topic", ["topicId"])
+    .index("by_lesson", ["lessonId"]),
 
   quizAttempts: defineTable({
     userId: v.id("users"),

@@ -13,6 +13,182 @@ import { SubjectNote } from '@/types/curriculum';
 
 export const SUBJECT_NOTES: SubjectNote[] = [
   {
+    id: 's7',
+    subjectNumber: 7,
+    title: '7_Theory of Architecture',
+    area: 'Area 1',
+    weight: '25% Weight',
+    icon: Compass,
+    topics: [
+      {
+        id: 's7-t1',
+        topicNumber: 1,
+        title: 'Primary Elements & Spatial Ordering',
+        lessons: [
+          {
+            id: 's7-t1-l1',
+            lessonNumber: 1,
+            title: 'Point, Line, Plane, & Volume in Space',
+            duration: '7 min read',
+            summary: 'Primary geometric elements forming architectural form.',
+            keyPoints: [
+              'Point: Marks a position in space; has no length, width, or depth.',
+              'Line: A point extended becomes a line with length, direction, and position.',
+              'Plane: A line extended becomes a plane with length, width, shape, surface, and orientation.',
+              'Volume: A plane extended becomes a volume with length, width, depth, form, space, and surface.',
+            ],
+          },
+          {
+            id: 's7-t1-l2',
+            lessonNumber: 2,
+            title: 'Spatial Relationships & Spatial Organizations',
+            duration: '8 min read',
+            summary: 'Centralized, linear, radial, clustered, and grid organizations.',
+            keyPoints: [
+              'Space within Space: A larger space contains a smaller space within its volume.',
+              'Interlocking Spaces: Two spatial volumes overlap to create a shared zone.',
+              'Adjacent Spaces: Two spaces share a common border.',
+              'Centralized Organization: Dominant central space surrounded by secondary spaces.',
+            ],
+          },
+          {
+            id: 's7-t1-l3',
+            lessonNumber: 3,
+            title: 'Architectural Ordering Principles',
+            duration: '9 min read',
+            summary: 'Axis, symmetry, hierarchy, datum, rhythm, and transformation.',
+            keyPoints: [
+              'Axis: A line established by two points in space around which forms can be arranged.',
+              'Symmetry: Equivalent distribution of shapes along a dividing line.',
+              'Hierarchy: Articulation of importance by size, shape, or placement.',
+              'Datum: A line, plane, or volume serving to gather or organize a pattern.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 's7-t2',
+        topicNumber: 2,
+        title: 'Human Factors, Ergonomics, & Perception',
+        lessons: [
+          {
+            id: 's7-t2-l1',
+            lessonNumber: 1,
+            title: 'Anthropometrics vs. Ergonomics',
+            duration: '7 min read',
+            summary: 'Body dimensions measurement vs. design of workspaces for efficiency and safety.',
+            keyPoints: [
+              'Anthropometrics: Measurement of physical properties of the human body.',
+              'Ergonomics: Applied science of equipment design intended to maximize productivity by reducing operator fatigue and discomfort.',
+              'Percentiles: 5th percentile female to 95th percentile male guidelines in design.',
+            ],
+          },
+          {
+            id: 's7-t2-l2',
+            lessonNumber: 2,
+            title: 'Proxemics & 4 Spatial Zones',
+            duration: '6 min read',
+            summary: 'Interpersonal distance zones defined by Edward T. Hall.',
+            keyPoints: [
+              'Intimate Zone: 0 - 1.5 ft (0 - 0.45m).',
+              'Personal Zone: 1.5 - 4 ft (0.45m - 1.2m).',
+              'Social Zone: 4 - 12 ft (1.2m - 3.6m).',
+              'Public Zone: 12 ft and beyond (3.6m+).',
+            ],
+          },
+          {
+            id: 's7-t2-l3',
+            lessonNumber: 3,
+            title: 'Psychology Principles in Architectural Perception',
+            duration: '8 min read',
+            summary: 'Gestalt principles of visual organization and environmental psychology.',
+            keyPoints: [
+              'Figure-Ground Relationship: Distinction between positive form and negative space.',
+              'Closure: Human tendency to perceive incomplete shapes as complete.',
+              'Proximity & Similarity: Objects close or similar are perceived as a group.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 's7-t3',
+        topicNumber: 3,
+        title: 'Proportion Systems & Theories of Scale',
+        lessons: [
+          {
+            id: 's7-t3-l1',
+            lessonNumber: 1,
+            title: 'The Golden Section, Classical Orders, & Modulor',
+            duration: '10 min read',
+            summary: 'Proportioning systems in architecture.',
+            keyPoints: [
+              'Golden Section: Ratio 1 : 1.618 (phi).',
+              'Le Corbusier Modulor: Human body scale system based on 1.83m human height and Golden Ratio.',
+              'Classical Orders: Column height expressed as multiples of base diameter.',
+            ],
+          },
+          {
+            id: 's7-t3-l2',
+            lessonNumber: 2,
+            title: 'Japanese Ken System & Anthropomorphic Proportioning',
+            duration: '7 min read',
+            summary: 'Traditional Japanese spatial modules (tatami mats and Ken grids).',
+            keyPoints: [
+              'Ken: Traditional Japanese unit of length (6 shaku approx. 1.818m).',
+              'In-ma Method: Column interval is fixed; mat size varies.',
+              'Ki-ma Method: Mat size is fixed (2:1 proportion); column interval varies.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 's7-t4',
+        topicNumber: 4,
+        title: 'Architectural Philosophies & Master Dictums',
+        lessons: [
+          {
+            id: 's7-t4-l1',
+            lessonNumber: 1,
+            title: 'Pioneers of Modernism & Their Famous Dictums',
+            duration: '9 min read',
+            summary: 'Famous manifestos of Modern masters.',
+            keyPoints: [
+              'Louis Sullivan: "Form follows function".',
+              'Ludwig Mies van der Rohe: "Less is more" and "God is in the details".',
+              'Le Corbusier: "A house is a machine for living in".',
+              'Frank Lloyd Wright: "Organic architecture".',
+            ],
+          },
+          {
+            id: 's7-t4-l2',
+            lessonNumber: 2,
+            title: 'Postmodernism, Deconstructivism, & Regionalist Philosophies',
+            duration: '8 min read',
+            summary: 'Reactions against High Modernism and regional expressions.',
+            keyPoints: [
+              'Robert Venturi: "Less is a bore" and Complexity and Contradiction in Architecture.',
+              'Deconstructivism: Fragmentation, non-rectilinear shapes, and non-Euclidean geometry (Frank Gehry, Zaha Hadid).',
+              'Critical Regionalism: Countering placelessness through local climate, topography, and light.',
+            ],
+          },
+          {
+            id: 's7-t4-l3',
+            lessonNumber: 3,
+            title: 'National Artists for Architecture (PH) & Design Philosophies',
+            duration: '10 min read',
+            summary: 'Philippine architectural masters and their design legacies.',
+            keyPoints: [
+              'Leandro V. Locsin: Floating volume, duality of light and heavy massing (CCP Main Building).',
+              'Francisco "Bobby" Mañosa: Tropical Filipino Architecture using indigenous materials (Coconut Palace).',
+              'Juan F. Nakpil: Pioneer of modern Philippine architecture (Quiapo Church reconstruction).',
+              'Pablo S. Antonio: Art Deco master prioritizing natural ventilation and sunlight.',
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: 's1',
     subjectNumber: 1,
     title: 'History & Theory of Architecture',

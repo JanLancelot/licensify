@@ -36,11 +36,23 @@ export const topics = sqliteTable('topics', {
   isPublished: integer('is_published', { mode: 'boolean' }).notNull().default(false),
 });
 
+export const lessons = sqliteTable('lessons', {
+  id: text('id').primaryKey(),
+  convexId: text('convex_id').unique(),
+  subjectId: text('subject_id').references(() => subjects.id).notNull(),
+  topicId: text('topic_id').references(() => topics.id).notNull(),
+  name: text('name').notNull(),
+  description: text('description'),
+  order: integer('order').notNull().default(0),
+  isPublished: integer('is_published', { mode: 'boolean' }).notNull().default(true),
+});
+
 export const materials = sqliteTable('materials', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
   subjectId: text('subject_id').references(() => subjects.id).notNull(),
   topicId: text('topic_id').references(() => topics.id),
+  lessonId: text('lesson_id').references(() => lessons.id),
   title: text('title').notNull(),
   description: text('description'),
   type: text('type').notNull(), // 'article', 'pdf', 'image', 'document'
@@ -54,6 +66,7 @@ export const flashcards = sqliteTable('flashcards', {
   convexId: text('convex_id').unique(),
   subjectId: text('subject_id').references(() => subjects.id).notNull(),
   topicId: text('topic_id').references(() => topics.id),
+  lessonId: text('lesson_id').references(() => lessons.id),
   front: text('front').notNull(),
   back: text('back').notNull(),
 });
@@ -66,6 +79,7 @@ export const questions = sqliteTable('questions', {
   convexId: text('convex_id').unique(),
   subjectId: text('subject_id').references(() => subjects.id).notNull(),
   topicId: text('topic_id').references(() => topics.id),
+  lessonId: text('lesson_id').references(() => lessons.id),
   question: text('question').notNull(),
   
   // Stored as JSON string [{id, text, imageId}]
@@ -86,6 +100,7 @@ export const quizzes = sqliteTable('quizzes', {
   type: text('type').notNull(), // 'practice', 'mock_exam'
   subjectId: text('subject_id').references(() => subjects.id),
   topicId: text('topic_id').references(() => topics.id),
+  lessonId: text('lesson_id').references(() => lessons.id),
   
   // Stored as JSON string [questionId1, questionId2, ...]
   questionIds: text('question_ids', { mode: 'json' }).notNull(),
