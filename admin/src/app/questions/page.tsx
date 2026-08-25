@@ -33,6 +33,7 @@ interface Choice {
 export default function QuestionsPage() {
   const subjects = useQuery(api.subjects.listAllSubjects);
   const topics = useQuery(api.topics.listAllTopicsAdmin, {});
+  const lessons = useQuery(api.lessons.listAllLessonsAdmin, {});
   const { success, error: showError } = useToast();
 
   // Filters
@@ -65,6 +66,7 @@ export default function QuestionsPage() {
   // Single Question Form State
   const [formSubjectId, setFormSubjectId] = useState<Id<"subjects"> | "">("");
   const [formTopicId, setFormTopicId] = useState<Id<"topics"> | "">("");
+  const [formLessonId, setFormLessonId] = useState<Id<"lessons"> | "">("");
   const [formQuestion, setFormQuestion] = useState("");
   const [formDifficulty, setFormDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [formChoices, setFormChoices] = useState<Choice[]>([
@@ -88,6 +90,7 @@ export default function QuestionsPage() {
     setEditingQuestion(null);
     setFormSubjectId((subjects && subjects[0]?._id) || "");
     setFormTopicId("");
+    setFormLessonId("");
     setFormQuestion("");
     setFormDifficulty("medium");
     setFormChoices([
@@ -106,6 +109,7 @@ export default function QuestionsPage() {
     setEditingQuestion(q);
     setFormSubjectId(q.subjectId);
     setFormTopicId(q.topicId || "");
+    setFormLessonId(q.lessonId || "");
     setFormQuestion(q.question);
     setFormDifficulty(q.difficulty);
     setFormChoices(q.choices.map((c: any) => ({ id: c.id, text: c.text })));
@@ -154,6 +158,7 @@ export default function QuestionsPage() {
           questionId: editingQuestion._id,
           subjectId: formSubjectId as Id<"subjects">,
           topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
           question: formQuestion.trim(),
           choices: formChoices.map((c) => ({ id: c.id, text: c.text.trim() })),
           correctChoiceId: formCorrectId,
@@ -166,6 +171,7 @@ export default function QuestionsPage() {
         await createQuestion({
           subjectId: formSubjectId as Id<"subjects">,
           topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
           question: formQuestion.trim(),
           choices: formChoices.map((c) => ({ id: c.id, text: c.text.trim() })),
           correctChoiceId: formCorrectId,
@@ -557,16 +563,17 @@ export default function QuestionsPage() {
         }
       >
         <form id="question-form" onSubmit={handleSaveQuestion} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                Board Exam Subject Area
+                Board Exam Subject
               </label>
               <select
                 value={formSubjectId}
                 onChange={(e) => {
                   setFormSubjectId(e.target.value as Id<"subjects">);
                   setFormTopicId("");
+                  setFormLessonId("");
                 }}
                 required
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
@@ -585,7 +592,10 @@ export default function QuestionsPage() {
               </label>
               <select
                 value={formTopicId}
-                onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
+                onChange={(e) => {
+                  setFormTopicId(e.target.value as Id<"topics">);
+                  setFormLessonId("");
+                }}
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
               >
                 <option value="">-- General / Subject Level --</option>
@@ -594,6 +604,26 @@ export default function QuestionsPage() {
                     {t.name}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Lesson Tag (Optional)
+              </label>
+              <select
+                value={formLessonId}
+                onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              >
+                <option value="">-- Topic Level --</option>
+                {(lessons || [])
+                  .filter((l: any) => l.topicId === formTopicId)
+                  .map((l: any) => (
+                    <option key={l._id} value={l._id}>
+                      {l.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

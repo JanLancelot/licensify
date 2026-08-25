@@ -23,6 +23,7 @@ import { Modal } from "@/components/ui/Modal";
 export default function QuizzesPage() {
   const subjects = useQuery(api.subjects.listAllSubjects);
   const topics = useQuery(api.topics.listAllTopicsAdmin, {});
+  const lessons = useQuery(api.lessons.listAllLessonsAdmin, {});
   const quizzes = useQuery(api.quizzes.listAllQuizzesAdmin, {});
   const allQuestions = useQuery(api.questions.listAllQuestionsAdmin, {});
   const { success, error: showError } = useToast();
@@ -45,6 +46,7 @@ export default function QuizzesPage() {
   const [formType, setFormType] = useState<"practice" | "mock_exam">("mock_exam");
   const [formSubjectId, setFormSubjectId] = useState<Id<"subjects"> | "">("");
   const [formTopicId, setFormTopicId] = useState<Id<"topics"> | "">("");
+  const [formLessonId, setFormLessonId] = useState<Id<"lessons"> | "">("");
   const [formTimeLimitMinutes, setFormTimeLimitMinutes] = useState<number>(60);
   const [formPassingScore, setFormPassingScore] = useState<number>(75);
   const [formSelectedQuestionIds, setFormSelectedQuestionIds] = useState<Id<"questions">[]>([]);
@@ -62,6 +64,7 @@ export default function QuizzesPage() {
     setFormType("mock_exam");
     setFormSubjectId((subjects && subjects[0]?._id) || "");
     setFormTopicId("");
+    setFormLessonId("");
     setFormTimeLimitMinutes(60);
     setFormPassingScore(75);
     setFormSelectedQuestionIds([]);
@@ -77,6 +80,7 @@ export default function QuizzesPage() {
     setFormType(q.type);
     setFormSubjectId(q.subjectId || "");
     setFormTopicId(q.topicId || "");
+    setFormLessonId(q.lessonId || "");
     setFormTimeLimitMinutes(q.timeLimitSeconds ? Math.round(q.timeLimitSeconds / 60) : 60);
     setFormPassingScore(q.passingScore ?? 75);
     setFormSelectedQuestionIds(q.questionIds || []);
@@ -110,6 +114,7 @@ export default function QuizzesPage() {
           type: formType,
           subjectId: formSubjectId ? (formSubjectId as Id<"subjects">) : undefined,
           topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
           questionIds: formSelectedQuestionIds,
           timeLimitSeconds: formTimeLimitMinutes ? formTimeLimitMinutes * 60 : undefined,
           passingScore: formPassingScore,
@@ -123,6 +128,7 @@ export default function QuizzesPage() {
           type: formType,
           subjectId: formSubjectId ? (formSubjectId as Id<"subjects">) : undefined,
           topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
           questionIds: formSelectedQuestionIds,
           timeLimitSeconds: formTimeLimitMinutes ? formTimeLimitMinutes * 60 : undefined,
           passingScore: formPassingScore,
@@ -380,6 +386,73 @@ export default function QuizzesPage() {
               >
                 <option value="mock_exam">Full Mock Exam</option>
                 <option value="practice">Custom Practice Drill</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Subject Area (Optional)
+              </label>
+              <select
+                value={formSubjectId}
+                onChange={(e) => {
+                  setFormSubjectId(e.target.value as Id<"subjects">);
+                  setFormTopicId("");
+                  setFormLessonId("");
+                }}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              >
+                <option value="">-- All Subjects --</option>
+                {subjects.map((s: any) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Topic Tag (Optional)
+              </label>
+              <select
+                value={formTopicId}
+                onChange={(e) => {
+                  setFormTopicId(e.target.value as Id<"topics">);
+                  setFormLessonId("");
+                }}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              >
+                <option value="">-- All Topics --</option>
+                {topics
+                  .filter((t: any) => !formSubjectId || t.subjectId === formSubjectId)
+                  .map((t: any) => (
+                    <option key={t._id} value={t._id}>
+                      {t.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Lesson Tag (Optional)
+              </label>
+              <select
+                value={formLessonId}
+                onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              >
+                <option value="">-- All Lessons --</option>
+                {(lessons || [])
+                  .filter((l: any) => !formTopicId || l.topicId === formTopicId)
+                  .map((l: any) => (
+                    <option key={l._id} value={l._id}>
+                      {l.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

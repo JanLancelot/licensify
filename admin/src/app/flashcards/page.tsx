@@ -24,6 +24,7 @@ import { Modal } from "@/components/ui/Modal";
 export default function FlashcardsPage() {
   const subjects = useQuery(api.subjects.listAllSubjects);
   const topics = useQuery(api.topics.listAllTopicsAdmin, {});
+  const lessons = useQuery(api.lessons.listAllLessonsAdmin, {});
   const flashcards = useQuery(api.flashcards.listAllFlashcardsAdmin, {});
   const { success, error: showError } = useToast();
 
@@ -48,6 +49,7 @@ export default function FlashcardsPage() {
   // Form State
   const [formSubjectId, setFormSubjectId] = useState<Id<"subjects"> | "">("");
   const [formTopicId, setFormTopicId] = useState<Id<"topics"> | "">("");
+  const [formLessonId, setFormLessonId] = useState<Id<"lessons"> | "">("");
   const [formFront, setFormFront] = useState("");
   const [formBack, setFormBack] = useState("");
   const [formImageId, setFormImageId] = useState<Id<"_storage"> | undefined>(undefined);
@@ -63,6 +65,7 @@ export default function FlashcardsPage() {
     setEditingCard(null);
     setFormSubjectId((subjects && subjects[0]?._id) || "");
     setFormTopicId("");
+    setFormLessonId("");
     setFormFront("");
     setFormBack("");
     setFormImageId(undefined);
@@ -74,6 +77,7 @@ export default function FlashcardsPage() {
     setEditingCard(card);
     setFormSubjectId(card.subjectId);
     setFormTopicId(card.topicId || "");
+    setFormLessonId(card.lessonId || "");
     setFormFront(card.front);
     setFormBack(card.back);
     setFormImageId(card.imageId);
@@ -114,6 +118,7 @@ export default function FlashcardsPage() {
           flashcardId: editingCard._id,
           subjectId: formSubjectId as Id<"subjects">,
           topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
           front: formFront.trim(),
           back: formBack.trim(),
           imageId: formImageId,
@@ -124,6 +129,7 @@ export default function FlashcardsPage() {
         await createFlashcard({
           subjectId: formSubjectId as Id<"subjects">,
           topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
           front: formFront.trim(),
           back: formBack.trim(),
           imageId: formImageId,
@@ -377,7 +383,7 @@ export default function FlashcardsPage() {
         }
       >
         <form id="flashcard-form" onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                 Board Exam Subject
@@ -387,6 +393,7 @@ export default function FlashcardsPage() {
                 onChange={(e) => {
                   setFormSubjectId(e.target.value as Id<"subjects">);
                   setFormTopicId("");
+                  setFormLessonId("");
                 }}
                 required
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
@@ -405,7 +412,10 @@ export default function FlashcardsPage() {
               </label>
               <select
                 value={formTopicId}
-                onChange={(e) => setFormTopicId(e.target.value as Id<"topics">)}
+                onChange={(e) => {
+                  setFormTopicId(e.target.value as Id<"topics">);
+                  setFormLessonId("");
+                }}
                 className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
               >
                 <option value="">-- General / Subject Level --</option>
@@ -414,6 +424,26 @@ export default function FlashcardsPage() {
                     {t.name}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Lesson Tag (Optional)
+              </label>
+              <select
+                value={formLessonId}
+                onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
+                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              >
+                <option value="">-- Topic Level --</option>
+                {(lessons || [])
+                  .filter((l: any) => l.topicId === formTopicId)
+                  .map((l: any) => (
+                    <option key={l._id} value={l._id}>
+                      {l.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

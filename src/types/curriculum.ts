@@ -4,6 +4,7 @@ export interface Lesson {
   id: string;
   lessonId?: string;
   topicId?: string;
+  branchId?: string;
   subjectId?: string;
   lessonNumber: number;
   title: string;
@@ -15,10 +16,21 @@ export interface Lesson {
 export interface Topic {
   id: string;
   topicId?: string;
+  branchId?: string;
   subjectId?: string;
   topicNumber: number;
   title: string;
   lessons: Lesson[];
+}
+
+export interface Branch {
+  id: string;
+  branchId?: string;
+  subjectId?: string;
+  branchNumber: number;
+  title: string;
+  description?: string;
+  topics: Topic[];
 }
 
 export interface SubjectNote {
@@ -29,6 +41,7 @@ export interface SubjectNote {
   area: string;
   weight: string;
   icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
+  branches?: Branch[];
   topics: Topic[];
 }
 

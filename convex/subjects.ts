@@ -58,6 +58,12 @@ export const getSubjectWithHierarchy = query({
     const subject = await ctx.db.get(args.subjectId);
     if (!subject) return null;
 
+    const branches = await ctx.db
+      .query("branches")
+      .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId))
+      .filter((q) => q.eq(q.field("isPublished"), true))
+      .collect();
+
     const topics = await ctx.db
       .query("topics")
       .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId))
@@ -81,6 +87,7 @@ export const getSubjectWithHierarchy = query({
 
     return {
       ...subject,
+      branches,
       topics: topicsWithLessons,
     };
   },

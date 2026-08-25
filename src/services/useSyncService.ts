@@ -55,7 +55,34 @@ export function useSyncService() {
             },
           });
 
-          // 2. Fetch topics under subject
+          // 2. Fetch branches under subject
+          const branches = await convex.query((api.branches as any).listBranchesBySubject, {
+            subjectId: sub._id,
+          });
+
+          if (branches && branches.length > 0) {
+            for (const br of branches) {
+              await db.insert(schema.branches).values({
+                id: br._id,
+                convexId: br._id,
+                subjectId: sub._id,
+                name: br.name,
+                description: br.description,
+                order: br.order,
+                isPublished: br.isPublished,
+              }).onConflictDoUpdate({
+                target: schema.branches.id,
+                set: {
+                  name: br.name,
+                  description: br.description,
+                  order: br.order,
+                  isPublished: br.isPublished,
+                },
+              });
+            }
+          }
+
+          // 3. Fetch topics under subject
           const topics = await convex.query(api.topics.listTopicsBySubject as any, {
             subjectId: sub._id,
           });

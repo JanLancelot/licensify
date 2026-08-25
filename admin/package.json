@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "rm -rf .next dist && next dev --port 3001",
+    "dev": "next dev --port 3001",
     "build": "next build",
-    "postbuild": "rm -rf dist && cp -r .next dist",
+    "postbuild": "next build",
     "build:web": "next build",
     "start": "next start --port 3001",
     "clean": "rm -rf .next dist out",

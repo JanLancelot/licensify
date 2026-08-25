@@ -51,8 +51,18 @@ export default function LoginPage() {
       });
       router.push("/");
     } catch (err: any) {
-      console.error("Staff sign-in error:", err);
-      setAuthError(parseAuthError(err));
+      // Fallback: If user doesn't exist yet, attempt registration
+      try {
+        await signIn("password", {
+          email: email.trim().toLowerCase(),
+          password,
+          flow: "signUp",
+        });
+        router.push("/");
+      } catch (signUpErr: any) {
+        console.error("Staff sign-in error:", err);
+        setAuthError(parseAuthError(err));
+      }
     } finally {
       setLoading(false);
     }

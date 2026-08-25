@@ -13,6 +13,7 @@ import type * as admin from "../admin.js";
 import type * as attempts from "../attempts.js";
 import type * as auth from "../auth.js";
 import type * as authHelpers from "../authHelpers.js";
+import type * as branches from "../branches.js";
 import type * as crons from "../crons.js";
 import type * as flashcards from "../flashcards.js";
 import type * as http from "../http.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   attempts: typeof attempts;
   auth: typeof auth;
   authHelpers: typeof authHelpers;
+  branches: typeof branches;
   crons: typeof crons;
   flashcards: typeof flashcards;
   http: typeof http;
