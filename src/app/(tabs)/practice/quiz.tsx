@@ -125,7 +125,6 @@ export default function PracticeQuizScreen() {
     setCurrentIdx(0);
     setSelectedOption(null);
     setIsAnswerSubmitted(false);
-    setIsCurrentAnswerCorrect(false);
     setCorrectAnswersCount(0);
     setIsQuizFinished(false);
     setRecordedAnswers([]);
