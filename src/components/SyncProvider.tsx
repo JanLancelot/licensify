@@ -6,19 +6,42 @@ import { useSyncService } from '../services/useSyncService';
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { syncDown, syncUp } = useSyncService();
 
+  const syncDownRef = React.useRef(syncDown);
+  const syncUpRef = React.useRef(syncUp);
+
+  useEffect(() => {
+    syncDownRef.current = syncDown;
+    syncUpRef.current = syncUp;
+  }, [syncDown, syncUp]);
+
   useEffect(() => {
     const checkAndSync = async () => {
       try {
-        const state = await Network.getNetworkStateAsync();
-        // Fallback: if isInternetReachable is null (some Android devices), rely on isConnected
-        const isOnline = state.isConnected && (state.isInternetReachable !== false);
+        let isOnline = true;
+        try {
+          const state = await Network.getNetworkStateAsync();
+          isOnline = state.isConnected !== false;
+        } catch {
+          // Assume online if network check throws
+        }
         
         if (isOnline) {
-          await syncUp();
-          await syncDown();
+          // Down-sync first so the local device has all latest questions, subjects, and quizzes
+          try {
+            await syncDownRef.current();
+          } catch (e) {
+            console.warn('[SyncProvider] syncDown error:', e);
+          }
+
+          // Up-sync pending attempts in background
+          try {
+            await syncUpRef.current();
+          } catch (e) {
+            console.warn('[SyncProvider] syncUp error:', e);
+          }
         }
       } catch (err) {
-        console.warn('[SyncProvider] Network check failed', err);
+        console.warn('[SyncProvider] Sync sequence notice:', err);
       }
     };
 
@@ -35,7 +58,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.remove();
     };
-  }, [syncDown, syncUp]);
+  }, []);
 
   return <>{children}</>;
 }

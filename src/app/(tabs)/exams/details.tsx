@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
-  Award,
   CheckCircle,
   Compass,
   Landmark,
@@ -28,6 +27,7 @@ import Svg, {
 } from 'react-native-svg';
 
 import { useAppTheme } from '@/context/theme-context';
+import { useLocalQuizWithQuestions } from '@/hooks/useLocalData';
 
 /* Gradient Squircle Icon */
 function ExamDetailGradientIcon({
@@ -78,58 +78,51 @@ export default function ExamDetailsScreen() {
   const insets = useSafeAreaInsets();
 
   const examId = id || 'area-1';
+  const { quiz, questions } = useLocalQuizWithQuestions(examId);
 
   const getExamMetadata = () => {
+    const totalItems = questions.length > 0 ? `${questions.length} Questions` : '50 Questions';
     switch (examId) {
       case 'area-2':
         return {
-          title: 'Area 2: Structural & Utilities',
-          subtitle: 'Building Technology, MEPFS Systems & Estimation',
+          title: quiz?.title || 'Area 2: Structural & Utilities',
+          subtitle: quiz?.description || 'Building Technology, MEPFS Systems & Estimation',
           icon: Compass,
           gradient: ['#FBBF24', '#D97706'] as [string, string],
-          duration: '1.5 Hours',
-          items: '50 Questions',
-          passing: '70% Passing GWA',
+          duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '1.5 Hours',
+          items: totalItems,
+          passing: `${quiz?.passingScore || 70}% Passing GWA`,
         };
       case 'area-3':
         return {
-          title: 'Area 3: Design & Site Planning',
-          subtitle: 'Design Scenarios, Zoning & NBCP Rule 7/8',
+          title: quiz?.title || 'Area 3: Design & Site Planning',
+          subtitle: quiz?.description || 'Design Scenarios, Zoning & NBCP Rule 7/8',
           icon: PenTool,
           gradient: ['#34D399', '#059669'] as [string, string],
-          duration: '2.0 Hours',
-          items: '50 Questions',
-          passing: '70% Passing GWA',
+          duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '2.0 Hours',
+          items: totalItems,
+          passing: `${quiz?.passingScore || 70}% Passing GWA`,
         };
+      case 'all-modular':
       case 'mock-day-1':
         return {
-          title: 'ALE Day 1 Mock Board Exam',
-          subtitle: 'Part 1 (History & Planning) + Part 2 (Structural & Utilities)',
+          title: quiz?.title || 'Comprehensive ALE Mock Exam',
+          subtitle: quiz?.description || 'Full multi-area practice exam covering History, Utilities, and Design Planning.',
           icon: Trophy,
           gradient: ['#38BDF8', '#0284C7'] as [string, string],
-          duration: '6.0 Hours',
-          items: '200 Questions',
-          passing: '70% Passing GWA',
-        };
-      case 'mock-day-2':
-        return {
-          title: 'ALE Day 2 Design & Site Planning',
-          subtitle: 'Comprehensive architectural problem simulation',
-          icon: Award,
-          gradient: ['#FB7185', '#E11D48'] as [string, string],
-          duration: '6.0 Hours',
-          items: 'Design Scenario',
-          passing: '70% Passing GWA',
+          duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '3.0 Hours',
+          items: totalItems,
+          passing: `${quiz?.passingScore || 75}% Passing GWA`,
         };
       default:
         return {
-          title: 'Area 1: History, Theory & Laws',
-          subtitle: 'History of Architecture, Theory of Design & RA 9266',
+          title: quiz?.title || 'Area 1: History, Theory & Laws',
+          subtitle: quiz?.description || 'History of Architecture, Theory of Design & RA 9266',
           icon: Landmark,
           gradient: ['#E58368', '#C85A32'] as [string, string],
-          duration: '1.5 Hours',
-          items: '50 Questions',
-          passing: '70% Passing GWA',
+          duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '1.5 Hours',
+          items: totalItems,
+          passing: `${quiz?.passingScore || 70}% Passing GWA`,
         };
     }
   };

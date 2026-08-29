@@ -9,8 +9,9 @@ import {
   Timer,
   Trophy,
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,65 +25,20 @@ import Svg, {
   Rect,
   Stop,
 } from 'react-native-svg';
+import * as crypto from 'expo-crypto';
 
 import { useAppTheme } from '@/context/theme-context';
+import { useLocalQuizWithQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
 
-export interface Question {
-  id: number;
-  question: string;
-  options: { key: 'A' | 'B' | 'C' | 'D'; text: string }[];
-  correct: 'A' | 'B' | 'C' | 'D';
-  explanation: string;
+export interface ExamSessionQuestion {
+  id: string;
   topic: string;
+  question: string;
+  options: { key: 'A' | 'B' | 'C' | 'D'; id: string; text: string }[];
+  correctKey: 'A' | 'B' | 'C' | 'D';
+  correctChoiceHash?: string;
+  explanation: string;
 }
-
-const MOCK_QUESTIONS: Question[] = [
-  {
-    id: 1,
-    topic: 'History & Theory of Architecture',
-    question:
-      'Which monumental Roman building, dedicated to all planetary gods, is celebrated for having the world’s largest unreinforced concrete dome illuminated by an 8.8m central oculus?',
-    options: [
-      { key: 'A', text: 'Parthenon in Athens' },
-      { key: 'B', text: 'Pantheon in Rome' },
-      { key: 'C', text: 'Colosseum (Flavian Amphitheater)' },
-      { key: 'D', text: 'Basilica of Maxentius and Constantine' },
-    ],
-    correct: 'B',
-    explanation:
-      'The Pantheon in Rome was commissioned by Marcus Agrippa and rebuilt by Emperor Hadrian. Its stepped unreinforced concrete dome and oculus remain an engineering masterpiece of antiquity.',
-  },
-  {
-    id: 2,
-    topic: 'Professional Practice & Building Laws (PD 1096)',
-    question:
-      'Under the National Building Code of the Philippines (PD 1096) Rule 7 & 8, which parameter represents the maximum allowable ground footprint of a proposed building structure?',
-    options: [
-      { key: 'A', text: 'AMBF (Allowable Maximum Building Footprint)' },
-      { key: 'B', text: 'TOSL (Total Open Space within Lot)' },
-      { key: 'C', text: 'GFA (Gross Floor Area)' },
-      { key: 'D', text: 'USA (Unpaved Surface Area)' },
-    ],
-    correct: 'A',
-    explanation:
-      'AMBF = TLA - TOSL. It defines the maximum footprint area on the ground floor level that a building structure may occupy on a given lot.',
-  },
-  {
-    id: 3,
-    topic: 'Building Technology & Utilities',
-    question:
-      'According to ASTM C150 standards for Portland Cement, which classification designates High Early Strength cement used for cold-weather construction and accelerated formwork removal?',
-    options: [
-      { key: 'A', text: 'Type I (Normal Portland)' },
-      { key: 'B', text: 'Type II (Moderate Sulfate Resistance)' },
-      { key: 'C', text: 'Type III (High Early Strength)' },
-      { key: 'D', text: 'Type IV (Low Heat of Hydration)' },
-    ],
-    correct: 'C',
-    explanation:
-      'Type III Portland cement achieves in 3 days the compressive strength normally attained by Type I in 7 or 28 days, making it ideal for rapid cycle schedules and precast components.',
-  },
-];
 
 export default function ExamSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -90,15 +46,115 @@ export default function ExamSessionScreen() {
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({});
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Record<number, boolean>>({});
-  const [secondsRemaining, setSecondsRemaining] = useState(1800); // 30 mins
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const examId = id || 'area-1';
+  const { quiz, questions: dbQuestions, loading } = useLocalQuizWithQuestions(examId);
+  const submitLocalAttempt = useSubmitLocalAttempt();
 
-  const handleSubmitExam = () => {
+  const [questions, setQuestions] = useState<ExamSessionQuestion[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({}); // questionId -> choiceId
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({});
+  const [secondsRemaining, setSecondsRemaining] = useState(1800); // 30 mins default
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [computedScore, setComputedScore] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+
+  // Format DB questions
+  useEffect(() => {
+    if (dbQuestions && dbQuestions.length > 0) {
+      const formatAsync = async () => {
+        const formatted: ExamSessionQuestion[] = [];
+        const keys: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+
+        for (const q of dbQuestions) {
+          let choices: { id: string; text: string }[] = [];
+          try {
+            choices = typeof q.choices === 'string' ? JSON.parse(q.choices) : q.choices;
+          } catch {
+            choices = [];
+          }
+
+          let correctK: 'A' | 'B' | 'C' | 'D' = 'A';
+          if (q.correctChoiceHash) {
+            for (let i = 0; i < choices.length; i++) {
+              const hash = await crypto.digestStringAsync(
+                crypto.CryptoDigestAlgorithm.SHA256,
+                `${q.id}:${choices[i].id}`
+              );
+              if (hash === q.correctChoiceHash) {
+                correctK = keys[i] || 'A';
+                break;
+              }
+            }
+          }
+
+          formatted.push({
+            id: q.id,
+            topic: q.subjectId === 'sub-area-1'
+              ? 'History & Theory'
+              : q.subjectId === 'sub-area-2'
+                ? 'Technology & Utilities'
+                : 'Design & Laws',
+            question: q.question,
+            options: choices.map((c, idx) => ({
+              key: keys[idx] || 'A',
+              id: c.id,
+              text: c.text,
+            })),
+            correctKey: correctK,
+            correctChoiceHash: q.correctChoiceHash || undefined,
+            explanation: q.explanation || 'Essential board examination rule and architectural specification.',
+          });
+        }
+
+        setQuestions(formatted);
+        if (quiz?.timeLimitSeconds) {
+          setSecondsRemaining(quiz.timeLimitSeconds);
+        }
+      };
+      formatAsync();
+    }
+  }, [dbQuestions, quiz]);
+
+  const handleSubmitExam = useCallback(async () => {
+    if (isSubmitted) return;
+
+    let correct = 0;
+    const recorded: { questionId: string; selectedChoiceId: string; correctChoiceHash?: string }[] = [];
+
+    for (const q of questions) {
+      const userChoiceId = selectedAnswers[q.id];
+      if (userChoiceId && q.correctChoiceHash) {
+        const hash = await crypto.digestStringAsync(
+          crypto.CryptoDigestAlgorithm.SHA256,
+          `${q.id}:${userChoiceId}`
+        );
+        if (hash === q.correctChoiceHash) {
+          correct++;
+        }
+      }
+      if (userChoiceId) {
+        recorded.push({
+          questionId: q.id,
+          selectedChoiceId: userChoiceId,
+          correctChoiceHash: q.correctChoiceHash,
+        });
+      }
+    }
+
+    const total = questions.length > 0 ? questions.length : 1;
+    const score = Math.round((correct / total) * 100);
+
+    setCorrectCount(correct);
+    setComputedScore(score);
     setIsSubmitted(true);
-  };
+
+    try {
+      await submitLocalAttempt('local-student-1', examId, recorded);
+    } catch (err) {
+      console.warn('Failed to submit exam attempt locally:', err);
+    }
+  }, [isSubmitted, questions, selectedAnswers, examId, submitLocalAttempt]);
 
   // Timer countdown
   useEffect(() => {
@@ -114,7 +170,7 @@ export default function ExamSessionScreen() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isSubmitted]);
+  }, [isSubmitted, handleSubmitExam]);
 
   const formatTimer = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -122,39 +178,46 @@ export default function ExamSessionScreen() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  const currentQ = MOCK_QUESTIONS[currentIndex];
-  const userSelection = selectedAnswers[currentQ.id];
-  const isFlagged = Boolean(flaggedQuestions[currentQ.id]);
+  const currentQ = questions[currentIndex];
+  const userChoiceId = currentQ ? selectedAnswers[currentQ.id] : undefined;
+  const isFlagged = currentQ ? Boolean(flaggedQuestions[currentQ.id]) : false;
 
-  const handleSelectOption = (key: 'A' | 'B' | 'C' | 'D') => {
-    if (isSubmitted) return;
+  const handleSelectOption = (choiceId: string) => {
+    if (isSubmitted || !currentQ) return;
     setSelectedAnswers((prev) => ({
       ...prev,
-      [currentQ.id]: key,
+      [currentQ.id]: choiceId,
     }));
   };
 
   const handleToggleFlag = () => {
+    if (!currentQ) return;
     setFlaggedQuestions((prev) => ({
       ...prev,
       [currentQ.id]: !prev[currentQ.id],
     }));
   };
 
-  // Calculate score
-  const correctCount = MOCK_QUESTIONS.reduce((acc, q) => {
-    return selectedAnswers[q.id] === q.correct ? acc + 1 : acc;
-  }, 0);
-  const scorePercent = Math.round((correctCount / MOCK_QUESTIONS.length) * 100);
-  const isPassed = scorePercent >= 70;
+  const isPassed = computedScore >= (quiz?.passingScore || 70);
 
   const handleRetake = () => {
     setSelectedAnswers({});
     setFlaggedQuestions({});
-    setSecondsRemaining(1800);
+    setSecondsRemaining(quiz?.timeLimitSeconds || 1800);
     setCurrentIndex(0);
     setIsSubmitted(false);
   };
+
+  if (loading && questions.length === 0) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={{ color: colors.textSecondary, marginTop: 12, fontWeight: '600' }}>
+          Loading Examination Data...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -177,10 +240,10 @@ export default function ExamSessionScreen() {
 
         <View style={styles.headerTitles}>
           <Text style={[styles.headerSubtitle, { color: colors.accent }]}>
-            {id ? String(id).replace('-', ' ').toUpperCase() : 'BOARD EXAM'}
+            {quiz?.title || (id ? String(id).replace('-', ' ').toUpperCase() : 'BOARD EXAM')}
           </Text>
           <Text style={[styles.headerTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-            {isSubmitted ? 'Exam Results' : `Question ${currentIndex + 1} of ${MOCK_QUESTIONS.length}`}
+            {isSubmitted ? 'Exam Results' : `Question ${currentIndex + 1} of ${questions.length}`}
           </Text>
         </View>
 
@@ -219,7 +282,7 @@ export default function ExamSessionScreen() {
                 styles.timerText,
                 { color: isPassed ? '#10B981' : '#EF4444' },
               ]}>
-              {scorePercent}%
+              {computedScore}%
             </Text>
           </View>
         )}
@@ -235,7 +298,7 @@ export default function ExamSessionScreen() {
           style={[
             styles.trackFill,
             {
-              width: `${((currentIndex + 1) / (MOCK_QUESTIONS.length || 1)) * 100}%`,
+              width: `${((currentIndex + 1) / (questions.length || 1)) * 100}%`,
               backgroundColor: colors.accent,
             },
           ]}
@@ -248,80 +311,75 @@ export default function ExamSessionScreen() {
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={[
-              styles.content,
-              { paddingBottom: insets.bottom + 100 },
+              styles.scrollContent,
+              { paddingBottom: insets.bottom + 110 },
             ]}
             showsVerticalScrollIndicator={false}>
-            {/* Question Card */}
+            {/* Topic & Flag Row */}
+            <View style={styles.metaRow}>
+              <View
+                style={[
+                  styles.topicBadge,
+                  { backgroundColor: isDark ? '#23262F' : '#F6F0ED' },
+                ]}>
+                <BookOpen size={13} color={colors.accent} strokeWidth={2.2} />
+                <Text style={[styles.topicBadgeText, { color: colors.textSecondary }]}>
+                  {currentQ?.topic}
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={handleToggleFlag}
+                style={({ pressed }) => [
+                  styles.flagBtn,
+                  {
+                    backgroundColor: isFlagged
+                      ? isDark
+                        ? 'rgba(234, 179, 8, 0.2)'
+                        : '#FEF9C3'
+                      : isDark
+                        ? '#23262F'
+                        : '#F6F0ED',
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}>
+                <Flag
+                  size={14}
+                  color={isFlagged ? '#EAB308' : colors.textSecondary}
+                  strokeWidth={2.2}
+                />
+                <Text
+                  style={[
+                    styles.flagText,
+                    { color: isFlagged ? '#CA8A04' : colors.textSecondary },
+                  ]}>
+                  {isFlagged ? 'Flagged' : 'Flag'}
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Question Text Box */}
             <View
               style={[
-                styles.questionCard,
+                styles.questionBox,
                 {
                   backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
                 },
               ]}>
-              {/* Meta Row */}
-              <View style={styles.questionMetaRow}>
-                <View
-                  style={[
-                    styles.topicPill,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(224, 122, 95, 0.18)'
-                        : '#F8EAE4',
-                    },
-                  ]}>
-                  <BookOpen size={12} color={colors.accent} strokeWidth={2.2} />
-                  <Text style={[styles.topicPillText, { color: colors.accent }]}>
-                    {currentQ.topic}
-                  </Text>
-                </View>
-
-                <Pressable
-                  onPress={handleToggleFlag}
-                  style={({ pressed }) => [
-                    styles.flagBtn,
-                    {
-                      backgroundColor: isFlagged
-                        ? isDark
-                          ? 'rgba(224, 122, 95, 0.25)'
-                          : '#F8EAE4'
-                        : isDark
-                          ? '#23262F'
-                          : '#FFFFFF',
-                      opacity: pressed ? 0.75 : 1,
-                    },
-                  ]}>
-                  <Flag
-                    size={14}
-                    color={isFlagged ? colors.accent : colors.textSecondary}
-                    fill={isFlagged ? colors.accent : 'transparent'}
-                  />
-                  <Text
-                    style={[
-                      styles.flagText,
-                      { color: isFlagged ? colors.accent : colors.textSecondary },
-                    ]}>
-                    {isFlagged ? 'Flagged' : 'Flag'}
-                  </Text>
-                </Pressable>
-              </View>
-
-              {/* Question Text */}
               <Text style={[styles.questionText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                {currentQ.question}
+                {currentQ?.question}
               </Text>
             </View>
 
             {/* Options List */}
-            <View style={styles.optionsContainer}>
-              {currentQ.options.map((opt) => {
-                const isSelected = userSelection === opt.key;
+            <View style={styles.optionsList}>
+              {currentQ?.options.map((opt) => {
+                const isSelected = userChoiceId === opt.id;
 
                 return (
                   <Pressable
-                    key={opt.key}
-                    onPress={() => handleSelectOption(opt.key)}
+                    key={opt.id}
+                    onPress={() => handleSelectOption(opt.id)}
                     style={({ pressed }) => [
                       styles.optionCard,
                       {
@@ -333,13 +391,13 @@ export default function ExamSessionScreen() {
                             ? '#23262F'
                             : '#FFFFFF',
                         borderColor: isSelected ? colors.accent : 'transparent',
-                        borderWidth: isSelected ? 1.4 : 0,
+                        borderWidth: isSelected ? 1.5 : 0,
                         opacity: pressed ? 0.85 : 1,
                       },
                     ]}>
                     <View
                       style={[
-                        styles.keyBadge,
+                        styles.optionKeyCircle,
                         {
                           backgroundColor: isSelected
                             ? colors.accent
@@ -350,9 +408,13 @@ export default function ExamSessionScreen() {
                       ]}>
                       <Text
                         style={[
-                          styles.keyBadgeText,
+                          styles.optionKeyText,
                           {
-                            color: isSelected ? '#FFFFFF' : colors.textSecondary,
+                            color: isSelected
+                              ? '#FFFFFF'
+                              : isDark
+                                ? '#F9FAFB'
+                                : '#1F2937',
                           },
                         ]}>
                         {opt.key}
@@ -363,7 +425,7 @@ export default function ExamSessionScreen() {
                       style={[
                         styles.optionText,
                         {
-                          color: isDark ? '#F9FAFB' : '#0F172A',
+                          color: isDark ? '#F9FAFB' : '#111827',
                           fontWeight: isSelected ? '700' : '500',
                         },
                       ]}>
@@ -375,171 +437,219 @@ export default function ExamSessionScreen() {
             </View>
           </ScrollView>
 
-          {/* Sticky Bottom Nav Bar */}
+          {/* Sticky Bottom Navigation Bar */}
           <View
             style={[
-              styles.bottomBar,
-              { paddingBottom: Math.max(insets.bottom + 12, 16) },
+              styles.bottomNavContainer,
+              {
+                paddingBottom: insets.bottom + 12,
+                backgroundColor: colors.background,
+                borderTopColor: isDark
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(0, 0, 0, 0.06)',
+              },
             ]}>
             <Pressable
               disabled={currentIndex === 0}
               onPress={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
               style={({ pressed }) => [
-                styles.navSquareBtn,
+                styles.navBtn,
                 {
-                  backgroundColor: isDark ? '#23262F' : '#F6F0ED',
-                  opacity: currentIndex === 0 ? 0.35 : pressed ? 0.7 : 1,
+                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                  opacity: currentIndex === 0 ? 0.4 : pressed ? 0.8 : 1,
                 },
               ]}>
-              <ChevronLeft size={22} color={colors.text} />
+              <ChevronLeft size={18} color={colors.text} strokeWidth={2.4} />
+              <Text style={[styles.navBtnText, { color: colors.text }]}>Prev</Text>
             </Pressable>
 
-            {currentIndex < MOCK_QUESTIONS.length - 1 ? (
+            {currentIndex < questions.length - 1 ? (
               <Pressable
                 onPress={() => setCurrentIndex((prev) => prev + 1)}
                 style={({ pressed }) => [
-                  styles.navPrimaryBtn,
+                  styles.navBtnPrimary,
                   {
                     backgroundColor: colors.accent,
                     opacity: pressed ? 0.9 : 1,
                     transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}>
-                <Text style={styles.navPrimaryText}>Next Question</Text>
+                <Text style={styles.navBtnPrimaryText}>Next</Text>
                 <ChevronRight size={18} color="#FFFFFF" strokeWidth={2.4} />
               </Pressable>
             ) : (
               <Pressable
                 onPress={handleSubmitExam}
                 style={({ pressed }) => [
-                  styles.navPrimaryBtn,
+                  styles.navBtnPrimary,
                   {
-                    backgroundColor: colors.accent,
+                    backgroundColor: '#10B981',
                     opacity: pressed ? 0.9 : 1,
                     transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}>
-                <Text style={styles.navPrimaryText}>Submit Examination</Text>
+                <Text style={styles.navBtnPrimaryText}>Submit Exam</Text>
               </Pressable>
             )}
           </View>
         </View>
       ) : (
-        /* Results View */
+        /* Results & Review Screen */
         <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
-            styles.resultsContent,
+            styles.resultsContainer,
             { paddingBottom: insets.bottom + 40 },
           ]}>
+          {/* Result Summary Card */}
           <View
             style={[
-              styles.resultsCard,
+              styles.summaryCard,
               {
                 backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
               },
             ]}>
-            {/* Award Gradient Icon */}
             <View
               style={{
-                width: 64,
-                height: 64,
+                width: 68,
+                height: 68,
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
               }}>
-              <Svg width={64} height={64} style={StyleSheet.absoluteFill}>
+              <Svg width={68} height={68} style={StyleSheet.absoluteFill}>
                 <Defs>
-                  <LinearGradient id="exam_award_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <Stop offset="0%" stopColor="#E58368" />
-                    <Stop offset="100%" stopColor="#C85A32" />
+                  <LinearGradient id="exam_score_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <Stop offset="0%" stopColor={isPassed ? '#34D399' : '#FB7185'} />
+                    <Stop offset="100%" stopColor={isPassed ? '#059669' : '#E11D48'} />
                   </LinearGradient>
                 </Defs>
-                <Rect width={64} height={64} rx={22} fill="url(#exam_award_grad)" />
+                <Rect width={68} height={68} rx={24} fill="url(#exam_score_grad)" />
               </Svg>
-              <Trophy size={30} color="#FFFFFF" strokeWidth={2.2} />
+              <Trophy size={32} color="#FFFFFF" strokeWidth={2.2} />
             </View>
 
-            <Text style={[styles.resultHeading, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-              {isPassed ? 'Examination Passed!' : 'Needs Review'}
+            <Text style={[styles.summaryTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              {isPassed ? 'Exam Passed!' : 'Needs Review'}
             </Text>
 
-            <Text style={[styles.resultScore, { color: isPassed ? '#10B981' : colors.accent }]}>
-              {scorePercent}%
+            <Text
+              style={[
+                styles.summaryScore,
+                { color: isPassed ? '#10B981' : '#EF4444' },
+              ]}>
+              {computedScore}%
             </Text>
 
-            <Text style={[styles.resultSubtext, { color: colors.textSecondary }]}>
-              You correctly answered {correctCount} of {MOCK_QUESTIONS.length} questions (70% required to pass).
+            <Text style={[styles.summaryDescription, { color: colors.textSecondary }]}>
+              You achieved {correctCount} out of {questions.length} correct answers.
             </Text>
 
-            <View style={styles.statsGrid}>
-              <View
-                style={[
-                  styles.statCard,
-                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+            {/* Retake and Hub buttons */}
+            <View style={styles.actionButtonsRow}>
+              <Pressable
+                onPress={handleRetake}
+                style={({ pressed }) => [
+                  styles.retakeBtn,
+                  {
+                    backgroundColor: colors.accent,
+                    opacity: pressed ? 0.9 : 1,
+                  },
                 ]}>
-                <Text style={[styles.statNum, { color: '#10B981' }]}>
-                  {correctCount}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Correct
-                </Text>
-              </View>
+                <RotateCcw size={16} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={styles.retakeBtnText}>Retake Exam</Text>
+              </Pressable>
 
-              <View
-                style={[
-                  styles.statCard,
-                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
+              <Pressable
+                onPress={() => router.back()}
+                style={({ pressed }) => [
+                  styles.returnBtn,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                    opacity: pressed ? 0.75 : 1,
+                  },
                 ]}>
-                <Text style={[styles.statNum, { color: '#EF4444' }]}>
-                  {MOCK_QUESTIONS.length - correctCount}
+                <Text style={[styles.returnBtnText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                  Back to Hub
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Incorrect
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.statCard,
-                  { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
-                ]}>
-                <Text style={[styles.statNum, { color: colors.accent }]}>
-                  {scorePercent}%
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Score
-                </Text>
-              </View>
+              </Pressable>
             </View>
+          </View>
 
-            <Pressable
-              onPress={handleRetake}
-              style={({ pressed }) => [
-                styles.retakeBtn,
-                {
-                  backgroundColor: colors.accent,
-                  opacity: pressed ? 0.9 : 1,
-                  transform: [{ scale: pressed ? 0.985 : 1 }],
-                },
-              ]}>
-              <RotateCcw size={16} color="#FFFFFF" strokeWidth={2.4} />
-              <Text style={styles.retakeBtnText}>Retake Examination</Text>
-            </Pressable>
+          {/* Question Breakdown Section */}
+          <Text style={[styles.breakdownHeader, { color: colors.text }]}>
+            Detailed Answer Breakdown
+          </Text>
 
-            <Pressable
-              onPress={() => router.back()}
-              style={({ pressed }) => [
-                styles.returnBtn,
-                {
-                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
-                  opacity: pressed ? 0.75 : 1,
-                },
-              ]}>
-              <Text style={[styles.returnBtnText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                Return to Exams Hub
-              </Text>
-            </Pressable>
+          <View style={styles.breakdownList}>
+            {questions.map((q, idx) => {
+              const uChoiceId = selectedAnswers[q.id];
+              const selectedOptionObj = q.options.find((o) => o.id === uChoiceId);
+              const isCorrectQ = selectedOptionObj?.key === q.correctKey;
+
+              return (
+                <View
+                  key={q.id}
+                  style={[
+                    styles.reviewCard,
+                    {
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                      borderColor: isDark
+                        ? 'rgba(255,255,255,0.08)'
+                        : 'rgba(0,0,0,0.06)',
+                    },
+                  ]}>
+                  <View style={styles.reviewCardHeader}>
+                    <Text style={[styles.reviewNumber, { color: colors.accent }]}>
+                      Question {idx + 1}
+                    </Text>
+                    <View
+                      style={[
+                        styles.reviewResultBadge,
+                        {
+                          backgroundColor: isCorrectQ
+                            ? isDark
+                              ? 'rgba(16, 185, 129, 0.2)'
+                              : '#E8F8F0'
+                            : isDark
+                              ? 'rgba(239, 68, 68, 0.2)'
+                              : '#FEECEB',
+                        },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.reviewResultText,
+                          { color: isCorrectQ ? '#10B981' : '#EF4444' },
+                        ]}>
+                        {isCorrectQ ? 'Correct' : 'Incorrect'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.reviewQuestionText, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    {q.question}
+                  </Text>
+
+                  <View style={styles.reviewAnswersRow}>
+                    <Text style={[styles.reviewAnswerLabel, { color: colors.textSecondary }]}>
+                      Your Choice:{' '}
+                      <Text
+                        style={{
+                          fontWeight: '800',
+                          color: isCorrectQ ? '#10B981' : '#EF4444',
+                        }}>
+                        {selectedOptionObj ? `${selectedOptionObj.key}: ${selectedOptionObj.text}` : 'None Selected'}
+                      </Text>
+                    </Text>
+                  </View>
+
+                  <Text style={[styles.reviewExplanation, { color: isDark ? '#9CA3AF' : '#4B5563' }]}>
+                    {q.explanation}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         </ScrollView>
       )}
@@ -554,10 +664,9 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 10,
+    paddingBottom: 12,
     gap: 12,
   },
   backButton: {
@@ -569,28 +678,30 @@ const styles = StyleSheet.create({
   },
   headerTitles: {
     flex: 1,
-    gap: 2,
   },
   headerSubtitle: {
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   headerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
+    marginTop: 1,
   },
   timerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
   },
   timerText: {
-    fontSize: 12.5,
+    fontSize: 13,
     fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   track: {
     height: 4,
@@ -598,7 +709,6 @@ const styles = StyleSheet.create({
   },
   trackFill: {
     height: '100%',
-    borderRadius: 2,
   },
   sessionLayout: {
     flex: 1,
@@ -606,183 +716,215 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
     gap: 14,
   },
-  questionCard: {
-    borderRadius: 22,
-    padding: 18,
-    gap: 14,
-  },
-  questionMetaRow: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  topicPill: {
+  topicBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4.5,
-    borderRadius: 8,
-    maxWidth: '70%',
   },
-  topicPillText: {
-    fontSize: 11,
+  topicBadgeText: {
+    fontSize: 12,
     fontWeight: '700',
   },
   flagBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
   },
   flagText: {
     fontSize: 12,
     fontWeight: '700',
   },
-  questionText: {
-    fontSize: 16,
-    fontWeight: '700',
-    lineHeight: 23,
-    letterSpacing: -0.2,
+  questionBox: {
+    padding: 22,
+    borderRadius: 22,
   },
-  optionsContainer: {
-    gap: 10,
+  questionText: {
+    fontSize: 18,
+    lineHeight: 26,
+    fontWeight: '700',
+  },
+  optionsList: {
+    gap: 12,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    gap: 12,
+    padding: 16,
+    borderRadius: 18,
+    gap: 14,
   },
-  keyBadge: {
+  optionKeyCircle: {
     width: 32,
     height: 32,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  keyBadgeText: {
-    fontSize: 13,
+  optionKeyText: {
+    fontSize: 14,
     fontWeight: '800',
   },
   optionText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
   },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  bottomNavContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  navSquareBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navPrimaryBtn: {
-    flex: 1,
-    height: 48,
-    borderRadius: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  navPrimaryText: {
-    color: '#FFFFFF',
-    fontSize: 14.5,
-    fontWeight: '700',
-  },
-  resultsContent: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resultsCard: {
-    width: '100%',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
     gap: 14,
   },
-  resultHeading: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  resultScore: {
-    fontSize: 44,
-    fontWeight: '900',
-    letterSpacing: -1,
-  },
-  resultSubtext: {
-    fontSize: 13.5,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  statsGrid: {
+  navBtn: {
     flexDirection: 'row',
-    gap: 10,
-    width: '100%',
-    marginVertical: 4,
-  },
-  statCard: {
-    flex: 1,
+    alignItems: 'center',
     paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    gap: 3,
+    paddingHorizontal: 20,
+    borderRadius: 18,
+    gap: 6,
   },
-  statNum: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  retakeBtn: {
-    width: '100%',
-    borderRadius: 16,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  retakeBtnText: {
-    color: '#FFFFFF',
+  navBtnText: {
     fontSize: 15,
     fontWeight: '700',
   },
-  returnBtn: {
-    width: '100%',
-    borderRadius: 16,
-    paddingVertical: 14,
+  navBtnPrimary: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 18,
+    gap: 6,
+  },
+  navBtnPrimaryText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  resultsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 16,
+  },
+  summaryCard: {
+    padding: 24,
+    borderRadius: 26,
+    alignItems: 'center',
+    gap: 10,
+  },
+  summaryTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  summaryScore: {
+    fontSize: 48,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  summaryDescription: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 10,
+    marginTop: 8,
+  },
+  retakeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 18,
+    gap: 8,
+  },
+  retakeBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  returnBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 18,
   },
   returnBtnText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  breakdownHeader: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 6,
+  },
+  breakdownList: {
+    gap: 12,
+  },
+  reviewCard: {
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 10,
+  },
+  reviewCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reviewNumber: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  reviewResultBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  reviewResultText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  reviewQuestionText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '700',
+  },
+  reviewAnswersRow: {
+    paddingVertical: 4,
+  },
+  reviewAnswerLabel: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  reviewExplanation: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '500',
   },
 });

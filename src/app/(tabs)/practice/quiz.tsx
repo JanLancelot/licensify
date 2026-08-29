@@ -8,8 +8,9 @@ import {
   Trophy,
   XCircle,
 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,10 +24,22 @@ import Svg, {
   Rect,
   Stop,
 } from 'react-native-svg';
+import * as crypto from 'expo-crypto';
 
 import { useAppTheme } from '@/context/theme-context';
-import { QUESTION_BANK } from '@/data/quiz-questions';
-import { QuizQuestion } from '@/types/curriculum';
+import { useLocalQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
+
+interface FormattedQuestion {
+  id: string;
+  areaLabel: string;
+  question: string;
+  options: string[];
+  choiceIds: string[];
+  correctIndex: number;
+  correctChoiceHash?: string;
+  explanation: string;
+  difficulty: string;
+}
 
 export default function PracticeQuizScreen() {
   const { colors, isDark } = useAppTheme();
@@ -41,29 +54,82 @@ export default function PracticeQuizScreen() {
   const selectedArea = params.area || 'all';
   const count = parseInt(params.count || '10', 10);
 
-  const getFilteredQuestions = () => {
-    let pool = QUESTION_BANK;
-    if (selectedArea !== 'all') {
-      pool = pool.filter((q) => q.area === selectedArea);
-    }
-    const questionsToUse = pool.length > 0 ? pool : QUESTION_BANK;
-    return [...questionsToUse].slice(0, count);
-  };
+  const { questions: dbQuestions, loading, refetch } = useLocalQuestions({
+    subjectId: selectedArea === 'all' ? undefined : selectedArea,
+    difficulty: params.difficulty,
+    count,
+  });
 
-  const [questions, setQuestions] = useState<QuizQuestion[]>(getFilteredQuestions);
+  const submitLocalAttempt = useSubmitLocalAttempt();
+
+  const [questions, setQuestions] = useState<FormattedQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
   const [isQuizFinished, setIsQuizFinished] = useState(false);
+  const [recordedAnswers, setRecordedAnswers] = useState<{ questionId: string; selectedChoiceId: string; correctChoiceHash?: string }[]>([]);
+
+  // Format DB questions into component format
+  useEffect(() => {
+    if (dbQuestions && dbQuestions.length > 0) {
+      const formatAsync = async () => {
+        const formatted: FormattedQuestion[] = [];
+        for (const q of dbQuestions) {
+          let choices: { id: string; text: string }[] = [];
+          try {
+            choices = typeof q.choices === 'string' ? JSON.parse(q.choices) : q.choices;
+          } catch {
+            choices = [];
+          }
+
+          let correctIdx = 0;
+          if (q.correctChoiceHash) {
+            for (let i = 0; i < choices.length; i++) {
+              const hash = await crypto.digestStringAsync(
+                crypto.CryptoDigestAlgorithm.SHA256,
+                `${q.id}:${choices[i].id}`
+              );
+              if (hash === q.correctChoiceHash) {
+                correctIdx = i;
+                break;
+              }
+            }
+          }
+
+          const areaLabel = q.subjectId === 'sub-area-1'
+            ? 'Area 1: History & Theory'
+            : q.subjectId === 'sub-area-2'
+              ? 'Area 2: Tech & Utilities'
+              : 'Area 3: Design & Laws';
+
+          formatted.push({
+            id: q.id,
+            areaLabel,
+            question: q.question,
+            options: choices.map((c) => c.text),
+            choiceIds: choices.map((c) => c.id),
+            correctIndex: correctIdx,
+            correctChoiceHash: q.correctChoiceHash || undefined,
+            explanation: q.explanation || 'Essential architectural standard and code specification.',
+            difficulty: q.difficulty,
+          });
+        }
+        setQuestions(formatted);
+      };
+      formatAsync();
+    }
+  }, [dbQuestions]);
 
   const restartQuiz = () => {
-    setQuestions(getFilteredQuestions());
     setCurrentIdx(0);
     setSelectedOption(null);
     setIsAnswerSubmitted(false);
+    setIsCurrentAnswerCorrect(false);
     setCorrectAnswersCount(0);
     setIsQuizFinished(false);
+    setRecordedAnswers([]);
+    refetch();
   };
 
   const handleSelectOption = (idx: number) => {
@@ -72,25 +138,93 @@ export default function PracticeQuizScreen() {
     }
   };
 
-  const handleSubmitAnswer = () => {
-    if (selectedOption === null) return;
+  const handleSubmitAnswer = async () => {
+    if (selectedOption === null || !questions[currentIdx]) return;
+    
+    const currQ = questions[currentIdx];
+    const selectedChoiceId = currQ.choiceIds[selectedOption] || `c${selectedOption + 1}`;
+    
+    let isCorrect = selectedOption === currQ.correctIndex;
+    if (currQ.correctChoiceHash) {
+      const userHash = await crypto.digestStringAsync(
+        crypto.CryptoDigestAlgorithm.SHA256,
+        `${currQ.id}:${selectedChoiceId}`
+      );
+      isCorrect = userHash === currQ.correctChoiceHash;
+    }
+
     setIsAnswerSubmitted(true);
-    if (selectedOption === questions[currentIdx].correctIndex) {
+
+    if (isCorrect) {
       setCorrectAnswersCount((prev) => prev + 1);
     }
+
+    setRecordedAnswers((prev) => [
+      ...prev,
+      {
+        questionId: currQ.id,
+        selectedChoiceId,
+        correctChoiceHash: currQ.correctChoiceHash,
+      },
+    ]);
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
     if (currentIdx < questions.length - 1) {
       setCurrentIdx((prev) => prev + 1);
       setSelectedOption(null);
       setIsAnswerSubmitted(false);
     } else {
       setIsQuizFinished(true);
+      // Persist attempt to SQLite and trigger sync
+      try {
+        const quizId = (!selectedArea || selectedArea === 'all') ? 'all-modular' : selectedArea;
+        await submitLocalAttempt('local-student-1', quizId, recordedAnswers);
+      } catch (err) {
+        console.warn('Failed to record attempt:', err);
+      }
     }
   };
 
   const currentQ = questions[currentIdx];
+
+  if (loading && questions.length === 0) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={{ color: colors.textSecondary, marginTop: 12, fontWeight: '600' }}>
+          Loading Questions from Database...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!loading && questions.length === 0) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+        <HelpCircle size={48} color={colors.accent} strokeWidth={1.8} />
+        <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 16, textAlign: 'center' }}>
+          No Questions Found
+        </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+          There are no questions recorded for this filter in the local database. Try selecting &quot;All Subjects&quot; or sync your database from the Profile screen.
+        </Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={{
+            marginTop: 24,
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            borderRadius: 12,
+            backgroundColor: colors.accent,
+          }}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>
+            Go Back
+          </Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -348,72 +482,60 @@ export default function PracticeQuizScreen() {
                       style={[
                         styles.optionLabel,
                         {
-                          color: isDark ? '#F9FAFB' : '#0F172A',
+                          color: isDark ? '#F9FAFB' : '#111827',
                           fontWeight: isSelected ? '700' : '500',
                         },
                       ]}>
                       {opt}
                     </Text>
 
+                    {/* Checkmark or Cross Icon if Submitted */}
                     {isAnswerSubmitted && isCorrect && (
-                      <CheckCircle2 size={18} color="#10B981" />
+                      <CheckCircle2 size={20} color="#10B981" strokeWidth={2.4} />
                     )}
                     {isAnswerSubmitted && isSelected && !isCorrect && (
-                      <XCircle size={18} color="#EF4444" />
+                      <XCircle size={20} color="#EF4444" strokeWidth={2.4} />
                     )}
                   </Pressable>
                 );
               })}
             </View>
 
-            {/* Instant Explanation Card */}
-            {isAnswerSubmitted && (
+            {/* Explanation Rationale Box */}
+            {isAnswerSubmitted && currentQ?.explanation && (
               <View
                 style={[
-                  styles.explanationContainer,
+                  styles.explanationBox,
                   {
                     backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
-                <View style={styles.explanationTitleRow}>
-                  <HelpCircle size={16} color={colors.accent} strokeWidth={2.4} />
-                  <Text
-                    style={[
-                      styles.explanationKickerText,
-                      { color: colors.accent },
-                    ]}>
-                    ARCHITECTURAL EXPLANATION & CITATION
+                <View style={styles.explanationHeader}>
+                  <HelpCircle size={17} color={colors.accent} strokeWidth={2.4} />
+                  <Text style={[styles.explanationTitle, { color: colors.accent }]}>
+                    EXPLANATION & RATIONALE
                   </Text>
                 </View>
-
-                <Text style={[styles.explanationBody, { color: isDark ? '#E2E8F0' : '#1E293B' }]}>
-                  {currentQ?.explanation}
+                <Text
+                  style={[
+                    styles.explanationBody,
+                    { color: isDark ? '#D1D5DB' : '#374151' },
+                  ]}>
+                  {currentQ.explanation}
                 </Text>
-
-                {currentQ?.reference && (
-                  <View
-                    style={[
-                      styles.referenceBox,
-                      { backgroundColor: isDark ? '#23262F' : '#FFFFFF' },
-                    ]}>
-                    <Text style={[styles.referenceLabel, { color: colors.accent }]}>
-                      SOURCE / CODE SPEC:
-                    </Text>
-                    <Text style={[styles.referenceText, { color: colors.textSecondary }]}>
-                      {currentQ.reference}
-                    </Text>
-                  </View>
-                )}
               </View>
             )}
           </ScrollView>
 
-          {/* Sticky Bottom Action Bar */}
+          {/* Sticky Bottom Action Button */}
           <View
             style={[
-              styles.bottomActionBar,
+              styles.bottomActionContainer,
               {
-                paddingBottom: Math.max(insets.bottom + 12, 16),
+                paddingBottom: insets.bottom + 12,
+                backgroundColor: colors.background,
+                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
               },
             ]}>
             {!isAnswerSubmitted ? (
@@ -421,34 +543,46 @@ export default function PracticeQuizScreen() {
                 disabled={selectedOption === null}
                 onPress={handleSubmitAnswer}
                 style={({ pressed }) => [
-                  styles.bottomCtaBtn,
+                  styles.submitBtn,
                   {
-                    backgroundColor: selectedOption !== null ? colors.accent : isDark ? '#23262F' : '#E2E8F0',
-                    opacity: selectedOption === null ? 0.6 : pressed ? 0.9 : 1,
+                    backgroundColor:
+                      selectedOption !== null
+                        ? colors.accent
+                        : isDark
+                          ? '#23262F'
+                          : '#E2E8F0',
+                    opacity: pressed ? 0.9 : 1,
                     transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}>
                 <Text
                   style={[
-                    styles.bottomCtaBtnText,
-                    { color: selectedOption !== null ? '#FFFFFF' : colors.textSecondary },
+                    styles.submitBtnText,
+                    {
+                      color:
+                        selectedOption !== null
+                          ? '#FFFFFF'
+                          : isDark
+                            ? '#6B7280'
+                            : '#94A3B8',
+                    },
                   ]}>
-                  Submit Answer
+                  Check Answer
                 </Text>
               </Pressable>
             ) : (
               <Pressable
                 onPress={handleNextQuestion}
                 style={({ pressed }) => [
-                  styles.bottomCtaBtn,
+                  styles.submitBtn,
                   {
                     backgroundColor: colors.accent,
                     opacity: pressed ? 0.9 : 1,
                     transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}>
-                <Text style={styles.bottomCtaBtnText}>
-                  {currentIdx < questions.length - 1 ? 'Next Question' : 'View Results'}
+                <Text style={[styles.submitBtnText, { color: '#FFFFFF' }]}>
+                  {currentIdx < questions.length - 1 ? 'Next Question' : 'Finish Drill'}
                 </Text>
                 <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.4} />
               </Pressable>
@@ -470,7 +604,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 10,
+    paddingBottom: 12,
   },
   backBtn: {
     width: 40,
@@ -481,17 +615,17 @@ const styles = StyleSheet.create({
   },
   topCenter: {
     alignItems: 'center',
-    gap: 2,
   },
   areaLabel: {
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: '800',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
   },
   counterText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
+    marginTop: 2,
   },
   dummySpace: {
     width: 40,
@@ -499,11 +633,9 @@ const styles = StyleSheet.create({
   track: {
     height: 4,
     width: '100%',
-    position: 'relative',
   },
   trackFill: {
     height: '100%',
-    borderRadius: 2,
   },
   quizLayoutWrapper: {
     flex: 1,
@@ -512,30 +644,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    gap: 14,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 16,
   },
   questionBox: {
+    padding: 22,
     borderRadius: 22,
-    padding: 20,
   },
   questionText: {
-    fontSize: 16.5,
+    fontSize: 18,
+    lineHeight: 26,
     fontWeight: '700',
-    lineHeight: 24,
     letterSpacing: -0.2,
   },
   optionsContainer: {
-    gap: 10,
+    gap: 12,
   },
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    gap: 12,
+    padding: 16,
+    borderRadius: 18,
+    gap: 14,
   },
   optionPill: {
     width: 32,
@@ -545,141 +676,129 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   optionPillText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
   },
   optionLabel: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
   },
-  explanationContainer: {
-    borderRadius: 20,
+  explanationBox: {
     padding: 18,
-    gap: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 8,
     marginTop: 4,
   },
-  explanationTitleRow: {
+  explanationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  explanationKickerText: {
-    fontSize: 11,
+  explanationTitle: {
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.6,
   },
   explanationBody: {
-    fontSize: 13.5,
-    lineHeight: 21,
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: '500',
   },
-  referenceBox: {
-    padding: 12,
-    borderRadius: 12,
-    gap: 4,
-    marginTop: 4,
-  },
-  referenceLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  referenceText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  bottomActionBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  bottomActionContainer: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 12,
+    borderTopWidth: 1,
   },
-  bottomCtaBtn: {
-    borderRadius: 16,
-    paddingVertical: 16,
+  submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 18,
     gap: 8,
   },
-  bottomCtaBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
+  submitBtnText: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.2,
   },
   resultsScrollContent: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   resultCard: {
-    width: '100%',
-    borderRadius: 24,
-    padding: 24,
+    padding: 26,
+    borderRadius: 26,
     alignItems: 'center',
     gap: 14,
   },
   resultHeading: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
+    marginTop: 6,
   },
   resultScoreText: {
-    fontSize: 44,
+    fontSize: 48,
     fontWeight: '900',
     letterSpacing: -1,
   },
   resultSubtext: {
-    fontSize: 13.5,
+    fontSize: 14,
+    fontWeight: '600',
     textAlign: 'center',
     lineHeight: 20,
+    paddingHorizontal: 10,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
     width: '100%',
-    marginVertical: 6,
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 8,
   },
   statBox: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
+    marginTop: 2,
   },
   actionBtn: {
-    width: '100%',
-    borderRadius: 16,
-    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+    paddingVertical: 15,
+    borderRadius: 18,
     gap: 8,
-    marginTop: 4,
+    marginTop: 8,
   },
   actionBtnText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   secondaryBtn: {
-    width: '100%',
-    borderRadius: 16,
-    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 18,
   },
   secondaryBtnText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
   },
 });

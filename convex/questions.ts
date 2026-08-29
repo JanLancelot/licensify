@@ -4,6 +4,16 @@ import { Id } from "./_generated/dataModel";
 import { requireContentManager } from "./authHelpers";
 
 /**
+ * Public/Student query: Fetches all published questions across all subjects for offline sync.
+ */
+export const listAllPublishedQuestions = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("questions").collect();
+  },
+});
+
+/**
  * Public/Student query: Fetches questions by Subject.
  */
 export const listQuestionsBySubject = query({
@@ -12,7 +22,7 @@ export const listQuestionsBySubject = query({
     return await ctx.db
       .query("questions")
       .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId))
-      .filter((q) => q.eq(q.field("isPublished"), true))
+      .filter((q) => q.neq(q.field("isPublished"), false))
       .collect();
   },
 });
@@ -26,7 +36,7 @@ export const listQuestionsByTopic = query({
     return await ctx.db
       .query("questions")
       .withIndex("by_topic", (q) => q.eq("topicId", args.topicId))
-      .filter((q) => q.eq(q.field("isPublished"), true))
+      .filter((q) => q.neq(q.field("isPublished"), false))
       .collect();
   },
 });

@@ -1,48 +1,67 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, Button, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSubjects } from '../hooks/useLocalData';
 import { useSyncService } from '../services/useSyncService';
-import { seedSampleData } from '../db/seed';
+import { db } from '../db/client';
+import * as schema from '../db/schema';
 
 export default function DebugSQLite() {
   const { subjects, loading, refetch } = useLocalSubjects();
-  const { syncDown } = useSyncService();
-  const [seeding, setSeeding] = useState(false);
+  const { syncDown, syncUp, isSyncing } = useSyncService();
 
-  const handleSeed = async () => {
+  const handleSync = async () => {
     try {
-      setSeeding(true);
-      await seedSampleData();
+      await syncDown();
+      await syncUp();
       await refetch?.();
-      Alert.alert('Success', 'Sample database seeded! Switch to the Home tab to see subjects.');
+      Alert.alert('Success', 'Local SQLite database synchronized with Convex!');
     } catch (err: any) {
-      Alert.alert('Seed Failed', err?.message || 'Error occurred while seeding');
-      console.error(err);
-    } finally {
-      setSeeding(false);
+      Alert.alert('Sync Notice', err?.message || 'Offline database active.');
+      console.warn(err);
+    }
+  };
+
+  const handleWipeDatabase = async () => {
+    try {
+      // Clear all tables in dependency order
+      await db.delete(schema.quizAnswers);
+      await db.delete(schema.quizAttempts);
+      await db.delete(schema.quizzes);
+      await db.delete(schema.questions);
+      await db.delete(schema.flashcards);
+      await db.delete(schema.materials);
+      await db.delete(schema.lessons);
+      await db.delete(schema.topics);
+      await db.delete(schema.branches);
+      await db.delete(schema.subjects);
+
+      await refetch?.();
+      Alert.alert('Database Cleared', 'All local cached data has been successfully wiped. Please synchronize again to pull fresh data.');
+    } catch (err: any) {
+      Alert.alert('Wipe Failed', err?.message || 'Error clearing database.');
     }
   };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>SQLite Debugger</Text>
+      <Text style={styles.header}>SQLite & Convex Live Sync</Text>
 
       <View style={styles.buttonGroup}>
         <Button 
-          title={seeding ? "Seeding..." : "🌱 Populate Sample Data"} 
+          title={isSyncing ? "Syncing..." : "🔄 Synchronize Database with Convex"} 
           color="#3c87f7"
-          disabled={seeding}
-          onPress={handleSeed} 
+          disabled={isSyncing}
+          onPress={handleSync} 
         />
         <View style={{ height: 10 }} />
         <Button 
-          title="Force Sync (Pull from Convex)" 
-          color="#444"
-          onPress={() => syncDown()} 
+          title="🗑️ Wipe Local Cache" 
+          color="#ef4444"
+          onPress={handleWipeDatabase} 
         />
       </View>
 
-      {seeding && <ActivityIndicator color="#3c87f7" style={{ marginVertical: 15 }} />}
+      {isSyncing && <ActivityIndicator color="#3c87f7" style={{ marginVertical: 15 }} />}
 
       <Text style={styles.subHeader}>
         Local Subjects Count: {loading ? 'Loading...' : subjects.length}
@@ -64,44 +83,39 @@ export default function DebugSQLite() {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#fff',
     flex: 1,
   },
   header: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 20,
-  },
-  buttonGroup: {
     marginBottom: 15,
   },
   subHeader: {
-    fontSize: 18,
-    color: '#ccc',
-    marginTop: 15,
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  buttonGroup: {
     marginBottom: 10,
   },
   item: {
-    backgroundColor: '#333',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   itemName: {
     fontSize: 16,
-    color: '#fff',
     fontWeight: '600',
   },
   itemDesc: {
     fontSize: 14,
-    color: '#aaa',
-    marginTop: 4,
+    color: '#666',
+    marginVertical: 4,
   },
   itemStatus: {
     fontSize: 12,
-    color: '#00ffcc',
-    marginTop: 8,
+    color: '#888',
   },
 });
-
