@@ -21,7 +21,7 @@ import { LessonDetailModal } from '@/components/notes/LessonDetailModal';
 import { NoteTopicItem } from '@/components/notes/NoteTopicItem';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
-import { SUBJECT_NOTES } from '@/data/curriculum';
+import { useLocalHierarchy } from '@/hooks/useLocalData';
 import { Lesson } from '@/types/curriculum';
 
 // Curated pastel palettes matching the reference design
@@ -154,6 +154,8 @@ export default function NotesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  const { curriculum } = useLocalHierarchy();
+
   // Track which subjects are expanded (Level 1)
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   // Track which topics are expanded (Level 2)
@@ -161,7 +163,7 @@ export default function NotesScreen() {
   
   // Track completed lessons to calculate live progress
   const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(
-    new Set(['s1-t1-l1', 's1-t1-l2', 's1-t1-l3', 's2-t1-l1', 's3-t1-l1', 's3-t1-l2'])
+    new Set(['s1-t1-l1', 's1-t1-l2', 's1-t1-l3', 's2-t1-l1', 's3-t1-l1', 's3-t1-l2', 'les-1-1-1', 'les-2-1-1', 'les-3-1-1'])
   );
 
   // Modal for reading lesson notes
@@ -175,7 +177,7 @@ export default function NotesScreen() {
     setExpandedSubjects((prev) => {
       const isCurrentlyOpen = !!prev[subjectId];
       if (isCurrentlyOpen) {
-        const subject = SUBJECT_NOTES.find((s) => s.id === subjectId);
+        const subject = curriculum.find((s) => s.id === subjectId);
         if (subject) {
           setExpandedTopics((topicPrev) => {
             const next = { ...topicPrev };
@@ -239,7 +241,7 @@ export default function NotesScreen() {
           { paddingBottom: insets.bottom + 80 },
         ]}>
         <View style={styles.listContainer}>
-          {SUBJECT_NOTES.map((subject, sIdx) => {
+          {curriculum.map((subject, sIdx) => {
             const isSubjectOpen = !!expandedSubjects[subject.id];
             const IconComponent = subject.icon;
             const palette = SUBJECT_PALETTES[sIdx % SUBJECT_PALETTES.length];

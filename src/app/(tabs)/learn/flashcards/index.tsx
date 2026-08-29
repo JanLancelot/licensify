@@ -24,7 +24,7 @@ import {
 import { FlashcardStudyView } from '@/components/flashcards/FlashcardStudyView';
 import { buildCardsForLessons } from '@/components/flashcards/flashcard-utils';
 import { useAppTheme } from '@/context/theme-context';
-import { SUBJECT_NOTES } from '@/data/curriculum';
+import { useLocalHierarchy, useLocalFlashcards } from '@/hooks/useLocalData';
 import {
   FlashcardItem,
   FlashcardPreset,
@@ -74,8 +74,31 @@ export default function FlashcardsHubScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  const { curriculum } = useLocalHierarchy();
+  const { flashcards: dbFlashcards } = useLocalFlashcards();
+
   // User-created Custom Flashcard Decks (Top Grid)
-  const [customPresets, setCustomPresets] = useState<FlashcardPreset[]>([]);
+  const [userPresets, setUserPresets] = useState<FlashcardPreset[]>([]);
+
+  // Compute all presets (user created + default system deck from database)
+  const customPresets = React.useMemo(() => {
+    const list = [...userPresets];
+    if (dbFlashcards.length > 0) {
+      const defaultDeck: FlashcardPreset = {
+        id: 'preset-core-ale',
+        title: 'Core ALE Essential Concepts',
+        lessonCount: 6,
+        cardCount: dbFlashcards.length,
+        isShuffled: true,
+        iconName: 'Layers',
+        createdAt: 'Auto Generated',
+        subjectNames: ['History', 'Utilities', 'Design'],
+        cards: dbFlashcards,
+      };
+      list.push(defaultDeck);
+    }
+    return list;
+  }, [dbFlashcards, userPresets]);
 
   // Active Session State
   const [activeSessionTitle, setActiveSessionTitle] = useState<string | null>(null);
@@ -124,14 +147,14 @@ export default function FlashcardsHubScreen() {
       return;
     }
 
-    const cards = buildCardsForLessons(selectedLessonIds, modalIsShuffled);
+    const cards = buildCardsForLessons(selectedLessonIds, modalIsShuffled, curriculum);
     if (cards.length === 0) {
       Alert.alert('Notice', 'No flashcards could be generated for the selected lessons.');
       return;
     }
 
     const selectedSubjectsSet = new Set<string>();
-    SUBJECT_NOTES.forEach((sub) => {
+    curriculum.forEach((sub) => {
       const hasAny = sub.topics.some((t) =>
         t.lessons.some((l) => selectedLessonIds.has(l.id))
       );
@@ -160,7 +183,7 @@ export default function FlashcardsHubScreen() {
       selectedLessonIds: Array.from(selectedLessonIds),
     };
 
-    setCustomPresets((prev) => [newPreset, ...prev]);
+    setUserPresets((prev) => [newPreset, ...prev]);
     setIsAddModalVisible(false);
   };
 
@@ -379,6 +402,7 @@ export default function FlashcardsHubScreen() {
       <FlashcardPresetBuilderModal
         visible={isAddModalVisible}
         isEditing={false}
+        subjects={curriculum}
         onClose={() => setIsAddModalVisible(false)}
         onSubmit={handleModalSubmitPreset}
         expandedSubjects={modalExpandedSubjects}

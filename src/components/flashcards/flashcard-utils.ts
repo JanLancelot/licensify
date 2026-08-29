@@ -1,17 +1,21 @@
-import { FlashcardItem } from '@/types/curriculum';
-import { SUBJECT_NOTES } from '@/data/curriculum';
+import { FlashcardItem, SubjectNote } from '@/types/curriculum';
 
 export function buildCardsForLessons(
   selectedLessonIds: Set<string>,
-  isShuffled: boolean = false
+  isShuffled: boolean = false,
+  curriculum: SubjectNote[] = []
 ): FlashcardItem[] {
   const generated: FlashcardItem[] = [];
 
-  SUBJECT_NOTES.forEach((subject) => {
+  curriculum.forEach((subject) => {
     subject.topics.forEach((topic) => {
       topic.lessons.forEach((lesson) => {
         if (selectedLessonIds.has(lesson.id)) {
-          lesson.keyPoints.forEach((point, pIdx) => {
+          const points = lesson.keyPoints && lesson.keyPoints.length > 0
+            ? lesson.keyPoints
+            : [lesson.summary || lesson.title];
+
+          points.forEach((point, pIdx) => {
             const colonIndex = point.indexOf(':');
             let term = '';
             let explanation = '';
@@ -20,7 +24,7 @@ export function buildCardsForLessons(
               term = point.substring(0, colonIndex).trim();
               explanation = point.substring(colonIndex + 1).trim();
             } else {
-              term = `${lesson.title} Concept #${pIdx + 1}`;
+              term = `${lesson.title} - Key Concept #${pIdx + 1}`;
               explanation = point.trim();
             }
 
@@ -29,7 +33,7 @@ export function buildCardsForLessons(
               subjectTitle: subject.title,
               topicTitle: topic.title,
               lessonTitle: lesson.title,
-              question: `What are the key provisions and characteristics of "${term}" in ${lesson.title}?`,
+              question: `What are the key provisions and principles of "${term}" in ${lesson.title}?`,
               answer: term,
               explanation,
               isDifficult: false,

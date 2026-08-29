@@ -11,14 +11,15 @@ function initDatabase() {
     try {
       expoDb.execSync('PRAGMA journal_mode = WAL;');
       expoDb.execSync('PRAGMA busy_timeout = 5000;');
+      expoDb.execSync('PRAGMA foreign_keys = OFF;');
     } catch (e) {
       console.warn('Failed to set PRAGMA on SQLite:', e);
     }
   }
 
-  // Ensure tables exist on startup
+  // Ensure tables exist on startup without strict relational blocking during asynchronous cloud sync
   expoDb.execSync(`
-    PRAGMA foreign_keys = ON;
+    PRAGMA foreign_keys = OFF;
 
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -40,21 +41,46 @@ function initDatabase() {
       "order" INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS branches (
+      id TEXT PRIMARY KEY,
+      convex_id TEXT UNIQUE,
+      subject_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      "order" INTEGER NOT NULL DEFAULT 0,
+      is_published INTEGER NOT NULL DEFAULT 1
+    );
+
     CREATE TABLE IF NOT EXISTS topics (
       id TEXT PRIMARY KEY,
       convex_id TEXT UNIQUE,
-      subject_id TEXT NOT NULL REFERENCES subjects(id),
+      subject_id TEXT NOT NULL,
+      branch_id TEXT,
       name TEXT NOT NULL,
       description TEXT,
       "order" INTEGER NOT NULL DEFAULT 0,
       is_published INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS lessons (
+      id TEXT PRIMARY KEY,
+      convex_id TEXT UNIQUE,
+      subject_id TEXT NOT NULL,
+      branch_id TEXT,
+      topic_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      "order" INTEGER NOT NULL DEFAULT 0,
+      is_published INTEGER NOT NULL DEFAULT 1
+    );
+
     CREATE TABLE IF NOT EXISTS materials (
       id TEXT PRIMARY KEY,
       convex_id TEXT UNIQUE,
-      subject_id TEXT NOT NULL REFERENCES subjects(id),
-      topic_id TEXT REFERENCES topics(id),
+      subject_id TEXT NOT NULL,
+      branch_id TEXT,
+      topic_id TEXT,
+      lesson_id TEXT,
       title TEXT NOT NULL,
       description TEXT,
       type TEXT NOT NULL,
@@ -65,8 +91,10 @@ function initDatabase() {
     CREATE TABLE IF NOT EXISTS flashcards (
       id TEXT PRIMARY KEY,
       convex_id TEXT UNIQUE,
-      subject_id TEXT NOT NULL REFERENCES subjects(id),
-      topic_id TEXT REFERENCES topics(id),
+      subject_id TEXT NOT NULL,
+      branch_id TEXT,
+      topic_id TEXT,
+      lesson_id TEXT,
       front TEXT NOT NULL,
       back TEXT NOT NULL
     );
@@ -74,8 +102,10 @@ function initDatabase() {
     CREATE TABLE IF NOT EXISTS questions (
       id TEXT PRIMARY KEY,
       convex_id TEXT UNIQUE,
-      subject_id TEXT NOT NULL REFERENCES subjects(id),
-      topic_id TEXT REFERENCES topics(id),
+      subject_id TEXT NOT NULL,
+      branch_id TEXT,
+      topic_id TEXT,
+      lesson_id TEXT,
       question TEXT NOT NULL,
       choices TEXT NOT NULL,
       correct_choice_hash TEXT,
@@ -89,8 +119,10 @@ function initDatabase() {
       title TEXT NOT NULL,
       description TEXT,
       type TEXT NOT NULL,
-      subject_id TEXT REFERENCES subjects(id),
-      topic_id TEXT REFERENCES topics(id),
+      subject_id TEXT,
+      branch_id TEXT,
+      topic_id TEXT,
+      lesson_id TEXT,
       question_ids TEXT NOT NULL,
       time_limit_seconds INTEGER,
       passing_score INTEGER
@@ -99,8 +131,8 @@ function initDatabase() {
     CREATE TABLE IF NOT EXISTS quiz_attempts (
       id TEXT PRIMARY KEY,
       convex_id TEXT UNIQUE,
-      user_id TEXT NOT NULL REFERENCES users(id),
-      quiz_id TEXT NOT NULL REFERENCES quizzes(id),
+      user_id TEXT NOT NULL,
+      quiz_id TEXT NOT NULL,
       status TEXT NOT NULL,
       sync_status TEXT NOT NULL DEFAULT 'pending_sync',
       score INTEGER,
@@ -113,26 +145,19 @@ function initDatabase() {
 
     CREATE TABLE IF NOT EXISTS quiz_answers (
       id TEXT PRIMARY KEY,
-      attempt_id TEXT NOT NULL REFERENCES quiz_attempts(id),
-      question_id TEXT NOT NULL REFERENCES questions(id),
+      attempt_id TEXT NOT NULL,
+      question_id TEXT NOT NULL,
       selected_choice_id TEXT,
       answered_at INTEGER
     );
+
+    CREATE TABLE IF NOT EXISTS sync_metadata (
+      table_name TEXT PRIMARY KEY,
+      last_synced_at INTEGER NOT NULL
+    );
   `);
 
-  return expoDb;
+  return drizzle(expoDb, { schema });
 }
 
-// Singleton across hot-reloads in development
-const globalForDb = globalThis as unknown as {
-  __expoDb?: ReturnType<typeof openDatabaseSync>;
-  __drizzleDb?: ReturnType<typeof drizzle>;
-};
-
-export const expoDb = globalForDb.__expoDb ?? initDatabase();
-export const db = globalForDb.__drizzleDb ?? drizzle(expoDb, { schema });
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForDb.__expoDb = expoDb;
-  globalForDb.__drizzleDb = db;
-}
+export const db = initDatabase();

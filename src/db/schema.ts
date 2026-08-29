@@ -29,7 +29,7 @@ export const subjects = sqliteTable('subjects', {
 export const branches = sqliteTable('branches', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
-  subjectId: text('subject_id').references(() => subjects.id).notNull(),
+  subjectId: text('subject_id').notNull(),
   name: text('name').notNull(),
   description: text('description'),
   order: integer('order').notNull().default(0),
@@ -39,8 +39,8 @@ export const branches = sqliteTable('branches', {
 export const topics = sqliteTable('topics', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
-  subjectId: text('subject_id').references(() => subjects.id).notNull(),
-  branchId: text('branch_id').references(() => branches.id),
+  subjectId: text('subject_id').notNull(),
+  branchId: text('branch_id'),
   name: text('name').notNull(),
   description: text('description'),
   order: integer('order').notNull().default(0),
@@ -50,9 +50,9 @@ export const topics = sqliteTable('topics', {
 export const lessons = sqliteTable('lessons', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
-  subjectId: text('subject_id').references(() => subjects.id).notNull(),
-  branchId: text('branch_id').references(() => branches.id),
-  topicId: text('topic_id').references(() => topics.id).notNull(),
+  subjectId: text('subject_id').notNull(),
+  branchId: text('branch_id'),
+  topicId: text('topic_id').notNull(),
   name: text('name').notNull(),
   description: text('description'),
   order: integer('order').notNull().default(0),
@@ -62,10 +62,10 @@ export const lessons = sqliteTable('lessons', {
 export const materials = sqliteTable('materials', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
-  subjectId: text('subject_id').references(() => subjects.id).notNull(),
-  branchId: text('branch_id').references(() => branches.id),
-  topicId: text('topic_id').references(() => topics.id),
-  lessonId: text('lesson_id').references(() => lessons.id),
+  subjectId: text('subject_id').notNull(),
+  branchId: text('branch_id'),
+  topicId: text('topic_id'),
+  lessonId: text('lesson_id'),
   title: text('title').notNull(),
   description: text('description'),
   type: text('type').notNull(), // 'article', 'pdf', 'image', 'document'
@@ -76,10 +76,10 @@ export const materials = sqliteTable('materials', {
 export const flashcards = sqliteTable('flashcards', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
-  subjectId: text('subject_id').references(() => subjects.id).notNull(),
-  branchId: text('branch_id').references(() => branches.id),
-  topicId: text('topic_id').references(() => topics.id),
-  lessonId: text('lesson_id').references(() => lessons.id),
+  subjectId: text('subject_id').notNull(),
+  branchId: text('branch_id'),
+  topicId: text('topic_id'),
+  lessonId: text('lesson_id'),
   front: text('front').notNull(),
   back: text('back').notNull(),
 });
@@ -90,12 +90,13 @@ export const flashcards = sqliteTable('flashcards', {
 export const questions = sqliteTable('questions', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
-  subjectId: text('subject_id').references(() => subjects.id).notNull(),
-  branchId: text('branch_id').references(() => branches.id),
-  topicId: text('topic_id').references(() => topics.id),
-  lessonId: text('lesson_id').references(() => lessons.id),
+  subjectId: text('subject_id').notNull(),
+  branchId: text('branch_id'),
+  topicId: text('topic_id'),
+  lessonId: text('lesson_id'),
   question: text('question').notNull(),
   
+  // JSON serialized string [{ id: "c1", text: "Option A" }, ...]
   choices: text('choices', { mode: 'json' }).notNull(),
   correctChoiceHash: text('correct_choice_hash'),
   explanation: text('explanation'),
@@ -108,10 +109,10 @@ export const quizzes = sqliteTable('quizzes', {
   title: text('title').notNull(),
   description: text('description'),
   type: text('type').notNull(),
-  subjectId: text('subject_id').references(() => subjects.id),
-  branchId: text('branch_id').references(() => branches.id),
-  topicId: text('topic_id').references(() => topics.id),
-  lessonId: text('lesson_id').references(() => lessons.id),
+  subjectId: text('subject_id'),
+  branchId: text('branch_id'),
+  topicId: text('topic_id'),
+  lessonId: text('lesson_id'),
   
   // Stored as JSON string [questionId1, questionId2, ...]
   questionIds: text('question_ids', { mode: 'json' }).notNull(),
@@ -122,8 +123,8 @@ export const quizzes = sqliteTable('quizzes', {
 export const quizAttempts = sqliteTable('quiz_attempts', {
   id: text('id').primaryKey(),
   convexId: text('convex_id').unique(),
-  userId: text('user_id').references(() => users.id).notNull(),
-  quizId: text('quiz_id').references(() => quizzes.id).notNull(),
+  userId: text('user_id').notNull(),
+  quizId: text('quiz_id').notNull(),
   status: text('status').notNull(), // 'in_progress', 'submitted', 'expired'
   
   // Sync metadata
@@ -142,9 +143,17 @@ export const quizAttempts = sqliteTable('quiz_attempts', {
 
 export const quizAnswers = sqliteTable('quiz_answers', {
   id: text('id').primaryKey(),
-  attemptId: text('attempt_id').references(() => quizAttempts.id).notNull(),
-  questionId: text('question_id').references(() => questions.id).notNull(),
+  attemptId: text('attempt_id').notNull(),
+  questionId: text('question_id').notNull(),
   selectedChoiceId: text('selected_choice_id'),
   
   answeredAt: integer('answered_at'),
+});
+
+// ---------------------------------------------------------------------------
+// 4. METADATA
+// ---------------------------------------------------------------------------
+export const syncMetadata = sqliteTable('sync_metadata', {
+  tableName: text('table_name').primaryKey(),
+  lastSyncedAt: integer('last_synced_at').notNull(),
 });

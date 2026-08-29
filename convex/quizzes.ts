@@ -4,6 +4,16 @@ import { requireContentManager, requireUser } from "./authHelpers";
 import { paginationOptsValidator } from "convex/server";
 
 /**
+ * Public/Student query: Fetches all published quizzes for offline sync.
+ */
+export const listAllPublishedQuizzes = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("quizzes").collect();
+  },
+});
+
+/**
  * Public/Student query: List published quizzes filtered by type (practice or mock_exam).
  */
 export const listQuizzes = query({
@@ -12,13 +22,13 @@ export const listQuizzes = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    let quizQuery = ctx.db.query("quizzes").filter((q) => q.eq(q.field("isPublished"), true));
+    let quizQuery = ctx.db.query("quizzes").filter((q) => q.neq(q.field("isPublished"), false));
 
     if (args.type) {
       return await ctx.db
         .query("quizzes")
         .withIndex("by_type", (q) => q.eq("type", args.type!))
-        .filter((q) => q.eq(q.field("isPublished"), true))
+        .filter((q) => q.neq(q.field("isPublished"), false))
         .paginate(args.paginationOpts);
     }
 

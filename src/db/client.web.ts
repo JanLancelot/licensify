@@ -10,7 +10,9 @@ function loadInitialStore(): TableStore {
   const defaultStore: TableStore = {
     users: [],
     subjects: [],
+    branches: [],
     topics: [],
+    lessons: [],
     materials: [],
     flashcards: [],
     questions: [],
@@ -49,7 +51,9 @@ function resolveTableName(table: any): string {
   if (!table) return 'unknown';
   if (table === schema.users) return 'users';
   if (table === schema.subjects) return 'subjects';
+  if (table === schema.branches) return 'branches';
   if (table === schema.topics) return 'topics';
+  if (table === schema.lessons) return 'lessons';
   if (table === schema.materials) return 'materials';
   if (table === schema.flashcards) return 'flashcards';
   if (table === schema.questions) return 'questions';

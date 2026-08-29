@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   Award,
   BookOpen,
@@ -7,7 +7,7 @@ import {
   Play,
   Zap,
 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -19,55 +19,19 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/context/theme-context';
+import { useLocalAttempts, useLocalSubjects } from '@/hooks/useLocalData';
 
-type SubjectArea = 'all' | 'area-1' | 'area-2' | 'area-3';
 type Difficulty = 'easy' | 'medium' | 'hard';
 type QuestionCount = 5 | 10 | 20;
 
-// Subject Area Options with Pastel Badges
-const SUBJECT_AREAS: {
-  key: SubjectArea;
-  title: string;
-  icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
-  bg: string;
-  darkBg: string;
-  iconColor: string;
-}[] = [
-  {
-    key: 'all',
-    title: 'All Subjects',
-    icon: Layers,
-    bg: '#EDE9FE',
-    darkBg: 'rgba(139, 92, 246, 0.2)',
-    iconColor: '#7C3AED',
-  },
-  {
-    key: 'area-1',
-    title: 'Area 1: History',
-    icon: BookOpen,
-    bg: '#FCE7F3',
-    darkBg: 'rgba(236, 72, 153, 0.2)',
-    iconColor: '#DB2777',
-  },
-  {
-    key: 'area-2',
-    title: 'Area 2: Tech',
-    icon: Zap,
-    bg: '#E0F2FE',
-    darkBg: 'rgba(14, 165, 233, 0.2)',
-    iconColor: '#0284C7',
-  },
-  {
-    key: 'area-3',
-    title: 'Area 3: Practice',
-    icon: Compass,
-    bg: '#FFEDD5',
-    darkBg: 'rgba(249, 115, 22, 0.2)',
-    iconColor: '#EA580C',
-  },
+const AREA_PALETTES = [
+  { icon: BookOpen, bg: '#FCE7F3', darkBg: 'rgba(236, 72, 153, 0.2)', iconColor: '#DB2777' },
+  { icon: Zap, bg: '#E0F2FE', darkBg: 'rgba(14, 165, 233, 0.2)', iconColor: '#0284C7' },
+  { icon: Compass, bg: '#FFEDD5', darkBg: 'rgba(249, 115, 22, 0.2)', iconColor: '#EA580C' },
+  { icon: Layers, bg: '#EDE9FE', darkBg: 'rgba(139, 92, 246, 0.2)', iconColor: '#7C3AED' },
 ];
 
-const RECENT_DRILLS = [
+const DEFAULT_DRILLS = [
   {
     id: 'h1',
     topic: 'NBCP Rule 7 & 8 Computations',
@@ -95,26 +59,69 @@ const RECENT_DRILLS = [
     darkBg: 'rgba(249, 115, 22, 0.2)',
     iconColor: '#EA580C',
   },
-  {
-    id: 'h4',
-    topic: 'Mixed Syllabus Quick Drill',
-    score: '85%',
-    isPassed: true,
-    bg: '#E0F2FE',
-    darkBg: 'rgba(14, 165, 233, 0.2)',
-    iconColor: '#0284C7',
-  },
 ];
 
 export default function PracticeScreen() {
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { attempts, refetch } = useLocalAttempts();
+  const { subjects: dbSubjects } = useLocalSubjects();
+
+  // Auto-refresh attempts whenever this screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetch?.();
+    }, [refetch])
+  );
+
+  // Dynamic Subjects List: All Subjects + Real DB Subjects
+  const subjectOptions = [
+    {
+      key: 'all',
+      title: 'All Subjects',
+      icon: Layers,
+      bg: '#EDE9FE',
+      darkBg: 'rgba(139, 92, 246, 0.2)',
+      iconColor: '#7C3AED',
+    },
+    ...dbSubjects.map((sub, idx) => {
+      const palette = AREA_PALETTES[idx % AREA_PALETTES.length];
+      return {
+        key: sub.id,
+        title: sub.name,
+        icon: palette.icon,
+        bg: palette.bg,
+        darkBg: palette.darkBg,
+        iconColor: palette.iconColor,
+      };
+    }),
+  ];
 
   // Launcher State
-  const [selectedArea, setSelectedArea] = useState<SubjectArea>('all');
+  const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('medium');
   const [selectedCount, setSelectedCount] = useState<QuestionCount>(10);
+
+  const displayDrills = attempts.length > 0
+    ? attempts.slice(0, 4).map((att, i) => {
+        const isPassed = (att.score ?? 0) >= 75;
+        const palettes = [
+          { bg: '#D1FAE5', darkBg: 'rgba(16, 185, 129, 0.2)', iconColor: '#10B981' },
+          { bg: '#EDE9FE', darkBg: 'rgba(139, 92, 246, 0.2)', iconColor: '#7C3AED' },
+          { bg: '#FFEDD5', darkBg: 'rgba(249, 115, 22, 0.2)', iconColor: '#EA580C' },
+          { bg: '#E0F2FE', darkBg: 'rgba(14, 165, 233, 0.2)', iconColor: '#0284C7' },
+        ];
+        const p = palettes[i % palettes.length];
+        return {
+          id: att.id,
+          topic: att.quizTitle || 'Practice Assessment Drill',
+          score: `${att.score ?? 0}%`,
+          isPassed,
+          ...p,
+        };
+      })
+    : DEFAULT_DRILLS;
 
   const handleStartQuiz = () => {
     router.push({
@@ -158,7 +165,7 @@ export default function PracticeScreen() {
             </Text>
 
             <View style={styles.subjectGrid}>
-              {SUBJECT_AREAS.map((item) => {
+              {subjectOptions.map((item) => {
                 const isSelected = selectedArea === item.key;
                 const IconComp = item.icon;
 
@@ -318,7 +325,7 @@ export default function PracticeScreen() {
                 borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
               },
             ]}>
-            {RECENT_DRILLS.map((item, idx) => (
+            {displayDrills.map((item, idx) => (
               <React.Fragment key={item.id}>
                 <View style={styles.drillRow}>
                   {/* Pastel Icon Badge */}
@@ -366,7 +373,7 @@ export default function PracticeScreen() {
                   </View>
                 </View>
 
-                {idx < RECENT_DRILLS.length - 1 && (
+                {idx < displayDrills.length - 1 && (
                   <View
                     style={[
                       styles.itemDivider,

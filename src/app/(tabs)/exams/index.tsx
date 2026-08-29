@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   Award,
   Compass,
@@ -7,7 +7,7 @@ import {
   Trophy,
   Zap,
 } from 'lucide-react-native';
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -24,6 +24,7 @@ import Svg, {
 } from 'react-native-svg';
 
 import { useAppTheme } from '@/context/theme-context';
+import { useLocalQuizzes } from '@/hooks/useLocalData';
 
 export const MODULAR_TESTS = [
   {
@@ -123,6 +124,66 @@ export default function ExamsSelectionScreen() {
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { quizzes: dbQuizzes, refetch } = useLocalQuizzes();
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch?.();
+    }, [refetch])
+  );
+
+  // Dynamic Live Mock Exams and Modular Tests
+  const dynamicMockExams = dbQuizzes.filter((q) => q.type === 'mock_exam');
+  const dynamicModularQuizzes = dbQuizzes.filter((q) => q.type !== 'mock_exam');
+
+  const displayedModular = dynamicModularQuizzes.length > 0
+    ? dynamicModularQuizzes.map((q, idx) => {
+        const palettes = [
+          ['#E58368', '#C85A32'],
+          ['#FBBF24', '#D97706'],
+          ['#34D399', '#059669'],
+          ['#A78BFA', '#7C3AED'],
+        ] as [string, string][];
+        const icons = [Landmark, Compass, PenTool, Zap];
+        let qCount = 50;
+        try {
+          const parsed = typeof q.questionIds === 'string' ? JSON.parse(q.questionIds) : q.questionIds;
+          if (Array.isArray(parsed)) qCount = parsed.length;
+        } catch {}
+        return {
+          id: q.id,
+          title: q.title,
+          subtitle: q.description || 'Board Review Drill',
+          itemsCount: `${qCount} Questions`,
+          icon: icons[idx % icons.length],
+          gradient: palettes[idx % palettes.length],
+        };
+      })
+    : MODULAR_TESTS;
+
+  const displayedMocks = dynamicMockExams.length > 0
+    ? dynamicMockExams.map((q, idx) => {
+        const palettes = [
+          ['#38BDF8', '#0284C7'],
+          ['#FB7185', '#E11D48'],
+          ['#10B981', '#059669'],
+        ] as [string, string][];
+        const icons = [Trophy, Award, Landmark];
+        let qCount = 100;
+        try {
+          const parsed = typeof q.questionIds === 'string' ? JSON.parse(q.questionIds) : q.questionIds;
+          if (Array.isArray(parsed)) qCount = parsed.length;
+        } catch {}
+        const durationHours = q.timeLimitSeconds ? `${Math.round(q.timeLimitSeconds / 3600)}h` : '3h';
+        return {
+          id: q.id,
+          title: q.title,
+          itemsCount: `${qCount} Items • ${durationHours}`,
+          icon: icons[idx % icons.length],
+          gradient: palettes[idx % palettes.length],
+        };
+      })
+    : MOCK_SIMULATIONS;
 
   const handleSelectExam = (id: string) => {
     router.push({
@@ -157,7 +218,7 @@ export default function ExamsSelectionScreen() {
           </Text>
 
           <View style={styles.bentoGrid}>
-            {MODULAR_TESTS.map((test) => {
+            {displayedModular.map((test) => {
               const IconComp = test.icon;
               return (
                 <Pressable
@@ -222,7 +283,7 @@ export default function ExamsSelectionScreen() {
           </Text>
 
           <View style={styles.bentoGrid}>
-            {MOCK_SIMULATIONS.map((mock) => {
+            {displayedMocks.map((mock) => {
               const IconComp = mock.icon;
               return (
                 <Pressable

@@ -1,4 +1,5 @@
-import { useRouter } from 'expo-router';
+import { useQuery } from 'convex/react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   Award,
   BookOpen,
@@ -8,7 +9,7 @@ import {
   FileText,
   Layers,
 } from 'lucide-react-native';
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -21,6 +22,8 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
+import { api } from '../../../convex/_generated/api';
+import { useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
 
 /* Reusable Gradient Squircle / Circle Container */
 function GradientIconBox({
@@ -69,6 +72,23 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  const userProfile = useQuery(api.users.getCurrentUserProfile);
+  const { stats, refetch } = useLocalStats();
+  const { curriculum } = useLocalHierarchy();
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch?.();
+    }, [refetch])
+  );
+
+  const greetingName = userProfile?.firstName || userProfile?.username || 'Candidate';
+  const progressPercent = stats?.progressPercentage || 75;
+  const continueSubject = curriculum[0] || {
+    title: 'Architectural Design & Planning',
+    topics: [{ title: 'Space Planning & Ergonomics' }],
+  };
+
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
@@ -76,7 +96,7 @@ export default function HomeScreen() {
       {/* 1. Header */}
       <View style={styles.header}>
         <Text style={[styles.headerGreeting, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-          Good morning, User!
+          Good morning, {greetingName}!
         </Text>
       </View>
 
@@ -109,14 +129,14 @@ export default function HomeScreen() {
                 styles.progressHeroPercentage,
                 { color: isDark ? '#FFFFFF' : '#2D120B' },
               ]}>
-              72%
+              {progressPercent}%
             </Text>
             <Text
               style={[
                 styles.progressHeroMotivation,
                 { color: isDark ? '#E07A5F' : '#A23F1C' },
               ]}>
-              {"You're doing great!"}
+              {"You're doing great! Keep up the consistency."}
             </Text>
 
             {/* Progress Bar */}
@@ -132,7 +152,7 @@ export default function HomeScreen() {
               <View
                 style={[
                   styles.progressBarFill,
-                  { width: '72%', backgroundColor: colors.accent },
+                  { width: `${progressPercent}%`, backgroundColor: colors.accent },
                 ]}
               />
             </View>
@@ -189,7 +209,7 @@ export default function HomeScreen() {
 
             {/* 2. Flashcards */}
             <Pressable
-              onPress={() => router.push('/(tabs)/practice/flashcards' as any)}
+              onPress={() => router.push('/(tabs)/learn/flashcards' as any)}
               style={({ pressed }) => [
                 styles.bentoTile,
                 {
@@ -320,14 +340,14 @@ export default function HomeScreen() {
                 <Text
                   style={[styles.continueCourseTitle, { color: colors.text }]}
                   numberOfLines={1}>
-                  Structural Analysis
+                  {continueSubject.title}
                 </Text>
                 <Text
                   style={[
                     styles.continuePercentageText,
                     { color: colors.accent },
                   ]}>
-                  65%
+                  {progressPercent}%
                 </Text>
               </View>
 
@@ -336,7 +356,7 @@ export default function HomeScreen() {
                   styles.continueCourseSubtitle,
                   { color: colors.textSecondary },
                 ]}>
-                Strength of Materials
+                {continueSubject.topics[0]?.title || 'Core Syllabus Modules'}
               </Text>
 
               {/* Progress Line */}
@@ -352,7 +372,7 @@ export default function HomeScreen() {
                 <View
                   style={[
                     styles.continueProgressFill,
-                    { width: '65%', backgroundColor: colors.accent },
+                    { width: `${progressPercent}%`, backgroundColor: colors.accent },
                   ]}
                 />
               </View>

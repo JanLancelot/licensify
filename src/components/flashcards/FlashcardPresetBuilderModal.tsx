@@ -43,7 +43,6 @@ import Svg, {
 import { PresetTopicItem } from '@/components/flashcards/PresetTopicItem';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
-import { SUBJECT_NOTES } from '@/data/curriculum';
 import { SubjectNote, Topic } from '@/types/curriculum';
 
 export const PRESET_ICONS = [
@@ -103,6 +102,7 @@ export const SUBJECT_PALETTES = [
 export interface FlashcardPresetBuilderModalProps {
   visible: boolean;
   isEditing?: boolean;
+  subjects?: SubjectNote[];
   onClose: () => void;
   onSubmit: () => void;
   expandedSubjects: Record<string, boolean>;
@@ -126,6 +126,7 @@ export interface FlashcardPresetBuilderModalProps {
 export function FlashcardPresetBuilderModal({
   visible,
   isEditing = false,
+  subjects = [],
   onClose,
   onSubmit,
   expandedSubjects,
@@ -327,7 +328,7 @@ export function FlashcardPresetBuilderModal({
 
             {/* 3. Subjects & Topics List (Matching Comprehensive Notes style) */}
             <View style={styles.notesList}>
-              {SUBJECT_NOTES.map((subject, sIdx) => {
+              {(subjects || []).map((subject, sIdx) => {
                 const isSubjectOpen = !!expandedSubjects[subject.id];
                 const IconComponent = subject.icon;
                 const palette = SUBJECT_PALETTES[sIdx % SUBJECT_PALETTES.length];
