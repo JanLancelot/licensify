@@ -1401,9 +1401,9 @@ const styles = StyleSheet.create({
   },
   simpleOptionRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    paddingVertical: 3,
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 5,
   },
   simpleRadioCircle: {
     width: 26,
@@ -1411,16 +1411,20 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
     flexShrink: 0,
   },
   simpleRadioKeyText: {
     fontSize: 12,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    lineHeight: 16,
   },
   simpleOptionText: {
     flex: 1,
-    fontSize: 13.5,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
+    includeFontPadding: false,
   },
   endExamBox: {
     borderRadius: 18,
@@ -1648,6 +1652,10 @@ const styles = StyleSheet.create({
   },
   simpleScantronBubbleText: {
     fontSize: 12,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    lineHeight: 16,
   },
   sheetFooter: {
     paddingHorizontal: 16,
