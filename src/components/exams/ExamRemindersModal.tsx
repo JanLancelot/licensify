@@ -9,14 +9,13 @@ import {
   View,
 } from 'react-native';
 import {
-  AlertCircle,
   Award,
-  BookOpen,
+  Calculator,
   CheckCircle2,
   Clock,
+  Flag,
   HelpCircle,
   Play,
-  ShieldCheck,
   Timer,
   X,
 } from 'lucide-react-native';
@@ -42,26 +41,18 @@ export interface ExamRemindersModalProps {
   bottomInset?: number;
 }
 
-const GENERAL_REMINDERS = [
+const QUICK_REMINDERS = [
   {
     icon: Timer,
-    title: 'Continuous Timer',
-    desc: 'The examination clock runs continuously to simulate real board exam pressure.',
+    text: 'Continuous timer — cannot be paused once started',
   },
   {
-    icon: CheckCircle2,
-    title: 'Flag & Review',
-    desc: 'You can flag questions for later review before your final exam submission.',
+    icon: Flag,
+    text: 'Flag items to review before final submission',
   },
   {
-    icon: BookOpen,
-    title: 'Materials & Scratchpad',
-    desc: 'Keep scratch paper, architectural scale, and non-programmable calculator ready.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Passing Criterion',
-    desc: 'Target score is 70% General Weighted Average with no subject score below 50%.',
+    icon: Calculator,
+    text: 'Calculator, scale, and scratchpad permitted',
   },
 ];
 
@@ -115,13 +106,6 @@ export function ExamRemindersModal({
                 style={[styles.modalTitle, { color: colors.text }]}>
                 {target.title}
               </Text>
-              {target.subtitle ? (
-                <Text
-                  numberOfLines={1}
-                  style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                  {target.subtitle}
-                </Text>
-              ) : null}
             </View>
 
             <Pressable
@@ -141,7 +125,7 @@ export function ExamRemindersModal({
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.modalContent}>
-            {/* Overview Key Metrics Box */}
+            {/* Overview 3-Stat Key Metrics Card */}
             <View
               style={[
                 styles.metricsCard,
@@ -163,10 +147,10 @@ export function ExamRemindersModal({
                         : '#F8EAE4',
                     },
                   ]}>
-                  <Clock size={16} color={colors.accent} strokeWidth={2.4} />
+                  <Clock size={15} color={colors.accent} strokeWidth={2.4} />
                 </View>
                 <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
-                  TOTAL TIME
+                  TIME
                 </Text>
                 <Text
                   numberOfLines={1}
@@ -186,7 +170,7 @@ export function ExamRemindersModal({
                 ]}
               />
 
-              {/* Total Items */}
+              {/* Total Questions */}
               <View style={styles.metricItem}>
                 <View
                   style={[
@@ -197,16 +181,16 @@ export function ExamRemindersModal({
                         : '#E0F2FE',
                     },
                   ]}>
-                  <HelpCircle size={16} color="#0284C7" strokeWidth={2.4} />
+                  <HelpCircle size={15} color="#0284C7" strokeWidth={2.4} />
                 </View>
                 <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
-                  QUESTIONS
+                  ITEMS
                 </Text>
                 <Text
                   numberOfLines={1}
                   style={[styles.metricValue, { color: colors.text }]}>
                   {typeof target.itemCount === 'number'
-                    ? `${target.itemCount} Items`
+                    ? `${target.itemCount} Qs`
                     : target.itemCount}
                 </Text>
               </View>
@@ -233,22 +217,22 @@ export function ExamRemindersModal({
                         : '#D1FAE5',
                     },
                   ]}>
-                  <Award size={16} color="#059669" strokeWidth={2.4} />
+                  <Award size={15} color="#059669" strokeWidth={2.4} />
                 </View>
                 <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>
-                  PASSING GWA
+                  PASSING
                 </Text>
                 <Text
                   numberOfLines={1}
                   style={[styles.metricValue, { color: colors.text }]}>
-                  70% Target
+                  70% GWA
                 </Text>
               </View>
             </View>
 
             {/* Covered Subjects Chips */}
             {target.subjects && target.subjects.length > 0 && (
-              <View style={styles.subjectsSection}>
+              <View style={styles.sectionBlock}>
                 <Text
                   style={[
                     styles.sectionHeading,
@@ -282,19 +266,19 @@ export function ExamRemindersModal({
               </View>
             )}
 
-            {/* General Reminders List */}
-            <View style={styles.remindersSection}>
+            {/* Quick Reminders List */}
+            <View style={styles.sectionBlock}>
               <Text
                 style={[
                   styles.sectionHeading,
                   { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}>
-                GENERAL REMINDERS
+                EXAM REMINDERS
               </Text>
 
               <View
                 style={[
-                  styles.remindersCard,
+                  styles.remindersBox,
                   {
                     backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                     borderColor: isDark
@@ -302,14 +286,14 @@ export function ExamRemindersModal({
                       : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
-                {GENERAL_REMINDERS.map((item, idx) => {
+                {QUICK_REMINDERS.map((item, idx) => {
                   const IconComp = item.icon;
                   return (
                     <View
-                      key={item.title}
+                      key={item.text}
                       style={[
-                        styles.reminderRow,
-                        idx < GENERAL_REMINDERS.length - 1 && {
+                        styles.reminderLine,
+                        idx < QUICK_REMINDERS.length - 1 && {
                           borderBottomWidth: 1,
                           borderBottomColor: isDark
                             ? 'rgba(255, 255, 255, 0.05)'
@@ -318,33 +302,24 @@ export function ExamRemindersModal({
                       ]}>
                       <View
                         style={[
-                          styles.reminderIconBox,
+                          styles.reminderDot,
                           {
                             backgroundColor: isDark ? '#23262F' : '#F6F0ED',
                           },
                         ]}>
                         <IconComp
-                          size={15}
+                          size={13}
                           color={colors.accent}
-                          strokeWidth={2.2}
+                          strokeWidth={2.4}
                         />
                       </View>
-                      <View style={styles.reminderTextBox}>
-                        <Text
-                          style={[
-                            styles.reminderTitle,
-                            { color: isDark ? '#F9FAFB' : '#111827' },
-                          ]}>
-                          {item.title}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.reminderDesc,
-                            { color: colors.textSecondary },
-                          ]}>
-                          {item.desc}
-                        </Text>
-                      </View>
+                      <Text
+                        style={[
+                          styles.reminderText,
+                          { color: isDark ? '#E5E7EB' : '#374151' },
+                        ]}>
+                        {item.text}
+                      </Text>
                     </View>
                   );
                 })}
@@ -364,7 +339,7 @@ export function ExamRemindersModal({
                   transform: [{ scale: pressed ? 0.985 : 1 }],
                 },
               ]}>
-              <Play size={18} color="#FFFFFF" fill="#FFFFFF" />
+              <Play size={17} color="#FFFFFF" fill="#FFFFFF" />
               <Text style={styles.startBtnText}>Start Examination</Text>
             </Pressable>
           </View>
@@ -405,7 +380,7 @@ const styles = StyleSheet.create({
   modalHandleBar: {
     alignItems: 'center',
     paddingTop: 10,
-    paddingBottom: 6,
+    paddingBottom: 4,
   },
   modalHandle: {
     width: 44,
@@ -418,40 +393,35 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 6,
-    paddingBottom: 14,
+    paddingBottom: 12,
     gap: 12,
   },
   modalHeaderTitleBox: {
     flex: 1,
   },
   modalTitle: {
-    fontSize: 18.5,
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  modalSubtitle: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    marginTop: 2,
-  },
   modalCloseBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalContent: {
     paddingHorizontal: 20,
-    gap: 18,
-    paddingBottom: 16,
+    gap: 16,
+    paddingBottom: 14,
   },
   metricsCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 8,
     ...Platform.select({
       ios: {
@@ -471,18 +441,18 @@ const styles = StyleSheet.create({
   metricItem: {
     flex: 1,
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   metricIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
   },
   metricLabel: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -493,13 +463,13 @@ const styles = StyleSheet.create({
   },
   metricDivider: {
     width: 1,
-    height: 36,
+    height: 32,
   },
-  subjectsSection: {
+  sectionBlock: {
     gap: 8,
   },
   sectionHeading: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -509,69 +479,43 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   subjectChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 4.5,
+    borderRadius: 9,
     borderWidth: 1,
   },
   subjectChipText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '700',
   },
-  remindersSection: {
-    gap: 8,
-  },
-  remindersCard: {
-    borderRadius: 20,
+  remindersBox: {
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-      },
-    }),
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
-  reminderRow: {
+  reminderLine: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 10,
-    gap: 12,
+    alignItems: 'center',
+    paddingVertical: 9,
+    gap: 10,
   },
-  reminderIconBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  reminderDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
   },
-  reminderTextBox: {
+  reminderText: {
     flex: 1,
-    gap: 2,
-  },
-  reminderTitle: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  reminderDesc: {
     fontSize: 12,
-    lineHeight: 16.5,
-    fontWeight: '500',
+    fontWeight: '600',
+    lineHeight: 16,
   },
   bottomCtaContainer: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 4,
   },
   startBtn: {
     height: 52,
@@ -597,7 +541,7 @@ const styles = StyleSheet.create({
   },
   startBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
