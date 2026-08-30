@@ -1,25 +1,22 @@
+import * as crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  AlertCircle,
   ArrowLeft,
-  Award,
   CheckCircle2,
-  Clock,
+  ChevronDown,
   FileSpreadsheet,
   Flag,
-  HelpCircle,
-  Play,
-  RotateCcw,
   ShieldAlert,
   ShieldCheck,
   Timer,
   X,
-  XCircle,
+  XCircle
 } from 'lucide-react-native';
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   LayoutChangeEvent,
   Modal,
   Platform,
@@ -30,10 +27,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as crypto from 'expo-crypto';
 
 import { useAppTheme } from '@/context/theme-context';
-import { useLocalHierarchy, useLocalQuizWithQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
+import { useLocalQuizWithQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
 
 export interface ExamSessionQuestion {
   id: string;
@@ -201,16 +197,16 @@ const ExamQuestionCard = memo(function ExamQuestionCard({
               : 'rgba(0, 0, 0, 0.06)',
         },
       ]}>
-      {/* Question Header: Number + Topic + Flag */}
+      {/* Question Header: 1.) [space] Question Text + Flag */}
       <View style={styles.questionCardHeader}>
-        <Text style={[styles.questionNumberText, { color: accentColor }]}>
-          {index + 1}.)
-        </Text>
-        <Text
-          numberOfLines={1}
-          style={[styles.questionTopicTag, { color: textSecondaryColor }]}>
-          {q.topic}
-        </Text>
+        <View style={styles.questionTextRow}>
+          <Text style={[styles.questionNumberText, { color: accentColor }]}>
+            {index + 1}.)
+          </Text>
+          <Text style={[styles.questionBodyText, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+            {q.question.replace(/^\[Item \d+\]\s*/, '')}
+          </Text>
+        </View>
 
         {/* Flag Button */}
         <Pressable
@@ -234,11 +230,6 @@ const ExamQuestionCard = memo(function ExamQuestionCard({
           />
         </Pressable>
       </View>
-
-      {/* Question Statement */}
-      <Text style={[styles.questionBodyText, { color: isDark ? '#F9FAFB' : '#111827' }]}>
-        {q.question}
-      </Text>
 
       {/* Options List (A, B, C, D) - Clean rows, only the circle is shaded */}
       <View style={styles.simpleOptionsList}>
@@ -433,9 +424,11 @@ export default function ExamSessionScreen() {
   const [computedScore, setComputedScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
 
-  // Answer Sheet Drawer Modal State
+  // Answer Sheet Drawer State & Slide Animation
   const [isAnswerSheetVisible, setIsAnswerSheetVisible] = useState(false);
   const [isSubmitConfirmVisible, setIsSubmitConfirmVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-260)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Generate / format examination questions
   useEffect(() => {
@@ -592,7 +585,7 @@ export default function ExamSessionScreen() {
           formatted.push({
             id: qId,
             topic: template.topic,
-            question: `[Item ${formatted.length + 1}] ${template.q}`,
+            question: template.q,
             options: template.choices.map((text, cIdx) => ({
               key: keys[cIdx] || 'A',
               id: `${qId}-${choiceIds[cIdx]}`,
@@ -625,13 +618,46 @@ export default function ExamSessionScreen() {
     }));
   }, []);
 
+  const openAnswerSheet = useCallback(() => {
+    setIsAnswerSheetVisible(true);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [slideAnim, fadeAnim]);
+
+  const closeAnswerSheet = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: -260,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsAnswerSheetVisible(false);
+    });
+  }, [slideAnim, fadeAnim]);
+
   const handleScrollToQuestion = useCallback((index: number) => {
-    setIsAnswerSheetVisible(false);
+    closeAnswerSheet();
     const yPos = questionLayoutsRef.current[index];
     if (yPos !== undefined && scrollViewRef.current) {
       scrollViewRef.current.scrollTo({ y: Math.max(yPos - 20, 0), animated: true });
     }
-  }, []);
+  }, [closeAnswerSheet]);
 
   const answeredCount = useMemo(() => {
     return Object.keys(selectedAnswers).filter((k) => selectedAnswers[k]).length;
@@ -770,11 +796,11 @@ export default function ExamSessionScreen() {
       </View>
 
       {/* =================================================================== */}
-      {/* 2. FLOATING ROTATED "ANSWER SHEET" TAB ON LEFT                      */}
+      {/* 2. FLOATING ROTATED "ANSWER SHEET" TAB ON FAR LEFT                  */}
       {/* =================================================================== */}
       {!isSubmitted && (
         <Pressable
-          onPress={() => setIsAnswerSheetVisible(true)}
+          onPress={openAnswerSheet}
           style={({ pressed }) => [
             styles.floatingLeftTab,
             {
@@ -783,19 +809,14 @@ export default function ExamSessionScreen() {
               opacity: pressed ? 0.8 : 1,
             },
           ]}>
-          <FileSpreadsheet size={13} color={colors.accent} strokeWidth={2.2} />
           <Text style={[styles.floatingTabText, { color: colors.text }]}>
             ANSWER SHEET
           </Text>
-          <View
-            style={[
-              styles.floatingCountBadge,
-              { backgroundColor: colors.accent },
-            ]}>
-            <Text style={styles.floatingCountText}>
-              {answeredCount}/{questions.length}
-            </Text>
-          </View>
+          <ChevronDown
+            size={15}
+            color={colors.accent}
+            strokeWidth={2.8}
+          />
         </Pressable>
       )}
 
@@ -891,13 +912,13 @@ export default function ExamSessionScreen() {
                   },
                 ]}>
                 <View style={styles.questionCardHeader}>
-                  <Text style={[styles.questionNumberText, { color: colors.accent }]}>
-                    {idx + 1}.)
+                  <Text style={[styles.questionBodyText, { flex: 1, color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    <Text style={[styles.questionNumberText, { color: colors.accent }]}>
+                      {idx + 1}.)  
+                    </Text>
+                    {q.question.replace(/^\[Item \d+\]\s*/, '')}
                   </Text>
-                  <Text style={[styles.questionTopicTag, { color: colors.textSecondary }]}>
-                    {q.topic}
-                  </Text>
-                  <View style={{ marginLeft: 'auto' }}>
+                  <View style={{ marginLeft: 8 }}>
                     {isUserCorrect ? (
                       <CheckCircle2 size={16} color="#10B981" />
                     ) : (
@@ -905,10 +926,6 @@ export default function ExamSessionScreen() {
                     )}
                   </View>
                 </View>
-
-                <Text style={[styles.questionBodyText, { color: isDark ? '#F9FAFB' : '#111827' }]}>
-                  {q.question}
-                </Text>
 
                 {/* Simple Option Review Rows */}
                 <View style={styles.simpleOptionsList}>
@@ -1041,7 +1058,7 @@ export default function ExamSessionScreen() {
             <View style={styles.endActionsRow}>
               {/* Review on Answer Sheet */}
               <Pressable
-                onPress={() => setIsAnswerSheetVisible(true)}
+                onPress={openAnswerSheet}
                 style={({ pressed }) => [
                   styles.reviewSheetBtn,
                   {
@@ -1075,22 +1092,24 @@ export default function ExamSessionScreen() {
       )}
 
       {/* =================================================================== */}
-      {/* 6. SLIDE-OUT LEFT MODAL: "ANSWER SHEET" (OMR BUBBLE SHEET)          */}
+      {/* 6. SMOOTH SLIDE-OUT LEFT DRAWER: "ANSWER SHEET" (Slide to Right)    */}
       {/* =================================================================== */}
-      <Modal
-        visible={isAnswerSheetVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsAnswerSheetVisible(false)}>
-        <View style={styles.sheetModalOverlay}>
+      {!isSubmitted && (
+        <Animated.View
+          pointerEvents={isAnswerSheetVisible ? 'auto' : 'none'}
+          style={[
+            styles.sheetModalOverlay,
+            { opacity: fadeAnim },
+          ]}>
           {/* Left Sliding Sheet Container */}
-          <View
+          <Animated.View
             style={[
               styles.sheetModalDrawer,
               {
                 backgroundColor: colors.background,
                 paddingTop: insets.top + 10,
                 paddingBottom: insets.bottom + 16,
+                transform: [{ translateX: slideAnim }],
               },
             ]}>
             {/* Answer Sheet Drawer Header */}
@@ -1105,7 +1124,7 @@ export default function ExamSessionScreen() {
               </View>
 
               <Pressable
-                onPress={() => setIsAnswerSheetVisible(false)}
+                onPress={closeAnswerSheet}
                 hitSlop={8}
                 style={[
                   styles.sheetCloseBtn,
@@ -1139,7 +1158,7 @@ export default function ExamSessionScreen() {
             <View style={styles.sheetFooter}>
               <Pressable
                 onPress={() => {
-                  setIsAnswerSheetVisible(false);
+                  closeAnswerSheet();
                   setIsSubmitConfirmVisible(true);
                 }}
                 style={[styles.sheetSubmitBtn, { backgroundColor: colors.accent }]}>
@@ -1148,15 +1167,15 @@ export default function ExamSessionScreen() {
                 </Text>
               </Pressable>
             </View>
-          </View>
+          </Animated.View>
 
           {/* Click outside to dismiss */}
           <Pressable
             style={styles.sheetModalDismiss}
-            onPress={() => setIsAnswerSheetVisible(false)}
+            onPress={closeAnswerSheet}
           />
-        </View>
-      </Modal>
+        </Animated.View>
+      )}
 
       {/* =================================================================== */}
       {/* 7. SUBMISSION CONFIRMATION MODAL                                    */}
@@ -1278,47 +1297,43 @@ const styles = StyleSheet.create({
   /* Floating Left Rotated Tab */
   floatingLeftTab: {
     position: 'absolute',
-    left: -48,
+    left: -35,
     top: '46%',
     zIndex: 40,
-    flexDirection: 'row',
+    width: 98,
+    height: 30,
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    borderWidth: 1,
+    justifyContent: 'center',
+    gap: 1.5,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
     transform: [{ rotate: '-90deg' }],
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
-        shadowOffset: { width: 2, height: 0 },
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
+        shadowOffset: { width: 1, height: 0 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 6,
+        elevation: 4,
       },
       web: {
-        boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+        boxShadow: '0 1px 6px rgba(0,0,0,0.1)',
       },
     }),
   },
   floatingTabText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  floatingCountBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 5,
-  },
-  floatingCountText: {
-    color: '#FFFFFF',
-    fontSize: 8.5,
-    fontWeight: '900',
+    letterSpacing: 0.7,
   },
 
   /* Form Container */
@@ -1349,28 +1364,33 @@ const styles = StyleSheet.create({
   },
   questionCardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  questionTextRow: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 8,
   },
   questionNumberText: {
     fontSize: 14.5,
     fontWeight: '900',
-  },
-  questionTopicTag: {
-    flex: 1,
-    fontSize: 11.5,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    marginTop: 0.5,
+    flexShrink: 0,
   },
   flagButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   questionBodyText: {
+    flex: 1,
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
@@ -1533,28 +1553,35 @@ const styles = StyleSheet.create({
 
   /* Left Slide-out Answer Sheet Drawer */
   sheetModalOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
     flexDirection: 'row',
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   sheetModalDrawer: {
-    width: '84%',
-    maxWidth: 360,
+    width: 248,
+    maxWidth: 256,
     height: '100%',
-    borderTopRightRadius: 24,
-    borderBottomRightRadius: 24,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(150, 150, 150, 0.12)',
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
         shadowOffset: { width: 4, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 12,
+        elevation: 8,
       },
       web: {
-        boxShadow: '4px 0 24px rgba(0,0,0,0.2)',
+        boxShadow: '4px 0 20px rgba(0,0,0,0.15)',
       },
     }),
   },
@@ -1649,7 +1676,11 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalDismissArea: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   confirmCard: {
     width: '100%',
