@@ -321,10 +321,15 @@ export default function PracticeQuizScreen() {
         </Pressable>
 
         <View style={styles.topCenter}>
-          <Text style={[styles.areaLabel, { color: colors.accent }]}>
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[styles.areaLabel, { color: colors.accent }]}>
             {currentQ?.areaLabel || 'Practice Drill'}
           </Text>
-          <Text style={[styles.counterText, { color: colors.textSecondary }]}>
+          <Text
+            numberOfLines={1}
+            style={[styles.counterText, { color: colors.textSecondary }]}>
             Question {currentIdx + 1} of {questions.length}
           </Text>
         </View>
@@ -707,9 +712,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 12,
+    gap: 8,
   },
   backBtn: {
     width: 40,
@@ -717,34 +723,46 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   topCenter: {
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
   areaLabel: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
+    textAlign: 'center',
+    maxWidth: '100%',
   },
   counterText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
     marginTop: 2,
+    textAlign: 'center',
   },
   dummySpace: {
     width: 40,
+    flexShrink: 0,
   },
   timerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 12,
+    flexShrink: 0,
+    minWidth: 48,
   },
   timerBadgeText: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '800',
   },
   track: {
