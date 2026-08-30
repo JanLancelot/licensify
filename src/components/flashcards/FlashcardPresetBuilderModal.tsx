@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   Platform,
@@ -20,6 +20,7 @@ import {
   Brain,
   Check,
   Compass,
+  Edit2,
   Flame,
   Landmark,
   Layers,
@@ -99,6 +100,43 @@ export const SUBJECT_PALETTES = [
   }, // Mint / Emerald
 ];
 
+/* Custom Deck Gradient Icon Component */
+function CustomDeckIcon({
+  iconName = 'Layers',
+  size = 48,
+}: {
+  iconName?: string;
+  size?: number;
+}) {
+  const iconConfig = PRESET_ICONS.find((i) => i.id === iconName) || PRESET_ICONS[0];
+  const IconComp = iconConfig.icon;
+  const [startC, endC] = iconConfig.gradient;
+  const gradId = `bento_preview_icon_${iconConfig.id}_${size}`;
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startC} />
+            <Stop offset="100%" stopColor={endC} />
+          </LinearGradient>
+        </Defs>
+        <Rect width={size} height={size} rx={size / 2} fill={`url(#${gradId})`} />
+      </Svg>
+      <IconComp size={22} color="#FFFFFF" strokeWidth={2.4} />
+    </View>
+  );
+}
+
 export interface FlashcardPresetBuilderModalProps {
   visible: boolean;
   isEditing?: boolean;
@@ -147,6 +185,22 @@ export function FlashcardPresetBuilderModal({
 }: FlashcardPresetBuilderModalProps) {
   const { colors, isDark } = useAppTheme();
 
+  // Pop-up states
+  const [isIconPickerVisible, setIsIconPickerVisible] = useState(false);
+  const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);
+  const [tempTitle, setTempTitle] = useState(customTitle);
+
+  // Sync tempTitle when opening name editor
+  const handleOpenNameEditor = () => {
+    setTempTitle(customTitle);
+    setIsNameEditorVisible(true);
+  };
+
+  const handleSaveName = () => {
+    setCustomTitle(tempTitle);
+    setIsNameEditorVisible(false);
+  };
+
   return (
     <Modal
       visible={visible}
@@ -184,9 +238,13 @@ export function FlashcardPresetBuilderModal({
 
             <Pressable
               onPress={onClose}
-              style={[
+              hitSlop={8}
+              style={({ pressed }) => [
                 styles.modalCloseBtn,
-                { backgroundColor: isDark ? '#23262F' : '#F3F4F6' },
+                {
+                  backgroundColor: isDark ? '#23262F' : '#F3F4F6',
+                  opacity: pressed ? 0.7 : 1,
+                },
               ]}>
               <X size={18} color={colors.text} strokeWidth={2.4} />
             </Pressable>
@@ -195,100 +253,103 @@ export function FlashcardPresetBuilderModal({
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.modalNotesContent}>
-            {/* 1. Preset Title & Customization Card Box */}
-            <View
-              style={[
-                styles.configCard,
-                {
-                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-                },
-              ]}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
-                PRESET TITLE (OPTIONAL)
-              </Text>
-              <TextInput
-                value={customTitle}
-                onChangeText={setCustomTitle}
-                placeholder="e.g., Structural & History Focus"
-                placeholderTextColor={colors.textSecondary}
+            {/* 1. Centered Live Bento Box Preview Section */}
+            <View style={styles.bentoPreviewSection}>
+              {/* Bento Box Card */}
+              <View
                 style={[
-                  styles.titleInput,
+                  styles.bentoPreviewCard,
                   {
-                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
-                    color: isDark ? '#F9FAFB' : '#111827',
+                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                    borderColor: isDark
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'rgba(0, 0, 0, 0.06)',
                   },
-                ]}
-              />
+                ]}>
+                {/* 1A. Clickable Icon to open Icon Picker Pop-up */}
+                <Pressable
+                  onPress={() => setIsIconPickerVisible(true)}
+                  style={({ pressed }) => [
+                    styles.iconPressableBox,
+                    {
+                      opacity: pressed ? 0.75 : 1,
+                      transform: [{ scale: pressed ? 0.94 : 1 }],
+                    },
+                  ]}>
+                  <View style={styles.iconContainerWithBadge}>
+                    <CustomDeckIcon iconName={selectedIconId} size={48} />
+                    <View
+                      style={[
+                        styles.iconEditBadge,
+                        {
+                          backgroundColor: isDark ? '#374151' : '#E5E7EB',
+                          borderColor: isDark ? '#1C1F26' : '#F6F0ED',
+                        },
+                      ]}>
+                      <Edit2
+                        size={8.5}
+                        color={isDark ? '#9CA3AF' : '#6B7280'}
+                        strokeWidth={2.4}
+                      />
+                    </View>
+                  </View>
+                </Pressable>
 
-              {/* Icon Selection Row */}
-              <View style={styles.iconSelectionSection}>
-                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
-                  PRESET ICON
+                {/* 1B. Clickable Preset Title to open Name Editor Pop-up */}
+                <Pressable
+                  onPress={handleOpenNameEditor}
+                  style={({ pressed }) => [
+                    styles.titlePressableBox,
+                    {
+                      opacity: pressed ? 0.75 : 1,
+                    },
+                  ]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.bentoPreviewTitle,
+                      { color: isDark ? '#F9FAFB' : '#0F172A' },
+                    ]}>
+                    {customTitle.trim() || 'Preset Name'}
+                  </Text>
+                  <Edit2
+                    size={11}
+                    color={isDark ? '#9CA3AF' : '#6B7280'}
+                    strokeWidth={2.2}
+                  />
+                </Pressable>
+
+                {/* 1C. Card / Lesson Count Subtitle */}
+                <Text
+                  style={[
+                    styles.bentoPreviewSub,
+                    { color: colors.textSecondary },
+                  ]}>
+                  {selectedLessonIds.size > 0
+                    ? `${selectedLessonIds.size} Lessons`
+                    : '0 Cards'}
                 </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.iconScrollRow}>
-                  {PRESET_ICONS.map((item) => {
-                    const isSelected = selectedIconId === item.id;
-                    const IconComp = item.icon;
-                    const [startC, endC] = item.gradient;
-                    const gradId = `sel_icon_${item.id}`;
-
-                    return (
-                      <Pressable
-                        key={item.id}
-                        onPress={() => setSelectedIconId(item.id)}
-                        style={({ pressed }) => [
-                          styles.iconPickButton,
-                          {
-                            borderColor: isSelected ? colors.accent : 'transparent',
-                            backgroundColor: isSelected
-                              ? isDark
-                                ? 'rgba(224, 122, 95, 0.25)'
-                                : '#F8EAE4'
-                              : isDark
-                                ? '#23262F'
-                                : '#F9FAFB',
-                            opacity: pressed ? 0.75 : 1,
-                            transform: [{ scale: isSelected ? 1.05 : 1 }],
-                          },
-                        ]}>
-                        <View
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 12,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            position: 'relative',
-                          }}>
-                          <Svg width={36} height={36} style={StyleSheet.absoluteFill}>
-                            <Defs>
-                              <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <Stop offset="0%" stopColor={startC} />
-                                <Stop offset="100%" stopColor={endC} />
-                              </LinearGradient>
-                            </Defs>
-                            <Rect width={36} height={36} rx={12} fill={`url(#${gradId})`} />
-                          </Svg>
-                          <IconComp size={18} color="#FFFFFF" strokeWidth={2.4} />
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
               </View>
 
               {/* Shuffle Toggle Row */}
               <Pressable
                 onPress={() => setIsShuffled(!isShuffled)}
-                style={styles.shuffleToggleRow}>
+                style={[
+                  styles.shuffleToggleCard,
+                  {
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                    borderColor: isDark
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'rgba(0, 0, 0, 0.06)',
+                  },
+                ]}>
                 <View style={styles.shuffleLeft}>
                   <Shuffle size={16} color={colors.accent} strokeWidth={2.2} />
-                  <Text style={[styles.shuffleLabel, { color: isDark ? '#E2E8F0' : '#1E293B' }]}>
+                  <Text
+                    style={[
+                      styles.shuffleLabel,
+                      { color: isDark ? '#E2E8F0' : '#1E293B' },
+                    ]}>
                     Shuffle Cards in Session
                   </Text>
                 </View>
@@ -316,7 +377,7 @@ export function FlashcardPresetBuilderModal({
               </Pressable>
             </View>
 
-            {/* 2. Section Subhead */}
+            {/* 2. Section Header: Curriculum Selection */}
             <View style={styles.sectionHeaderRow}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 Select Subjects & Lessons
@@ -326,7 +387,7 @@ export function FlashcardPresetBuilderModal({
               </Text>
             </View>
 
-            {/* 3. Subjects & Topics List (Matching Comprehensive Notes style) */}
+            {/* 3. Subjects & Topics List */}
             <View style={styles.notesList}>
               {(subjects || []).map((subject, sIdx) => {
                 const isSubjectOpen = !!expandedSubjects[subject.id];
@@ -492,6 +553,179 @@ export function FlashcardPresetBuilderModal({
           </View>
         </View>
       </View>
+
+      {/* =================================================================== */}
+      {/* POP-UP 1: CHOOSE PRESET ICON MODAL                                  */}
+      {/* =================================================================== */}
+      <Modal
+        visible={isIconPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsIconPickerVisible(false)}>
+        <View style={styles.subModalOverlay}>
+          <Pressable
+            style={styles.modalDismissArea}
+            onPress={() => setIsIconPickerVisible(false)}
+          />
+          <View
+            style={[
+              styles.subModalCard,
+              {
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderColor: isDark
+                  ? 'rgba(255, 255, 255, 0.12)'
+                  : 'rgba(0, 0, 0, 0.08)',
+              },
+            ]}>
+            {/* Pop-up Header */}
+            <View style={styles.subModalHeader}>
+              <Text style={[styles.subModalTitle, { color: colors.text }]}>
+                Choose Preset Icon
+              </Text>
+              <Pressable
+                onPress={() => setIsIconPickerVisible(false)}
+                hitSlop={8}
+                style={[
+                  styles.subModalCloseBtn,
+                  { backgroundColor: isDark ? '#23262F' : '#F3F4F6' },
+                ]}>
+                <X size={16} color={colors.text} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+
+            {/* Grid of Icons */}
+            <View style={styles.iconPickerGrid}>
+              {PRESET_ICONS.map((item) => {
+                const isSelected = selectedIconId === item.id;
+                const IconComp = item.icon;
+                const [startC, endC] = item.gradient;
+                const gradId = `popup_icon_${item.id}`;
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => {
+                      setSelectedIconId(item.id);
+                      setIsIconPickerVisible(false);
+                    }}
+                    style={({ pressed }) => [
+                      styles.popupIconBtn,
+                      {
+                        borderColor: isSelected ? colors.accent : 'transparent',
+                        backgroundColor: isSelected
+                          ? isDark
+                            ? 'rgba(224, 122, 95, 0.22)'
+                            : '#F8EAE4'
+                          : isDark
+                            ? '#23262F'
+                            : '#F6F0ED',
+                        opacity: pressed ? 0.75 : 1,
+                        transform: [{ scale: isSelected ? 1.08 : pressed ? 0.94 : 1 }],
+                      },
+                    ]}>
+                    <View
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                      }}>
+                      <Svg width={44} height={44} style={StyleSheet.absoluteFill}>
+                        <Defs>
+                          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <Stop offset="0%" stopColor={startC} />
+                            <Stop offset="100%" stopColor={endC} />
+                          </LinearGradient>
+                        </Defs>
+                        <Rect width={44} height={44} rx={22} fill={`url(#${gradId})`} />
+                      </Svg>
+                      <IconComp size={22} color="#FFFFFF" strokeWidth={2.4} />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* =================================================================== */}
+      {/* POP-UP 2: EDIT PRESET NAME MODAL                                    */}
+      {/* =================================================================== */}
+      <Modal
+        visible={isNameEditorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsNameEditorVisible(false)}>
+        <View style={styles.subModalOverlay}>
+          <Pressable
+            style={styles.modalDismissArea}
+            onPress={() => setIsNameEditorVisible(false)}
+          />
+          <View
+            style={[
+              styles.subModalCard,
+              {
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderColor: isDark
+                  ? 'rgba(255, 255, 255, 0.12)'
+                  : 'rgba(0, 0, 0, 0.08)',
+              },
+            ]}>
+            {/* Pop-up Header */}
+            <View style={styles.subModalHeader}>
+              <Text style={[styles.subModalTitle, { color: colors.text }]}>
+                Edit Preset Name
+              </Text>
+              <Pressable
+                onPress={() => setIsNameEditorVisible(false)}
+                hitSlop={8}
+                style={[
+                  styles.subModalCloseBtn,
+                  { backgroundColor: isDark ? '#23262F' : '#F3F4F6' },
+                ]}>
+                <X size={16} color={colors.text} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+
+            {/* Input Field */}
+            <View style={styles.nameEditorBody}>
+              <TextInput
+                value={tempTitle}
+                onChangeText={setTempTitle}
+                placeholder="Enter preset name..."
+                placeholderTextColor={colors.textSecondary}
+                autoFocus
+                onSubmitEditing={handleSaveName}
+                style={[
+                  styles.popupNameInput,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark
+                      ? 'rgba(255, 255, 255, 0.1)'
+                      : '#E5E7EB',
+                    color: isDark ? '#F9FAFB' : '#111827',
+                  },
+                ]}
+              />
+
+              <Pressable
+                onPress={handleSaveName}
+                style={({ pressed }) => [
+                  styles.saveNameBtn,
+                  {
+                    backgroundColor: colors.accent,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}>
+                <Text style={styles.saveNameBtnText}>Done</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -549,56 +783,93 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 16,
   },
-  configCard: {
+  bentoPreviewSection: {
+    alignItems: 'center',
+    gap: 12,
+    paddingTop: 4,
+  },
+  bentoPreviewCard: {
+    width: 154,
+    height: 136,
     borderRadius: 20,
     borderWidth: 1,
-    padding: 16,
-    gap: 14,
+    padding: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0 4px 14px rgba(0,0,0,0.06)',
+      },
+    }),
+  },
+  iconPressableBox: {
+    padding: 2,
+  },
+  iconContainerWithBadge: {
+    position: 'relative',
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconEditBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
       },
       android: {
         elevation: 2,
       },
-      web: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-      },
     }),
   },
-  fieldLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.6,
+  titlePressableBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '100%',
+    paddingHorizontal: 4,
   },
-  titleInput: {
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
+  bentoPreviewTitle: {
     fontSize: 14,
+    fontWeight: '800',
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  bentoPreviewSub: {
+    fontSize: 11.5,
     fontWeight: '600',
   },
-  iconSelectionSection: {
-    gap: 8,
-  },
-  iconScrollRow: {
-    gap: 8,
-    paddingVertical: 2,
-  },
-  iconPickButton: {
-    padding: 3,
-    borderRadius: 15,
-    borderWidth: 2,
-  },
-  shuffleToggleRow: {
+  shuffleToggleCard: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
   },
   shuffleLeft: {
     flexDirection: 'row',
@@ -610,26 +881,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   shuffleSwitchPill: {
-    width: 42,
-    height: 24,
-    borderRadius: 12,
+    width: 40,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
-    padding: 2,
   },
   switchThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 4,
+    paddingTop: 6,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14.5,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
@@ -638,7 +920,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   notesList: {
-    gap: 12,
+    gap: 10,
   },
   subjectCardBox: {
     borderRadius: 18,
@@ -649,7 +931,7 @@ const styles = StyleSheet.create({
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
-        shadowRadius: 8,
+        shadowRadius: 6,
       },
       android: {
         elevation: 2,
@@ -662,69 +944,164 @@ const styles = StyleSheet.create({
   subjectHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingLeft: 12,
+    paddingRight: 12,
   },
   subjectHeaderClickable: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   subjectIconBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
   subjectTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
     letterSpacing: -0.2,
-    lineHeight: 20,
   },
   chevronWrapper: {
-    padding: 2,
+    paddingHorizontal: 4,
   },
   subjectSelectAllBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   someSelectedMark: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
-    lineHeight: 14,
+    marginTop: -2,
   },
   topicsListWrapper: {
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 12,
     borderTopWidth: 1,
+    padding: 10,
     gap: 6,
   },
   modalFooterBar: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 10,
   },
   submitBtn: {
+    height: 52,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 50,
-    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0 4px 14px rgba(224, 122, 95, 0.35)',
+      },
+    }),
   },
   submitBtnText: {
     color: '#FFFFFF',
+    fontSize: 15.5,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+
+  /* Pop-up Modal Styles */
+  subModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.58)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  subModalCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 18,
+    gap: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 18,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
+      },
+    }),
+  },
+  subModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  subModalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  subModalCloseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconPickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  popupIconBtn: {
+    padding: 3,
+    borderRadius: 26,
+    borderWidth: 2,
+  },
+  nameEditorBody: {
+    gap: 12,
+  },
+  popupNameInput: {
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
+  },
+  saveNameBtn: {
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveNameBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14.5,
+    fontWeight: '800',
   },
 });
