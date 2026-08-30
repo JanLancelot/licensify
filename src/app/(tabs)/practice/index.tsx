@@ -1,16 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import {
-  Award,
-  BookOpen,
-  Calculator,
-  Compass,
-  Layers,
-  Play,
-  Plus,
-  Sparkles,
-  X,
-  Zap,
-} from 'lucide-react-native';
+import { Calculator, Play, Plus, X } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
@@ -488,105 +477,74 @@ export default function PracticeScreen() {
             </Text>
           </View>
 
-          {/* Template Block: Developmental control computation set */}
-          <Pressable
-            onPress={handleSelectSpecializedSet}
-            style={({ pressed }) => [
-              styles.specializedCardBox,
+          {/* Single-Line Block Matching Premade Quiz Sets Design */}
+          <View
+            style={[
+              styles.subjectCardBox,
               {
                 backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-                opacity: pressed ? 0.92 : 1,
-                transform: [{ scale: pressed ? 0.985 : 1 }],
+                borderColor: isDark
+                  ? 'rgba(255, 255, 255, 0.07)'
+                  : 'rgba(0, 0, 0, 0.05)',
               },
             ]}>
-            {/* Top Row: Icon + Badges */}
-            <View style={styles.specializedTopRow}>
-              {/* Gradient Calculation Icon Badge */}
+            <Pressable
+              onPress={handleSelectSpecializedSet}
+              style={({ pressed }) => [
+                styles.subjectHeader,
+                {
+                  backgroundColor: pressed
+                    ? isDark
+                      ? 'rgba(255, 255, 255, 0.04)'
+                      : 'rgba(0, 0, 0, 0.02)'
+                    : 'transparent',
+                },
+              ]}>
+              {/* Circular Pastel Icon Box */}
               <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
-                }}>
-                <Svg width={48} height={48} style={StyleSheet.absoluteFill}>
-                  <Defs>
-                    <LinearGradient id="specialized_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <Stop offset="0%" stopColor="#38BDF8" />
-                      <Stop offset="100%" stopColor="#0284C7" />
-                    </LinearGradient>
-                  </Defs>
-                  <Rect width={48} height={48} rx={16} fill="url(#specialized_grad)" />
-                </Svg>
-                <Calculator size={24} color="#FFFFFF" strokeWidth={2.4} />
-              </View>
-
-              <View style={styles.specializedBadgesRow}>
-                <View
-                  style={[
-                    styles.specializedPill,
-                    {
-                      backgroundColor: isDark ? 'rgba(14, 165, 233, 0.18)' : '#E0F2FE',
-                    },
-                  ]}>
-                  <Zap size={11} color="#0284C7" strokeWidth={2.4} />
-                  <Text style={[styles.specializedPillText, { color: '#0284C7' }]}>
-                    Calculations
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.specializedPill,
-                    {
-                      backgroundColor: isDark ? '#23262F' : '#F6F0ED',
-                    },
-                  ]}>
-                  <Text style={[styles.specializedPillText, { color: colors.textSecondary }]}>
-                    NBCP Rule 7 & 8
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Content Body */}
-            <View style={styles.specializedBody}>
-              <Text
                 style={[
-                  styles.specializedTitle,
+                  styles.subjectIconBox,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(14, 165, 233, 0.22)'
+                      : '#E0F2FE',
+                  },
+                ]}>
+                <Calculator
+                  size={20}
+                  color={isDark ? '#7DD3FC' : '#0284C7'}
+                  strokeWidth={2.2}
+                />
+              </View>
+
+              {/* Title */}
+              <Text
+                numberOfLines={2}
+                style={[
+                  styles.subjectTitle,
                   { color: isDark ? '#F9FAFB' : '#111827' },
                 ]}>
                 Developmental control computation set
               </Text>
-              <Text
-                style={[
-                  styles.specializedDesc,
-                  { color: colors.textSecondary },
-                ]}>
-                NBCP Rule 7 & 8 formulas: AMBF, TOSL, BHL, and FLAR.
-              </Text>
-            </View>
 
-            {/* Bottom Footer Launch Button */}
-            <View style={styles.specializedFooter}>
-              <View style={styles.formulaTagsRow}>
-                <Text style={[styles.formulaTag, { color: colors.textSecondary }]}>
-                  BHL • AMBF • TOSL • FLAR
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.specializedPlayBtn,
-                  { backgroundColor: colors.accent },
+              {/* Quick Play Button */}
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleSelectSpecializedSet();
+                }}
+                hitSlop={8}
+                style={({ pressed }) => [
+                  styles.quickSubjectPlayBtn,
+                  {
+                    backgroundColor: isDark ? 'rgba(224, 122, 95, 0.18)' : '#F8EAE4',
+                    opacity: pressed ? 0.7 : 1,
+                  },
                 ]}>
-                <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
-                <Text style={styles.specializedPlayBtnText}>Start Set</Text>
-              </View>
-            </View>
-          </Pressable>
+                <Play size={12} color={colors.accent} fill={colors.accent} />
+              </Pressable>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
 
@@ -778,87 +736,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     padding: 12,
     gap: 4,
-  },
-  specializedCardBox: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 18,
-    gap: 14,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: '0 3px 12px rgba(0,0,0,0.04)',
-      },
-    }),
-  },
-  specializedTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  specializedBadgesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  specializedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 4.5,
-    borderRadius: 9,
-  },
-  specializedPillText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  specializedBody: {
-    gap: 6,
-  },
-  specializedTitle: {
-    fontSize: 16.5,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  specializedDesc: {
-    fontSize: 12.5,
-    lineHeight: 18,
-    fontWeight: '500',
-  },
-  specializedFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 4,
-  },
-  formulaTagsRow: {
-    flex: 1,
-  },
-  formulaTag: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  specializedPlayBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  specializedPlayBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12.5,
-    fontWeight: '800',
   },
 });
