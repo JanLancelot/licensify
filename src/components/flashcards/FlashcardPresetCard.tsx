@@ -10,6 +10,7 @@ export interface FlashcardPresetCardProps {
   onStartDrill: (preset: FlashcardPreset) => void;
   onEditPreset: (preset: FlashcardPreset) => void;
   onDeletePreset: (id: string) => void;
+  onAddToQuizSets?: (preset: FlashcardPreset) => void;
   theme?: any;
 }
 
@@ -18,6 +19,7 @@ export function FlashcardPresetCard({
   onStartDrill,
   onEditPreset,
   onDeletePreset,
+  onAddToQuizSets,
 }: FlashcardPresetCardProps) {
   const { colors, isDark } = useAppTheme();
 
@@ -122,6 +124,23 @@ export function FlashcardPresetCard({
         </Text>
 
         <View style={styles.footerActions}>
+          {onAddToQuizSets && (
+            <Pressable
+              onPress={() => onAddToQuizSets(preset)}
+              style={({ pressed }) => [
+                styles.addQuizBtn,
+                {
+                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                  opacity: pressed ? 0.75 : 1,
+                },
+              ]}>
+              <Text style={[styles.addQuizBtnText, { color: colors.accent }]}>
+                + Quiz Set
+              </Text>
+            </Pressable>
+          )}
+
           <Pressable
             onPress={() => onStartDrill(preset)}
             style={({ pressed }) => [
@@ -207,6 +226,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  addQuizBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  addQuizBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
   },
   startDrillBtn: {
     flexDirection: 'row',

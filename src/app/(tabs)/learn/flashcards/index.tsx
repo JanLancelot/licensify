@@ -25,6 +25,7 @@ import { FlashcardStudyView } from '@/components/flashcards/FlashcardStudyView';
 import { buildCardsForLessons } from '@/components/flashcards/flashcard-utils';
 import { useAppTheme } from '@/context/theme-context';
 import { useLocalHierarchy, useLocalFlashcards } from '@/hooks/useLocalData';
+import { addFlashcardPresetToQuiz } from '@/services/quizPresetStore';
 import {
   FlashcardItem,
   FlashcardPreset,
@@ -125,6 +126,14 @@ export default function FlashcardsHubScreen() {
     setActiveCards(drillCards);
     setStudyIndex(0);
     setIsFlipped(false);
+  };
+
+  const handleAddPresetToQuizSets = (preset: FlashcardPreset) => {
+    addFlashcardPresetToQuiz(preset);
+    Alert.alert(
+      'Added to Quiz Sets',
+      `"${preset.title}" is now available under "Your Quiz Sets" in the Practice tab.`
+    );
   };
 
   // ── Modal Actions (Create / Edit Preset) ──────────────────────────────────
@@ -363,10 +372,31 @@ export default function FlashcardsHubScreen() {
                   {preset.title}
                 </Text>
 
-                {/* Card Count Subtitle */}
-                <Text style={[styles.customDeckSub, { color: colors.textSecondary }]}>
-                  {preset.cardCount} Cards
-                </Text>
+                {/* Card Count Subtitle & Add to Quiz Button Row */}
+                <View style={styles.cardBottomRow}>
+                  <Text style={[styles.customDeckSub, { color: colors.textSecondary }]}>
+                    {preset.cardCount} Cards
+                  </Text>
+
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleAddPresetToQuizSets(preset);
+                    }}
+                    hitSlop={6}
+                    style={({ pressed }) => [
+                      styles.addToQuizPill,
+                      {
+                        backgroundColor: isDark ? 'rgba(224, 122, 95, 0.18)' : '#F8EAE4',
+                        opacity: pressed ? 0.75 : 1,
+                      },
+                    ]}>
+                    <Plus size={10} color={colors.accent} strokeWidth={2.6} />
+                    <Text style={[styles.addToQuizPillText, { color: colors.accent }]}>
+                      Quiz
+                    </Text>
+                  </Pressable>
+                </View>
               </Pressable>
             ))}
 
@@ -500,6 +530,25 @@ const styles = StyleSheet.create({
   customDeckSub: {
     fontSize: 11.5,
     fontWeight: '500',
+  },
+  cardBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingTop: 2,
+  },
+  addToQuizPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+    borderRadius: 7,
+  },
+  addToQuizPillText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   dashedAddCard: {
     width: '48%',

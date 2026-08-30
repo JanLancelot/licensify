@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   HelpCircle,
   RotateCcw,
+  Timer,
   Trophy,
   XCircle,
 } from 'lucide-react-native';
@@ -47,15 +48,22 @@ export default function PracticeQuizScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     area?: string;
+    topicId?: string;
     difficulty?: string;
     count?: string;
+    timer?: string;
+    title?: string;
+    specializedType?: string;
   }>();
 
   const selectedArea = params.area || 'all';
   const count = parseInt(params.count || '10', 10);
+  const timerLimit = parseInt(params.timer || '0', 10); // 0 = untimed
+  const customTitle = params.title;
 
   const { questions: dbQuestions, loading, refetch } = useLocalQuestions({
     subjectId: selectedArea === 'all' ? undefined : selectedArea,
+    topicId: params.topicId,
     difficulty: params.difficulty,
     count,
   });
@@ -69,6 +77,9 @@ export default function PracticeQuizScreen() {
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
   const [isQuizFinished, setIsQuizFinished] = useState(false);
   const [recordedAnswers, setRecordedAnswers] = useState<{ questionId: string; selectedChoiceId: string; correctChoiceHash?: string }[]>([]);
+  
+  // Timer State
+  const [timeLeft, setTimeLeft] = useState<number>(timerLimit);
 
   // Format DB questions into component format
   useEffect(() => {
@@ -97,11 +108,13 @@ export default function PracticeQuizScreen() {
             }
           }
 
-          const areaLabel = q.subjectId === 'sub-area-1'
-            ? 'Area 1: History & Theory'
-            : q.subjectId === 'sub-area-2'
-              ? 'Area 2: Tech & Utilities'
-              : 'Area 3: Design & Laws';
+          const areaLabel = customTitle
+            ? customTitle
+            : q.subjectId === 'sub-area-1'
+              ? 'Area 1: History & Theory'
+              : q.subjectId === 'sub-area-2'
+                ? 'Area 2: Tech & Utilities'
+                : 'Area 3: Design & Laws';
 
           formatted.push({
             id: q.id,
@@ -119,7 +132,68 @@ export default function PracticeQuizScreen() {
       };
       formatAsync();
     }
-  }, [dbQuestions]);
+  }, [dbQuestions, customTitle]);
+
+  // Reset timer on question change
+  useEffect(() => {
+    if (timerLimit > 0) {
+      setTimeLeft(timerLimit);
+    }
+  }, [currentIdx, timerLimit]);
+
+  // Live Timer Countdown Interval
+  useEffect(() => {
+    if (timerLimit <= 0 || isAnswerSubmitted || isQuizFinished || questions.length === 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleTimeOut();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timerLimit, isAnswerSubmitted, isQuizFinished, currentIdx, questions.length, selectedOption]);
+
+  const handleTimeOut = async () => {
+    if (isAnswerSubmitted || !questions[currentIdx]) return;
+
+    const currQ = questions[currentIdx];
+    const userSelected = selectedOption !== null ? selectedOption : -1;
+    const selectedChoiceId = userSelected >= 0 && currQ.choiceIds[userSelected]
+      ? currQ.choiceIds[userSelected]
+      : 'unanswered';
+
+    let isCorrect = userSelected === currQ.correctIndex;
+    if (userSelected >= 0 && currQ.correctChoiceHash) {
+      const userHash = await crypto.digestStringAsync(
+        crypto.CryptoDigestAlgorithm.SHA256,
+        `${currQ.id}:${selectedChoiceId}`
+      );
+      isCorrect = userHash === currQ.correctChoiceHash;
+    }
+
+    setIsAnswerSubmitted(true);
+
+    if (isCorrect) {
+      setCorrectAnswersCount((prev) => prev + 1);
+    }
+
+    setRecordedAnswers((prev) => [
+      ...prev,
+      {
+        questionId: currQ.id,
+        selectedChoiceId,
+        correctChoiceHash: currQ.correctChoiceHash,
+      },
+    ]);
+  };
 
   const restartQuiz = () => {
     setCurrentIdx(0);
@@ -128,6 +202,7 @@ export default function PracticeQuizScreen() {
     setCorrectAnswersCount(0);
     setIsQuizFinished(false);
     setRecordedAnswers([]);
+    setTimeLeft(timerLimit);
     refetch();
   };
 
@@ -173,6 +248,7 @@ export default function PracticeQuizScreen() {
       setCurrentIdx((prev) => prev + 1);
       setSelectedOption(null);
       setIsAnswerSubmitted(false);
+      setTimeLeft(timerLimit);
     } else {
       setIsQuizFinished(true);
       // Persist attempt to SQLite and trigger sync
@@ -253,7 +329,37 @@ export default function PracticeQuizScreen() {
           </Text>
         </View>
 
-        <View style={styles.dummySpace} />
+        {timerLimit > 0 ? (
+          <View
+            style={[
+              styles.timerBadge,
+              {
+                backgroundColor:
+                  timeLeft <= 5
+                    ? isDark
+                      ? 'rgba(239, 68, 68, 0.2)'
+                      : '#FEE2E2'
+                    : isDark
+                      ? 'rgba(224, 122, 95, 0.18)'
+                      : '#F8EAE4',
+              },
+            ]}>
+            <Timer
+              size={13}
+              color={timeLeft <= 5 ? '#EF4444' : colors.accent}
+              strokeWidth={2.4}
+            />
+            <Text
+              style={[
+                styles.timerBadgeText,
+                { color: timeLeft <= 5 ? '#EF4444' : colors.accent },
+              ]}>
+              {timeLeft}s
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.dummySpace} />
+        )}
       </View>
 
       {/* 2. Smooth Progress Track */}
@@ -628,6 +734,18 @@ const styles = StyleSheet.create({
   },
   dummySpace: {
     width: 40,
+  },
+  timerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  timerBadgeText: {
+    fontSize: 12.5,
+    fontWeight: '800',
   },
   track: {
     height: 4,
