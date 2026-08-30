@@ -1,32 +1,9 @@
 import { useEffect, useState } from 'react';
 import { FlashcardPreset, QuizPreset } from '@/types/curriculum';
 
-const QUIZ_PRESETS_STORAGE_KEY = 'licensify_quiz_presets_v1';
+const QUIZ_PRESETS_STORAGE_KEY = 'licensify_quiz_presets_v2';
 
-const DEFAULT_QUIZ_PRESETS: QuizPreset[] = [
-  {
-    id: 'quiz-preset-core-ale',
-    title: 'Core ALE Essential Concepts',
-    questionCount: 15,
-    lessonCount: 6,
-    iconName: 'Layers',
-    createdAt: 'Auto Generated',
-    subjectNames: ['History', 'Utilities', 'Design'],
-    difficulty: 'medium',
-    defaultTimerSeconds: 15,
-  },
-  {
-    id: 'quiz-preset-nbcp',
-    title: 'NBCP Rule 7 & 8 Computations',
-    questionCount: 10,
-    lessonCount: 4,
-    iconName: 'Compass',
-    createdAt: 'Official Syllabus',
-    subjectNames: ['Rule 7 & 8', 'Zoning', 'Setbacks'],
-    difficulty: 'hard',
-    defaultTimerSeconds: 30,
-  },
-];
+const DEFAULT_QUIZ_PRESETS: QuizPreset[] = [];
 
 let inMemoryPresets: QuizPreset[] = [...DEFAULT_QUIZ_PRESETS];
 let isLoaded = false;
@@ -50,7 +27,7 @@ function loadPresetsFromStorage(): QuizPreset[] {
       const raw = localStorage.getItem(QUIZ_PRESETS_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           inMemoryPresets = parsed;
           isLoaded = true;
           return inMemoryPresets;
@@ -101,9 +78,18 @@ export function deleteQuizPreset(id: string): QuizPreset[] {
 }
 
 export function addFlashcardPresetToQuiz(flashcardPreset: FlashcardPreset): QuizPreset {
+  const current = loadPresetsFromStorage();
+  // Check if already added to avoid exact duplicates
+  const existing = current.find(
+    (p) => p.id === `quiz-${flashcardPreset.id}` || p.title === `${flashcardPreset.title} (Quiz)` || p.title === flashcardPreset.title
+  );
+  if (existing) {
+    return existing;
+  }
+
   const newQuizPreset: QuizPreset = {
-    id: `quiz-${flashcardPreset.id}-${Date.now()}`,
-    title: `${flashcardPreset.title} (Quiz)`,
+    id: `quiz-${flashcardPreset.id}`,
+    title: flashcardPreset.title,
     questionCount: flashcardPreset.cardCount || flashcardPreset.cards?.length || 10,
     lessonCount: flashcardPreset.lessonCount || 1,
     iconName: flashcardPreset.iconName || 'Layers',

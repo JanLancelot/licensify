@@ -34,22 +34,22 @@ import Svg, {
 
 import { CircularProgressIconBadge, SUBJECT_PALETTES } from '@/components/ui/CircularProgressIconBadge';
 import { PRESET_ICONS } from '@/components/flashcards/FlashcardPresetBuilderModal';
+import { AddQuizFromFlashcardsModal } from '@/components/practice/AddQuizFromFlashcardsModal';
 import { PremadeTopicItem } from '@/components/practice/PremadeTopicItem';
 import {
   QuizLaunchConfig,
   QuizLauncherModal,
 } from '@/components/practice/QuizLauncherModal';
-import { QuizPresetBuilderModal } from '@/components/practice/QuizPresetBuilderModal';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
 import { useLocalHierarchy } from '@/hooks/useLocalData';
 import { useQuizPresets } from '@/services/quizPresetStore';
-import { QuizPreset } from '@/types/curriculum';
+import { FlashcardPreset, QuizPreset } from '@/types/curriculum';
 
 /* Custom Deck Gradient Icon Component */
 function CustomDeckIcon({
   iconName = 'Layers',
-  size = 52,
+  size = 50,
 }: {
   iconName?: string;
   size?: number;
@@ -78,7 +78,7 @@ function CustomDeckIcon({
         </Defs>
         <Rect width={size} height={size} rx={size / 2} fill={`url(#${gradId})`} />
       </Svg>
-      <IconComp size={24} color="#FFFFFF" strokeWidth={2.4} />
+      <IconComp size={22} color="#FFFFFF" strokeWidth={2.4} />
     </View>
   );
 }
@@ -89,7 +89,7 @@ export default function PracticeScreen() {
   const router = useRouter();
 
   const { curriculum, refetch: refetchCurriculum } = useLocalHierarchy();
-  const { presets: quizPresets, savePreset } = useQuizPresets();
+  const { presets: quizPresets, addFromFlashcard } = useQuizPresets();
 
   // Refresh curriculum when tab is focused
   useFocusEffect(
@@ -102,8 +102,14 @@ export default function PracticeScreen() {
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
 
-  // Builder Modal State
-  const [isBuilderModalVisible, setIsBuilderModalVisible] = useState(false);
+  // Flashcards Selection Modal State
+  const [isAddFromFlashcardsModalVisible, setIsAddFromFlashcardsModalVisible] = useState(false);
+
+  // Existing Quiz Titles Set for Duplicate Detection
+  const existingQuizTitles = useMemo(
+    () => new Set(quizPresets.map((p) => p.title)),
+    [quizPresets]
+  );
 
   // Active Quiz Target for Launcher Modal
   const [activeQuizTarget, setActiveQuizTarget] = useState<{
@@ -191,6 +197,10 @@ export default function PracticeScreen() {
     });
   };
 
+  const handleAddFlashcardPreset = (preset: FlashcardPreset) => {
+    addFromFlashcard(preset);
+  };
+
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
@@ -215,7 +225,7 @@ export default function PracticeScreen() {
               YOUR QUIZ SETS
             </Text>
             <Pressable
-              onPress={() => setIsBuilderModalVisible(true)}
+              onPress={() => setIsAddFromFlashcardsModalVisible(true)}
               hitSlop={8}
               style={({ pressed }) => [
                 styles.addCircleBtn,
@@ -228,7 +238,7 @@ export default function PracticeScreen() {
             </Pressable>
           </View>
 
-          {/* 2-Column Grid of Custom Decks + Dashed Add Card */}
+          {/* 2-Column Bento Grid of Custom Decks + Bento Dashed Add Card */}
           <View style={styles.gridContainer}>
             {quizPresets.map((preset) => (
               <Pressable
@@ -242,8 +252,8 @@ export default function PracticeScreen() {
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}>
-                {/* Customizable Circular Icon on Top */}
-                <CustomDeckIcon iconName={preset.iconName} size={50} />
+                {/* Circular Icon */}
+                <CustomDeckIcon iconName={preset.iconName} size={48} />
 
                 {/* Deck Title */}
                 <Text
@@ -255,16 +265,16 @@ export default function PracticeScreen() {
                   {preset.title}
                 </Text>
 
-                {/* Question Count Subtitle */}
+                {/* Question Count */}
                 <Text style={[styles.customDeckSub, { color: colors.textSecondary }]}>
                   {preset.questionCount || 10} Questions
                 </Text>
               </Pressable>
             ))}
 
-            {/* Dashed Add New Preset Card */}
+            {/* Bento Dashed Add Card */}
             <Pressable
-              onPress={() => setIsBuilderModalVisible(true)}
+              onPress={() => setIsAddFromFlashcardsModalVisible(true)}
               style={({ pressed }) => [
                 styles.dashedAddCard,
                 {
@@ -283,7 +293,7 @@ export default function PracticeScreen() {
                 <Plus size={22} color={colors.accent} strokeWidth={2.4} />
               </View>
               <Text style={[styles.dashedAddText, { color: colors.textSecondary }]}>
-                New Quiz Set
+                Add from Flashcards
               </Text>
             </Pressable>
           </View>
@@ -517,7 +527,7 @@ export default function PracticeScreen() {
                   styles.specializedDesc,
                   { color: colors.textSecondary },
                 ]}>
-                Targeted algorithmic computations for Allowable Maximum Building Footprint (AMBF), Total Open Space (TOSL), Building Height Limits (BHL), and Floor Area Ratios (FLAR).
+                NBCP Rule 7 & 8 formulas: AMBF, TOSL, BHL, and FLAR.
               </Text>
             </View>
 
@@ -554,15 +564,12 @@ export default function PracticeScreen() {
         bottomInset={insets.bottom}
       />
 
-      {/* Quiz Preset Builder Modal */}
-      <QuizPresetBuilderModal
-        visible={isBuilderModalVisible}
-        subjects={curriculum}
-        onClose={() => setIsBuilderModalVisible(false)}
-        onSubmit={(newPreset) => {
-          savePreset(newPreset);
-          setIsBuilderModalVisible(false);
-        }}
+      {/* Add From Flashcards Modal */}
+      <AddQuizFromFlashcardsModal
+        visible={isAddFromFlashcardsModalVisible}
+        onClose={() => setIsAddFromFlashcardsModalVisible(false)}
+        onAddFlashcardToQuiz={handleAddFlashcardPreset}
+        existingQuizTitles={existingQuizTitles}
         bottomInset={insets.bottom}
       />
     </SafeAreaView>
@@ -608,6 +615,28 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyQuizSetDashedCard: {
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  emptyDashedTextGroup: {
+    flex: 1,
+    gap: 3,
+  },
+  emptyDashedTitle: {
+    fontSize: 14.5,
+    fontWeight: '800',
+  },
+  emptyDashedSub: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   gridContainer: {
     flexDirection: 'row',
@@ -656,6 +685,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    padding: 8,
   },
   dashedIconCircle: {
     width: 44,
@@ -665,8 +695,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dashedAddText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
   listContainer: {
     gap: 12,

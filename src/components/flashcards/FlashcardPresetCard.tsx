@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Pencil, Play, Shuffle, Trash2 } from 'lucide-react-native';
+import { Pencil, Play, Plus, Shuffle, Trash2 } from 'lucide-react-native';
 
 import { useAppTheme } from '@/context/theme-context';
 import { FlashcardPreset } from '@/types/curriculum';
@@ -77,6 +77,21 @@ export function FlashcardPresetCard({
         </View>
 
         <View style={styles.topActionsRow}>
+          {onAddToQuizSets && (
+            <Pressable
+              onPress={() => onAddToQuizSets(preset)}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.iconBtn,
+                {
+                  backgroundColor: isDark ? 'rgba(224, 122, 95, 0.2)' : '#F8EAE4',
+                  opacity: pressed ? 0.6 : 1,
+                },
+              ]}>
+              <Plus size={13} color={colors.accent} strokeWidth={2.8} />
+            </Pressable>
+          )}
+
           <Pressable
             onPress={() => onEditPreset(preset)}
             hitSlop={8}
@@ -124,23 +139,6 @@ export function FlashcardPresetCard({
         </Text>
 
         <View style={styles.footerActions}>
-          {onAddToQuizSets && (
-            <Pressable
-              onPress={() => onAddToQuizSets(preset)}
-              style={({ pressed }) => [
-                styles.addQuizBtn,
-                {
-                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
-                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
-                  opacity: pressed ? 0.75 : 1,
-                },
-              ]}>
-              <Text style={[styles.addQuizBtnText, { color: colors.accent }]}>
-                + Quiz Set
-              </Text>
-            </Pressable>
-          )}
-
           <Pressable
             onPress={() => onStartDrill(preset)}
             style={({ pressed }) => [
