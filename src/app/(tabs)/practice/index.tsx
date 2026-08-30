@@ -10,11 +10,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  LinearTransition,
-} from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Defs,
@@ -26,12 +21,10 @@ import Svg, {
 import { SUBJECT_PALETTES } from '@/components/ui/CircularProgressIconBadge';
 import { PRESET_ICONS } from '@/components/flashcards/FlashcardPresetBuilderModal';
 import { AddQuizFromFlashcardsModal } from '@/components/practice/AddQuizFromFlashcardsModal';
-import { PremadeTopicItem } from '@/components/practice/PremadeTopicItem';
 import {
   QuizLaunchConfig,
   QuizLauncherModal,
 } from '@/components/practice/QuizLauncherModal';
-import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
 import { useLocalHierarchy } from '@/hooks/useLocalData';
 import { useQuizPresets } from '@/services/quizPresetStore';
@@ -94,10 +87,6 @@ export default function PracticeScreen() {
     }, [refetchCurriculum])
   );
 
-  // Expanded state for Premade Quiz Sets (Subjects & Topics)
-  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
-  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
-
   // Flashcards Selection Modal State
   const [isAddFromFlashcardsModalVisible, setIsAddFromFlashcardsModalVisible] = useState(false);
 
@@ -118,35 +107,6 @@ export default function PracticeScreen() {
     initialTimerSeconds?: number;
     initialQuestionCount?: number;
   } | null>(null);
-
-  const toggleSubject = (subjectId: string) => {
-    setExpandedSubjects((prev) => {
-      const isCurrentlyOpen = !!prev[subjectId];
-      if (isCurrentlyOpen) {
-        const subject = curriculum.find((s) => s.id === subjectId);
-        if (subject) {
-          setExpandedTopics((topicPrev) => {
-            const next = { ...topicPrev };
-            subject.topics.forEach((t) => {
-              delete next[t.id];
-            });
-            return next;
-          });
-        }
-      }
-      return {
-        ...prev,
-        [subjectId]: !isCurrentlyOpen,
-      };
-    });
-  };
-
-  const toggleTopic = (topicId: string) => {
-    setExpandedTopics((prev) => ({
-      ...prev,
-      [topicId]: !prev[topicId],
-    }));
-  };
 
   // Launch modal for a user quiz preset
   const handleSelectQuizPreset = (preset: QuizPreset) => {
@@ -175,6 +135,17 @@ export default function PracticeScreen() {
         },
       ]
     );
+  };
+
+  // Launch modal for a premade subject note quiz
+  const handleSelectPremadeSubject = (subject: any) => {
+    setActiveQuizTarget({
+      quizTitle: subject.title,
+      quizSubtitle: `${subject.topics?.length || 0} Topics • Comprehensive Drill`,
+      subjectId: subject.id,
+      initialTimerSeconds: 15,
+      initialQuestionCount: 15,
+    });
   };
 
   // Launch modal for specialized computation set
@@ -339,33 +310,27 @@ export default function PracticeScreen() {
             </Text>
           </View>
 
-          {/* Curriculum Subjects Hierarchy */}
+          {/* Curriculum Subjects (Clean One-Line Cards) */}
           <View style={styles.listContainer}>
             {curriculum.map((subject, sIdx) => {
-              const isSubjectOpen = !!expandedSubjects[subject.id];
               const IconComponent = subject.icon;
               const palette = SUBJECT_PALETTES[sIdx % SUBJECT_PALETTES.length];
 
               return (
-                <Animated.View
+                <View
                   key={subject.id}
-                  layout={LinearTransition.duration(240)}
                   style={[
                     styles.subjectCardBox,
                     {
                       backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                       borderColor: isDark
-                        ? isSubjectOpen
-                          ? 'rgba(255, 255, 255, 0.15)'
-                          : 'rgba(255, 255, 255, 0.07)'
-                        : isSubjectOpen
-                          ? 'rgba(0, 0, 0, 0.09)'
-                          : 'rgba(0, 0, 0, 0.05)',
+                        ? 'rgba(255, 255, 255, 0.07)'
+                        : 'rgba(0, 0, 0, 0.05)',
                     },
                   ]}>
-                  {/* LEVEL 1: SUBJECT CARD ROW */}
+                  {/* Single Line Subject Card */}
                   <Pressable
-                    onPress={() => toggleSubject(subject.id)}
+                    onPress={() => handleSelectPremadeSubject(subject)}
                     style={({ pressed }) => [
                       styles.subjectHeader,
                       {
@@ -376,7 +341,7 @@ export default function PracticeScreen() {
                           : 'transparent',
                       },
                     ]}>
-                    {/* Clean Solid Pastel Icon Box */}
+                    {/* Clean Solid Pastel Circle Icon */}
                     <View
                       style={[
                         styles.subjectIconBox,
@@ -405,11 +370,7 @@ export default function PracticeScreen() {
                     <Pressable
                       onPress={(e) => {
                         e.stopPropagation();
-                        setActiveQuizTarget({
-                          quizTitle: `${subject.title} Comprehensive Drill`,
-                          quizSubtitle: `Full Area Assessment • ${subject.topics.length} Topics`,
-                          subjectId: subject.id,
-                        });
+                        handleSelectPremadeSubject(subject);
                       }}
                       hitSlop={8}
                       style={({ pressed }) => [
@@ -421,47 +382,8 @@ export default function PracticeScreen() {
                       ]}>
                       <Play size={12} color={colors.accent} fill={colors.accent} />
                     </Pressable>
-
-                    {/* Rotating Chevron */}
-                    <View style={styles.chevronWrapper}>
-                      <RotatingChevron
-                        isOpen={isSubjectOpen}
-                        color={isDark ? '#9CA3AF' : '#4B5563'}
-                        size={19}
-                      />
-                    </View>
                   </Pressable>
-
-                  {/* LEVEL 2: TOPICS LIST INSIDE SUBJECT */}
-                  {isSubjectOpen && (
-                    <Animated.View
-                      entering={FadeInDown.duration(220)}
-                      exiting={FadeOutUp.duration(180)}
-                      layout={LinearTransition.duration(240)}
-                      style={[
-                        styles.topicsContainer,
-                        {
-                          borderTopColor: isDark
-                            ? 'rgba(255, 255, 255, 0.06)'
-                            : 'rgba(0, 0, 0, 0.05)',
-                        },
-                      ]}>
-                      {subject.topics.map((topic, tIdx) => (
-                        <PremadeTopicItem
-                          key={topic.id}
-                          topic={topic}
-                          tIdx={tIdx}
-                          isLastTopic={tIdx === subject.topics.length - 1}
-                          isTopicOpen={!!expandedTopics[topic.id]}
-                          toggleTopic={toggleTopic}
-                          subjectTitle={subject.title}
-                          parentPalette={palette}
-                          onLaunchQuiz={(params) => setActiveQuizTarget(params)}
-                        />
-                      ))}
-                    </Animated.View>
-                  )}
-                </Animated.View>
+                </View>
               );
             })}
           </View>
@@ -728,13 +650,5 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  chevronWrapper: {
-    paddingLeft: 2,
-  },
-  topicsContainer: {
-    borderTopWidth: 1,
-    padding: 12,
-    gap: 4,
   },
 });
