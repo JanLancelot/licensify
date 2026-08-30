@@ -34,7 +34,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
-import { CircularProgressIconBadge, SUBJECT_PALETTES } from '@/components/ui/CircularProgressIconBadge';
+import { SUBJECT_PALETTES } from '@/components/ui/CircularProgressIconBadge';
 import { PRESET_ICONS } from '@/components/flashcards/FlashcardPresetBuilderModal';
 import { AddQuizFromFlashcardsModal } from '@/components/practice/AddQuizFromFlashcardsModal';
 import { PremadeTopicItem } from '@/components/practice/PremadeTopicItem';
@@ -387,20 +387,20 @@ export default function PracticeScreen() {
                           : 'transparent',
                       },
                     ]}>
-                    {/* Circular Icon Badge */}
-                    <CircularProgressIconBadge
-                      size={44}
-                      strokeWidth={2.6}
-                      progress={1}
-                      progressColor={colors.accent}
-                      bgColor={isDark ? palette.darkBg : palette.bg}
-                      isDark={isDark}>
+                    {/* Clean Solid Pastel Icon Box */}
+                    <View
+                      style={[
+                        styles.subjectIconBox,
+                        {
+                          backgroundColor: isDark ? palette.darkBg : palette.bg,
+                        },
+                      ]}>
                       <IconComponent
                         size={20}
                         color={isDark ? palette.darkIcon : palette.icon}
                         strokeWidth={2.2}
                       />
-                    </CircularProgressIconBadge>
+                    </View>
 
                     {/* Subject Title */}
                     <Text
@@ -412,7 +412,7 @@ export default function PracticeScreen() {
                       {subject.title}
                     </Text>
 
-                    {/* Quick Subject Quiz Launch Button */}
+                    {/* Quick Subject Play Button */}
                     <Pressable
                       onPress={(e) => {
                         e.stopPropagation();
@@ -424,16 +424,13 @@ export default function PracticeScreen() {
                       }}
                       hitSlop={8}
                       style={({ pressed }) => [
-                        styles.quickSubjectQuizBtn,
+                        styles.quickSubjectPlayBtn,
                         {
                           backgroundColor: isDark ? 'rgba(224, 122, 95, 0.18)' : '#F8EAE4',
-                          opacity: pressed ? 0.75 : 1,
+                          opacity: pressed ? 0.7 : 1,
                         },
                       ]}>
-                      <Play size={11} color={colors.accent} fill={colors.accent} />
-                      <Text style={[styles.quickSubjectQuizText, { color: colors.accent }]}>
-                        Quiz
-                      </Text>
+                      <Play size={12} color={colors.accent} fill={colors.accent} />
                     </Pressable>
 
                     {/* Rotating Chevron */}
@@ -441,7 +438,7 @@ export default function PracticeScreen() {
                       <RotatingChevron
                         isOpen={isSubjectOpen}
                         color={isDark ? '#9CA3AF' : '#4B5563'}
-                        size={20}
+                        size={19}
                       />
                     </View>
                   </Pressable>
@@ -754,23 +751,25 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 12,
   },
+  subjectIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   subjectTitle: {
     flex: 1,
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  quickSubjectQuizBtn: {
-    flexDirection: 'row',
+  quickSubjectPlayBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-  quickSubjectQuizText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    justifyContent: 'center',
   },
   chevronWrapper: {
     paddingLeft: 2,

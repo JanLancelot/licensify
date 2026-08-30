@@ -1,4 +1,4 @@
-import { ChevronRight, Play, Zap } from 'lucide-react-native';
+import { Play } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -6,7 +6,6 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
 
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
@@ -136,22 +135,18 @@ export function PremadeTopicItem({
           </View>
         </Pressable>
 
-        {/* Quick Quiz Launch Button on Topic */}
+        {/* Minimal Play Icon Button on Topic */}
         <Pressable
           onPress={handleTopicQuizLaunch}
           hitSlop={8}
           style={({ pressed }) => [
-            styles.topicQuizBtn,
+            styles.topicPlayBtn,
             {
-              backgroundColor: isDark ? 'rgba(224, 122, 95, 0.2)' : '#F8EAE4',
-              borderColor: colors.accent,
-              opacity: pressed ? 0.75 : 1,
+              backgroundColor: isDark ? 'rgba(224, 122, 95, 0.18)' : '#F8EAE4',
+              opacity: pressed ? 0.7 : 1,
             },
           ]}>
-          <Play size={12} color={colors.accent} fill={colors.accent} />
-          <Text style={[styles.topicQuizBtnText, { color: colors.accent }]}>
-            Quiz
-          </Text>
+          <Play size={11} color={colors.accent} fill={colors.accent} />
         </Pressable>
       </View>
 
@@ -219,7 +214,7 @@ export function PremadeTopicItem({
 
                 {/* Mini Quiz Action Indicator */}
                 <View style={styles.lessonActionBox}>
-                  <Play size={12} color={colors.accent} fill={colors.accent} />
+                  <Play size={11} color={colors.accent} fill={colors.accent} />
                 </View>
               </Pressable>
             );
@@ -244,6 +239,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingLeft: 12,
     paddingRight: 10,
+    gap: 8,
   },
   topicHeaderClickable: {
     flex: 1,
@@ -252,14 +248,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   topicBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   topicBadgeNumber: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '800',
   },
   topicTitleText: {
@@ -269,20 +265,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   chevronWrapper: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
-  topicQuizBtn: {
-    flexDirection: 'row',
+  topicPlayBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  topicQuizBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    justifyContent: 'center',
   },
   lessonsWrapper: {
     borderTopWidth: 1,
@@ -315,9 +305,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   lessonActionBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
