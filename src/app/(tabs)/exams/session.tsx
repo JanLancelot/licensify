@@ -1,17 +1,27 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
+  AlertCircle,
   ArrowLeft,
-  BookOpen,
-  ChevronLeft,
-  ChevronRight,
+  Award,
+  CheckCircle2,
+  Clock,
+  FileSpreadsheet,
   Flag,
+  HelpCircle,
+  Play,
   RotateCcw,
+  ShieldAlert,
+  ShieldCheck,
   Timer,
-  Trophy,
+  X,
+  XCircle,
 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,16 +29,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, {
-  Defs,
-  LinearGradient,
-  Rect,
-  Stop,
-} from 'react-native-svg';
 import * as crypto from 'expo-crypto';
 
 import { useAppTheme } from '@/context/theme-context';
-import { useLocalQuizWithQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
+import { useLocalHierarchy, useLocalQuizWithQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
+import { getModularExamPresets } from '@/services/modularExamStore';
+import { COMPREHENSIVE_MOCK_SETS } from '@/app/(tabs)/exams/index';
 
 export interface ExamSessionQuestion {
   id: string;
@@ -41,31 +47,47 @@ export interface ExamSessionQuestion {
 }
 
 export default function ExamSessionScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{
+    id?: string;
+    title?: string;
+    timer?: string;
+    count?: string;
+  }>();
   const router = useRouter();
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const questionLayoutsRef = useRef<Record<number, number>>({});
 
-  const examId = id || 'area-1';
-  const { quiz, questions: dbQuestions, loading } = useLocalQuizWithQuestions(examId);
+  const examId = params.id || 'comprehensive-set-1';
+  const examTitle = params.title || 'Comprehensive Examination';
+  const customTimerSeconds = params.timer ? parseInt(params.timer, 10) : 10800; // 3 hrs default
+  const targetQuestionCount = params.count ? parseInt(params.count, 10) : 100;
+
+  const { quiz, questions: dbQuestions, loading: dbLoading } = useLocalQuizWithQuestions(examId);
+  const { curriculum } = useLocalHierarchy();
   const submitLocalAttempt = useSubmitLocalAttempt();
 
   const [questions, setQuestions] = useState<ExamSessionQuestion[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({}); // questionId -> choiceId
-  const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({});
-  const [secondsRemaining, setSecondsRemaining] = useState(1800); // 30 mins default
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({}); // questionId -> boolean
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(customTimerSeconds);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [computedScore, setComputedScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
 
-  // Format DB questions
-  useEffect(() => {
-    if (dbQuestions && dbQuestions.length > 0) {
-      const formatAsync = async () => {
-        const formatted: ExamSessionQuestion[] = [];
-        const keys: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+  // Answer Sheet Drawer Modal State
+  const [isAnswerSheetVisible, setIsAnswerSheetVisible] = useState(false);
+  const [isSubmitConfirmVisible, setIsSubmitConfirmVisible] = useState(false);
 
+  // Generate / format examination questions
+  useEffect(() => {
+    const buildQuestions = async () => {
+      const keys: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+      const formatted: ExamSessionQuestion[] = [];
+
+      // 1. If DB has questions, format them
+      if (dbQuestions && dbQuestions.length > 0) {
         for (const q of dbQuestions) {
           let choices: { id: string; text: string }[] = [];
           try {
@@ -103,20 +125,196 @@ export default function ExamSessionScreen() {
             })),
             correctKey: correctK,
             correctChoiceHash: q.correctChoiceHash || undefined,
-            explanation: q.explanation || 'Essential board examination rule and architectural specification.',
+            explanation: q.explanation || 'Refer to the standard ALE board exam syllabus guidelines.',
           });
         }
+      }
 
-        setQuestions(formatted);
-        if (quiz?.timeLimitSeconds) {
-          setSecondsRemaining(quiz.timeLimitSeconds);
+      // 2. If questions are fewer than target count, generate realistic questions from curriculum
+      if (formatted.length < targetQuestionCount) {
+        const needed = targetQuestionCount - formatted.length;
+        const fallbackPool: {
+          topic: string;
+          q: string;
+          choices: string[];
+          correctIdx: number;
+          exp: string;
+        }[] = [
+          {
+            topic: 'History of Architecture',
+            q: 'Which architectural order is characterized by acanthus leaf carvings on a bell-shaped capital?',
+            choices: ['Doric Order', 'Ionic Order', 'Corinthian Order', 'Tuscan Order'],
+            correctIdx: 2,
+            exp: 'The Corinthian order is identified by its ornate capital decorated with stylized acanthus leaves and volutes.',
+          },
+          {
+            topic: 'Theory of Architecture',
+            q: 'According to Vitruvian principles, what are the three fundamental qualities of good architecture?',
+            choices: [
+              'Firmitas, Utilitas, Venustas (Strength, Utility, Beauty)',
+              'Form, Proportion, Materiality',
+              'Symmetry, Rhythm, Hierarchy',
+              'Context, Function, Aesthetic',
+            ],
+            correctIdx: 0,
+            exp: 'Marcus Vitruvius Pollio asserted in De Architectura that a structure must exhibit Firmitas, Utilitas, and Venustas.',
+          },
+          {
+            topic: 'Tropical Design',
+            q: 'In Philippine tropical climatic design, what is the primary orientation recommended for long building facades?',
+            choices: ['North-South Axis', 'East-West Axis', 'Northeast-Southwest', 'Northwest-Southeast'],
+            correctIdx: 0,
+            exp: 'Orienting long building facades along the North-South axis minimizes direct solar heat gain on large window exposures.',
+          },
+          {
+            topic: 'Building Utilities',
+            q: 'In plumbing sanitary drainage systems, what is the minimum slope required for 3-inch and smaller soil horizontal drainage pipes?',
+            choices: ['1% (1/8 in/ft)', '2% (1/4 in/ft)', '3% (3/8 in/ft)', '4% (1/2 in/ft)'],
+            correctIdx: 1,
+            exp: 'The Revised National Plumbing Code specifies a minimum 2% (1/4 inch per foot) slope for 3-inch or smaller horizontal drainage lines.',
+          },
+          {
+            topic: 'Building Technology',
+            q: 'What is the standard diameter of a #10 (metric 32mm) deformed steel reinforcing bar?',
+            choices: ['25 mm', '28 mm', '32 mm', '36 mm'],
+            correctIdx: 2,
+            exp: 'Under ASTM/PNS standards, a #10 bar corresponds to a nominal diameter of 32 mm.',
+          },
+          {
+            topic: 'NBCP Rule 7 & 8',
+            q: 'Under NBCP Rule 7 & 8, what does AMBF stand for in development control calculations?',
+            choices: [
+              'Allowable Maximum Building Footprint',
+              'Average Maximum Built Floor',
+              'Approved Minimum Base Foundation',
+              'Actual Median Boundary Form',
+            ],
+            correctIdx: 0,
+            exp: 'AMBF is the Allowable Maximum Building Footprint, which defines the maximum lot area a structure can occupy at ground level.',
+          },
+          {
+            topic: 'Professional Practice',
+            q: 'Under RA 9266 (The Architecture Act of 2004), what is the penalty for illegal practice of architecture by unregistered individuals?',
+            choices: [
+              'Fine of ₱100,000 to ₱5,000,000 and/or imprisonment of 6 months to 6 years',
+              'Fine of ₱20,000 and warning letter',
+              'Fine of ₱50,000 with 1 month community service',
+              'Administrative probation for 1 year',
+            ],
+            correctIdx: 0,
+            exp: 'Section 34 of RA 9266 penalizes illegal practice with a fine of not less than ₱100,000 nor more than ₱5,000,000, or imprisonment from 6 months to 6 years.',
+          },
+          {
+            topic: 'Site Planning',
+            q: 'Which contour line interval rule states that closer contour lines on a topographical site survey indicate what condition?',
+            choices: ['Flat terrain', 'Steeper slope or grade', 'Depression basin', 'Ridgeline summit'],
+            correctIdx: 1,
+            exp: 'Closely spaced contour lines indicate a steep slope, while widely spaced contours represent gentle or flat topography.',
+          },
+          {
+            topic: 'Building Laws',
+            q: 'Under BP 344 (Accessibility Law), what is the maximum allowable gradient slope for an accessible wheelchair ramp?',
+            choices: ['1:10 (10%)', '1:12 (8.33%)', '1:16 (6.25%)', '1:20 (5%)'],
+            correctIdx: 1,
+            exp: 'BP 344 mandates a maximum ramp slope of 1:12 (1 unit vertical rise per 12 units horizontal run) for wheelchair accessibility.',
+          },
+          {
+            topic: 'Architectural Design',
+            q: 'In architectural programming and egress design, what is the standard minimum clear width for an exit doorway?',
+            choices: ['700 mm', '800 mm', '900 mm', '1000 mm'],
+            correctIdx: 2,
+            exp: 'The Fire Code of the Philippines and NBCP specify a standard minimum clear opening width of 900 mm for accessible exit doors.',
+          },
+        ];
+
+        for (let i = 0; i < needed; i++) {
+          const template = fallbackPool[i % fallbackPool.length];
+          const qId = `gen-q-${examId}-${formatted.length + i + 1}`;
+          const choiceIds = ['c-1', 'c-2', 'c-3', 'c-4'];
+
+          formatted.push({
+            id: qId,
+            topic: template.topic,
+            question: `[Item ${formatted.length + 1}] ${template.q}`,
+            options: template.choices.map((text, cIdx) => ({
+              key: keys[cIdx] || 'A',
+              id: `${qId}-${choiceIds[cIdx]}`,
+              text,
+            })),
+            correctKey: keys[template.correctIdx] || 'A',
+            explanation: template.exp,
+          });
         }
-      };
-      formatAsync();
-    }
-  }, [dbQuestions, quiz]);
+      }
 
-  const handleSubmitExam = useCallback(async () => {
+      setQuestions(formatted);
+      setSecondsRemaining(customTimerSeconds);
+    };
+
+    buildQuestions();
+  }, [examId, dbQuestions, targetQuestionCount, customTimerSeconds]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (isSubmitted) return;
+    const interval = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleFinalSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isSubmitted]);
+
+  // Format Timer into HH:MM:SS
+  const formatTimer = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const handleSelectOption = (questionId: string, choiceId: string) => {
+    if (isSubmitted) return;
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [questionId]: choiceId,
+    }));
+  };
+
+  const handleToggleFlag = (questionId: string) => {
+    setFlaggedQuestions((prev) => ({
+      ...prev,
+      [questionId]: !prev[questionId],
+    }));
+  };
+
+  const handleScrollToQuestion = (index: number) => {
+    setIsAnswerSheetVisible(false);
+    const yPos = questionLayoutsRef.current[index];
+    if (yPos !== undefined && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: Math.max(yPos - 20, 0), animated: true });
+    }
+  };
+
+  const answeredCount = useMemo(() => {
+    return Object.keys(selectedAnswers).filter((k) => selectedAnswers[k]).length;
+  }, [selectedAnswers]);
+
+  const flaggedCount = useMemo(() => {
+    return Object.keys(flaggedQuestions).filter((k) => flaggedQuestions[k]).length;
+  }, [flaggedQuestions]);
+
+  const handleFinalSubmit = useCallback(async () => {
+    setIsSubmitConfirmVisible(false);
     if (isSubmitted) return;
 
     let correct = 0;
@@ -124,7 +322,11 @@ export default function ExamSessionScreen() {
 
     for (const q of questions) {
       const userChoiceId = selectedAnswers[q.id];
-      if (userChoiceId && q.correctChoiceHash) {
+      const selectedOption = q.options.find((o) => o.id === userChoiceId);
+
+      if (selectedOption && selectedOption.key === q.correctKey) {
+        correct++;
+      } else if (userChoiceId && q.correctChoiceHash) {
         const hash = await crypto.digestStringAsync(
           crypto.CryptoDigestAlgorithm.SHA256,
           `${q.id}:${userChoiceId}`
@@ -133,6 +335,7 @@ export default function ExamSessionScreen() {
           correct++;
         }
       }
+
       if (userChoiceId) {
         recorded.push({
           questionId: q.id,
@@ -156,64 +359,33 @@ export default function ExamSessionScreen() {
     }
   }, [isSubmitted, questions, selectedAnswers, examId, submitLocalAttempt]);
 
-  // Timer countdown
-  useEffect(() => {
-    if (isSubmitted) return;
-    const interval = setInterval(() => {
-      setSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          handleSubmitExam();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isSubmitted, handleSubmitExam]);
-
-  const formatTimer = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  const handleConfirmExit = () => {
+    if (isSubmitted) {
+      router.back();
+      return;
+    }
+    Alert.alert(
+      'Leave Examination?',
+      'Your examination progress will be discarded. Are you sure you want to leave?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave Exam',
+          style: 'destructive',
+          onPress: () => router.back(),
+        },
+      ]
+    );
   };
 
-  const currentQ = questions[currentIndex];
-  const userChoiceId = currentQ ? selectedAnswers[currentQ.id] : undefined;
-  const isFlagged = currentQ ? Boolean(flaggedQuestions[currentQ.id]) : false;
+  const isPassed = computedScore >= 70;
 
-  const handleSelectOption = (choiceId: string) => {
-    if (isSubmitted || !currentQ) return;
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [currentQ.id]: choiceId,
-    }));
-  };
-
-  const handleToggleFlag = () => {
-    if (!currentQ) return;
-    setFlaggedQuestions((prev) => ({
-      ...prev,
-      [currentQ.id]: !prev[currentQ.id],
-    }));
-  };
-
-  const isPassed = computedScore >= (quiz?.passingScore || 70);
-
-  const handleRetake = () => {
-    setSelectedAnswers({});
-    setFlaggedQuestions({});
-    setSecondsRemaining(quiz?.timeLimitSeconds || 1800);
-    setCurrentIndex(0);
-    setIsSubmitted(false);
-  };
-
-  if (loading && questions.length === 0) {
+  if (dbLoading && questions.length === 0) {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={{ color: colors.textSecondary, marginTop: 12, fontWeight: '600' }}>
-          Loading Examination Data...
+        <Text style={{ color: colors.textSecondary, marginTop: 12, fontWeight: '700' }}>
+          Preparing Examination Paper...
         </Text>
       </SafeAreaView>
     );
@@ -221,45 +393,91 @@ export default function ExamSessionScreen() {
 
   return (
     <SafeAreaView
-      edges={['top', 'left', 'right', 'bottom']}
+      edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* 1. Top Header Bar */}
+      {/* =================================================================== */}
+      {/* 1. FIXED TOP HEADER BAR                                             */}
+      {/* =================================================================== */}
       <View style={styles.topBar}>
+        {/* Back Button */}
         <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
+          onPress={handleConfirmExit}
+          hitSlop={10}
           style={({ pressed }) => [
-            styles.backButton,
+            styles.headerBtn,
             {
               backgroundColor: isDark ? '#23262F' : '#F6F0ED',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>
-          <ArrowLeft size={20} color={colors.text} strokeWidth={2.4} />
+          <ArrowLeft size={18} color={colors.text} strokeWidth={2.4} />
         </Pressable>
 
-        <View style={styles.headerTitles}>
-          <Text style={[styles.headerSubtitle, { color: colors.accent }]}>
-            {quiz?.title || (id ? String(id).replace('-', ' ').toUpperCase() : 'BOARD EXAM')}
-          </Text>
-          <Text style={[styles.headerTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-            {isSubmitted ? 'Exam Results' : `Question ${currentIndex + 1} of ${questions.length}`}
-          </Text>
-        </View>
+        {/* Answer Sheet Button on Left */}
+        {!isSubmitted && (
+          <Pressable
+            onPress={() => setIsAnswerSheetVisible(true)}
+            style={({ pressed }) => [
+              styles.answerSheetHeaderBtn,
+              {
+                backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}>
+            <FileSpreadsheet size={15} color={colors.accent} strokeWidth={2.2} />
+            <Text style={[styles.answerSheetBtnText, { color: colors.text }]}>
+              Answer Sheet
+            </Text>
+            <View
+              style={[
+                styles.answeredMiniPill,
+                { backgroundColor: colors.accent },
+              ]}>
+              <Text style={styles.answeredMiniPillText}>
+                {answeredCount}/{questions.length}
+              </Text>
+            </View>
+          </Pressable>
+        )}
 
-        {/* Timer Badge */}
+        {/* Header Center / Title when submitted */}
+        {isSubmitted && (
+          <View style={styles.submittedTitleBox}>
+            <Text style={[styles.submittedTitle, { color: colors.text }]}>
+              Exam Score Report
+            </Text>
+          </View>
+        )}
+
+        {/* Continuous Timer Badge */}
         {!isSubmitted ? (
           <View
             style={[
               styles.timerBadge,
               {
-                backgroundColor: isDark
-                  ? 'rgba(224, 122, 95, 0.18)'
-                  : '#F8EAE4',
+                backgroundColor:
+                  secondsRemaining <= 300
+                    ? isDark
+                      ? 'rgba(239, 68, 68, 0.22)'
+                      : '#FEE2E2'
+                    : isDark
+                      ? 'rgba(224, 122, 95, 0.18)'
+                      : '#F8EAE4',
               },
             ]}>
-            <Timer size={14} color={colors.accent} strokeWidth={2.2} />
-            <Text style={[styles.timerText, { color: colors.accent }]}>
+            <Timer
+              size={13}
+              color={secondsRemaining <= 300 ? '#EF4444' : colors.accent}
+              strokeWidth={2.4}
+            />
+            <Text
+              style={[
+                styles.timerText,
+                {
+                  color: secondsRemaining <= 300 ? '#EF4444' : colors.accent,
+                },
+              ]}>
               {formatTimer(secondsRemaining)}
             </Text>
           </View>
@@ -271,10 +489,10 @@ export default function ExamSessionScreen() {
                 backgroundColor: isPassed
                   ? isDark
                     ? 'rgba(16, 185, 129, 0.2)'
-                    : '#E8F8F0'
+                    : '#D1FAE5'
                   : isDark
                     ? 'rgba(239, 68, 68, 0.2)'
-                    : '#FEECEB',
+                    : '#FEE2E2',
               },
             ]}>
             <Text
@@ -282,377 +500,658 @@ export default function ExamSessionScreen() {
                 styles.timerText,
                 { color: isPassed ? '#10B981' : '#EF4444' },
               ]}>
-              {computedScore}%
+              {computedScore}% GWA
             </Text>
           </View>
         )}
       </View>
 
-      {/* Progress Track */}
-      <View
-        style={[
-          styles.track,
-          { backgroundColor: isDark ? '#23262F' : '#F0EBE8' },
-        ]}>
-        <View
-          style={[
-            styles.trackFill,
-            {
-              width: `${((currentIndex + 1) / (questions.length || 1)) * 100}%`,
-              backgroundColor: colors.accent,
-            },
-          ]}
-        />
-      </View>
-
-      {!isSubmitted ? (
-        /* Active Question Layout */
-        <View style={styles.sessionLayout}>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={[
-              styles.scrollContent,
-              { paddingBottom: insets.bottom + 110 },
-            ]}
-            showsVerticalScrollIndicator={false}>
-            {/* Topic & Flag Row */}
-            <View style={styles.metaRow}>
-              <View
-                style={[
-                  styles.topicBadge,
-                  { backgroundColor: isDark ? '#23262F' : '#F6F0ED' },
-                ]}>
-                <BookOpen size={13} color={colors.accent} strokeWidth={2.2} />
-                <Text style={[styles.topicBadgeText, { color: colors.textSecondary }]}>
-                  {currentQ?.topic}
-                </Text>
-              </View>
-
-              <Pressable
-                onPress={handleToggleFlag}
-                style={({ pressed }) => [
-                  styles.flagBtn,
-                  {
-                    backgroundColor: isFlagged
-                      ? isDark
-                        ? 'rgba(234, 179, 8, 0.2)'
-                        : '#FEF9C3'
-                      : isDark
-                        ? '#23262F'
-                        : '#F6F0ED',
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}>
-                <Flag
-                  size={14}
-                  color={isFlagged ? '#EAB308' : colors.textSecondary}
-                  strokeWidth={2.2}
-                />
-                <Text
-                  style={[
-                    styles.flagText,
-                    { color: isFlagged ? '#CA8A04' : colors.textSecondary },
-                  ]}>
-                  {isFlagged ? 'Flagged' : 'Flag'}
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* Question Text Box */}
-            <View
-              style={[
-                styles.questionBox,
-                {
-                  backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
-                },
-              ]}>
-              <Text style={[styles.questionText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                {currentQ?.question}
-              </Text>
-            </View>
-
-            {/* Options List */}
-            <View style={styles.optionsList}>
-              {currentQ?.options.map((opt) => {
-                const isSelected = userChoiceId === opt.id;
-
-                return (
-                  <Pressable
-                    key={opt.id}
-                    onPress={() => handleSelectOption(opt.id)}
-                    style={({ pressed }) => [
-                      styles.optionCard,
-                      {
-                        backgroundColor: isSelected
-                          ? isDark
-                            ? 'rgba(224, 122, 95, 0.22)'
-                            : '#F8EAE4'
-                          : isDark
-                            ? '#23262F'
-                            : '#FFFFFF',
-                        borderColor: isSelected ? colors.accent : 'transparent',
-                        borderWidth: isSelected ? 1.5 : 0,
-                        opacity: pressed ? 0.85 : 1,
-                      },
-                    ]}>
-                    <View
-                      style={[
-                        styles.optionKeyCircle,
-                        {
-                          backgroundColor: isSelected
-                            ? colors.accent
-                            : isDark
-                              ? '#1C1F26'
-                              : '#F0EBE8',
-                        },
-                      ]}>
-                      <Text
-                        style={[
-                          styles.optionKeyText,
-                          {
-                            color: isSelected
-                              ? '#FFFFFF'
-                              : isDark
-                                ? '#F9FAFB'
-                                : '#1F2937',
-                          },
-                        ]}>
-                        {opt.key}
-                      </Text>
-                    </View>
-
-                    <Text
-                      style={[
-                        styles.optionText,
-                        {
-                          color: isDark ? '#F9FAFB' : '#111827',
-                          fontWeight: isSelected ? '700' : '500',
-                        },
-                      ]}>
-                      {opt.text}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </ScrollView>
-
-          {/* Sticky Bottom Navigation Bar */}
-          <View
-            style={[
-              styles.bottomNavContainer,
-              {
-                paddingBottom: insets.bottom + 12,
-                backgroundColor: colors.background,
-                borderTopColor: isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(0, 0, 0, 0.06)',
-              },
-            ]}>
-            <Pressable
-              disabled={currentIndex === 0}
-              onPress={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
-              style={({ pressed }) => [
-                styles.navBtn,
-                {
-                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
-                  opacity: currentIndex === 0 ? 0.4 : pressed ? 0.8 : 1,
-                },
-              ]}>
-              <ChevronLeft size={18} color={colors.text} strokeWidth={2.4} />
-              <Text style={[styles.navBtnText, { color: colors.text }]}>Prev</Text>
-            </Pressable>
-
-            {currentIndex < questions.length - 1 ? (
-              <Pressable
-                onPress={() => setCurrentIndex((prev) => prev + 1)}
-                style={({ pressed }) => [
-                  styles.navBtnPrimary,
-                  {
-                    backgroundColor: colors.accent,
-                    opacity: pressed ? 0.9 : 1,
-                    transform: [{ scale: pressed ? 0.985 : 1 }],
-                  },
-                ]}>
-                <Text style={styles.navBtnPrimaryText}>Next</Text>
-                <ChevronRight size={18} color="#FFFFFF" strokeWidth={2.4} />
-              </Pressable>
-            ) : (
-              <Pressable
-                onPress={handleSubmitExam}
-                style={({ pressed }) => [
-                  styles.navBtnPrimary,
-                  {
-                    backgroundColor: '#10B981',
-                    opacity: pressed ? 0.9 : 1,
-                    transform: [{ scale: pressed ? 0.985 : 1 }],
-                  },
-                ]}>
-                <Text style={styles.navBtnPrimaryText}>Submit Exam</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-      ) : (
-        /* Results & Review Screen */
+      {/* =================================================================== */}
+      {/* 2. RESULTS VIEW (IF SUBMITTED)                                      */}
+      {/* =================================================================== */}
+      {isSubmitted ? (
         <ScrollView
-          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.resultsContainer,
             { paddingBottom: insets.bottom + 40 },
           ]}>
-          {/* Result Summary Card */}
+          {/* Result Banner Card */}
           <View
             style={[
-              styles.summaryCard,
+              styles.resultBannerCard,
               {
-                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderColor: isPassed
+                  ? isDark
+                    ? 'rgba(16, 185, 129, 0.4)'
+                    : '#A7F3D0'
+                  : isDark
+                    ? 'rgba(239, 68, 68, 0.4)'
+                    : '#FECACA',
               },
             ]}>
             <View
-              style={{
-                width: 68,
-                height: 68,
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-              }}>
-              <Svg width={68} height={68} style={StyleSheet.absoluteFill}>
-                <Defs>
-                  <LinearGradient id="exam_score_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <Stop offset="0%" stopColor={isPassed ? '#34D399' : '#FB7185'} />
-                    <Stop offset="100%" stopColor={isPassed ? '#059669' : '#E11D48'} />
-                  </LinearGradient>
-                </Defs>
-                <Rect width={68} height={68} rx={24} fill="url(#exam_score_grad)" />
-              </Svg>
-              <Trophy size={32} color="#FFFFFF" strokeWidth={2.2} />
+              style={[
+                styles.resultIconCircle,
+                {
+                  backgroundColor: isPassed
+                    ? isDark
+                      ? 'rgba(16, 185, 129, 0.2)'
+                      : '#D1FAE5'
+                    : isDark
+                      ? 'rgba(239, 68, 68, 0.2)'
+                      : '#FEE2E2',
+                },
+              ]}>
+              {isPassed ? (
+                <ShieldCheck size={36} color="#10B981" strokeWidth={2.4} />
+              ) : (
+                <ShieldAlert size={36} color="#EF4444" strokeWidth={2.4} />
+              )}
             </View>
-
-            <Text style={[styles.summaryTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-              {isPassed ? 'Exam Passed!' : 'Needs Review'}
-            </Text>
 
             <Text
               style={[
-                styles.summaryScore,
+                styles.resultStatusTitle,
                 { color: isPassed ? '#10B981' : '#EF4444' },
               ]}>
+              {isPassed ? 'EXAMINATION PASSED' : 'NEEDS REVIEW'}
+            </Text>
+
+            <Text style={[styles.resultScoreBig, { color: colors.text }]}>
               {computedScore}%
             </Text>
 
-            <Text style={[styles.summaryDescription, { color: colors.textSecondary }]}>
-              You achieved {correctCount} out of {questions.length} correct answers.
+            <Text style={[styles.resultScoreSub, { color: colors.textSecondary }]}>
+              {correctCount} correct out of {questions.length} total questions (70% passing threshold)
+            </Text>
+          </View>
+
+          {/* Solution & Question Review Header */}
+          <View style={styles.reviewSectionHeader}>
+            <Text style={[styles.reviewHeading, { color: colors.text }]}>
+              Questions & Solution Rationales
+            </Text>
+          </View>
+
+          {/* Question List Review */}
+          {questions.map((q, idx) => {
+            const userChoiceId = selectedAnswers[q.id];
+            const userChoice = q.options.find((o) => o.id === userChoiceId);
+            const isUserCorrect = userChoice && userChoice.key === q.correctKey;
+
+            return (
+              <View
+                key={q.id}
+                style={[
+                  styles.reviewQuestionCard,
+                  {
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                    borderColor: isUserCorrect
+                      ? isDark
+                        ? 'rgba(16, 185, 129, 0.3)'
+                        : '#A7F3D0'
+                      : isDark
+                        ? 'rgba(239, 68, 68, 0.3)'
+                        : '#FECACA',
+                  },
+                ]}>
+                <View style={styles.questionCardHeader}>
+                  <Text style={[styles.questionNumberText, { color: colors.accent }]}>
+                    {idx + 1}.)
+                  </Text>
+                  <Text style={[styles.questionTopicTag, { color: colors.textSecondary }]}>
+                    {q.topic}
+                  </Text>
+                  <View style={{ marginLeft: 'auto' }}>
+                    {isUserCorrect ? (
+                      <CheckCircle2 size={16} color="#10B981" />
+                    ) : (
+                      <XCircle size={16} color="#EF4444" />
+                    )}
+                  </View>
+                </View>
+
+                <Text style={[styles.questionBodyText, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                  {q.question}
+                </Text>
+
+                {/* Option Review Rows */}
+                <View style={styles.optionsList}>
+                  {q.options.map((opt) => {
+                    const isCorrectAnswer = opt.key === q.correctKey;
+                    const isSelectedByUser = opt.id === userChoiceId;
+
+                    let optBg = 'transparent';
+                    let optBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+                    let optTextColor = isDark ? '#D1D5DB' : '#374151';
+
+                    if (isCorrectAnswer) {
+                      optBg = isDark ? 'rgba(16, 185, 129, 0.18)' : '#ECFDF5';
+                      optBorder = '#10B981';
+                      optTextColor = isDark ? '#A7F3D0' : '#065F46';
+                    } else if (isSelectedByUser && !isCorrectAnswer) {
+                      optBg = isDark ? 'rgba(239, 68, 68, 0.18)' : '#FEF2F2';
+                      optBorder = '#EF4444';
+                      optTextColor = isDark ? '#FECACA' : '#991B1B';
+                    }
+
+                    return (
+                      <View
+                        key={opt.id}
+                        style={[
+                          styles.reviewOptionBox,
+                          {
+                            backgroundColor: optBg,
+                            borderColor: optBorder,
+                          },
+                        ]}>
+                        <View
+                          style={[
+                            styles.radioCircle,
+                            {
+                              backgroundColor: isCorrectAnswer
+                                ? '#10B981'
+                                : isSelectedByUser
+                                  ? '#EF4444'
+                                  : isDark
+                                    ? '#23262F'
+                                    : '#F3F4F6',
+                              borderColor: isCorrectAnswer
+                                ? '#10B981'
+                                : isSelectedByUser
+                                  ? '#EF4444'
+                                  : isDark
+                                    ? '#374151'
+                                    : '#D1D5DB',
+                            },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.radioKeyText,
+                              {
+                                color: isCorrectAnswer || isSelectedByUser ? '#FFFFFF' : colors.textSecondary,
+                              },
+                            ]}>
+                            {opt.key}
+                          </Text>
+                        </View>
+                        <Text style={[styles.optionText, { color: optTextColor }]}>
+                          {opt.text}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {/* Explanation */}
+                <View
+                  style={[
+                    styles.explanationBox,
+                    {
+                      backgroundColor: isDark ? '#23262F' : '#F8FAFC',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+                    },
+                  ]}>
+                  <Text style={[styles.explanationLabel, { color: colors.accent }]}>
+                    RATIONALE & SPECS:
+                  </Text>
+                  <Text style={[styles.explanationText, { color: isDark ? '#9CA3AF' : '#4B5563' }]}>
+                    {q.explanation}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+
+          {/* Finish Button */}
+          <Pressable
+            onPress={() => router.back()}
+            style={[styles.finishExamBtn, { backgroundColor: colors.accent }]}>
+            <Text style={styles.finishExamBtnText}>Finish & Return to Exams</Text>
+          </Pressable>
+        </ScrollView>
+      ) : (
+        /* =================================================================== */
+        /* 3. LIVE EXAMINATION CONTINUOUS DOCUMENT (GOOGLE FORM STYLE)         */
+        /* =================================================================== */
+        <ScrollView
+          ref={scrollViewRef}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.examFormContainer,
+            { paddingBottom: insets.bottom + 60 },
+          ]}>
+          {/* Exam Title & Instructions Banner */}
+          <View
+            style={[
+              styles.examBanner,
+              {
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+              },
+            ]}>
+            <Text style={[styles.bannerTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              {examTitle}
+            </Text>
+            <Text style={[styles.bannerSubtitle, { color: colors.textSecondary }]}>
+              {questions.length} Items Total • Continuous Simulation • Answer all items before submission
+            </Text>
+          </View>
+
+          {/* All Questions Rendered Sequentially (1, 2, 3...) */}
+          {questions.map((q, idx) => {
+            const userChoiceId = selectedAnswers[q.id];
+            const isFlagged = Boolean(flaggedQuestions[q.id]);
+
+            return (
+              <View
+                key={q.id}
+                onLayout={(e) => {
+                  questionLayoutsRef.current[idx] = e.nativeEvent.layout.y;
+                }}
+                style={[
+                  styles.questionCard,
+                  {
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                    borderColor: isFlagged
+                      ? colors.accent
+                      : userChoiceId
+                        ? isDark
+                          ? 'rgba(255, 255, 255, 0.12)'
+                          : 'rgba(0, 0, 0, 0.08)'
+                        : isDark
+                          ? 'rgba(255, 255, 255, 0.06)'
+                          : 'rgba(0, 0, 0, 0.05)',
+                  },
+                ]}>
+                {/* Question Header: Number + Topic + Flag */}
+                <View style={styles.questionCardHeader}>
+                  <Text style={[styles.questionNumberText, { color: colors.accent }]}>
+                    {idx + 1}.)
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.questionTopicTag, { color: colors.textSecondary }]}>
+                    {q.topic}
+                  </Text>
+
+                  {/* Flag Button */}
+                  <Pressable
+                    onPress={() => handleToggleFlag(q.id)}
+                    hitSlop={8}
+                    style={[
+                      styles.flagButton,
+                      {
+                        backgroundColor: isFlagged
+                          ? isDark
+                            ? 'rgba(224, 122, 95, 0.22)'
+                            : '#F8EAE4'
+                          : 'transparent',
+                      },
+                    ]}>
+                    <Flag
+                      size={14}
+                      color={isFlagged ? colors.accent : colors.textSecondary}
+                      fill={isFlagged ? colors.accent : 'transparent'}
+                      strokeWidth={2.2}
+                    />
+                  </Pressable>
+                </View>
+
+                {/* Question Statement */}
+                <Text style={[styles.questionBodyText, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                  {q.question}
+                </Text>
+
+                {/* Options List (A, B, C, D) with Shaded Circular Bubbles */}
+                <View style={styles.optionsList}>
+                  {q.options.map((opt) => {
+                    const isSelected = userChoiceId === opt.id;
+
+                    return (
+                      <Pressable
+                        key={opt.id}
+                        onPress={() => handleSelectOption(q.id, opt.id)}
+                        style={({ pressed }) => [
+                          styles.optionPressableRow,
+                          {
+                            backgroundColor: isSelected
+                              ? isDark
+                                ? 'rgba(224, 122, 95, 0.16)'
+                                : '#F8EAE4'
+                              : isDark
+                                ? '#23262F'
+                                : '#F9FAFB',
+                            borderColor: isSelected
+                              ? colors.accent
+                              : isDark
+                                ? 'rgba(255, 255, 255, 0.08)'
+                                : 'rgba(0, 0, 0, 0.06)',
+                            opacity: pressed ? 0.8 : 1,
+                          },
+                        ]}>
+                        {/* Shaded Circle Radio Bubble */}
+                        <View
+                          style={[
+                            styles.radioCircle,
+                            {
+                              backgroundColor: isSelected
+                                ? colors.accent
+                                : isDark
+                                  ? '#1C1F26'
+                                  : '#FFFFFF',
+                              borderColor: isSelected
+                                ? colors.accent
+                                : isDark
+                                  ? '#4B5563'
+                                  : '#D1D5DB',
+                            },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.radioKeyText,
+                              {
+                                color: isSelected ? '#FFFFFF' : isDark ? '#D1D5DB' : '#4B5563',
+                                fontWeight: isSelected ? '800' : '700',
+                              },
+                            ]}>
+                            {opt.key}
+                          </Text>
+                        </View>
+
+                        {/* Option Text */}
+                        <Text
+                          style={[
+                            styles.optionText,
+                            {
+                              color: isSelected
+                                ? isDark
+                                  ? '#F9FAFB'
+                                  : '#111827'
+                                : isDark
+                                  ? '#D1D5DB'
+                                  : '#374151',
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}>
+                          {opt.text}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })}
+
+          {/* ================================================================= */}
+          {/* 4. END OF EXAMINATION: REVIEW & SUBMIT ACTIONS                    */}
+          {/* ================================================================= */}
+          <View
+            style={[
+              styles.endExamBox,
+              {
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+              },
+            ]}>
+            <Text style={[styles.endExamTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              End of Examination Paper
+            </Text>
+            <Text style={[styles.endExamStats, { color: colors.textSecondary }]}>
+              {answeredCount} Answered • {questions.length - answeredCount} Unanswered • {flaggedCount} Flagged
             </Text>
 
-            {/* Retake and Hub buttons */}
-            <View style={styles.actionButtonsRow}>
+            <View style={styles.endActionsRow}>
+              {/* Review on Answer Sheet */}
               <Pressable
-                onPress={handleRetake}
+                onPress={() => setIsAnswerSheetVisible(true)}
                 style={({ pressed }) => [
-                  styles.retakeBtn,
+                  styles.reviewSheetBtn,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}>
+                <FileSpreadsheet size={16} color={colors.accent} strokeWidth={2.2} />
+                <Text style={[styles.reviewSheetBtnText, { color: colors.text }]}>
+                  Review Answer Sheet
+                </Text>
+              </Pressable>
+
+              {/* Submit Exam Button */}
+              <Pressable
+                onPress={() => setIsSubmitConfirmVisible(true)}
+                style={({ pressed }) => [
+                  styles.submitExamBtn,
                   {
                     backgroundColor: colors.accent,
                     opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.985 : 1 }],
                   },
                 ]}>
-                <RotateCcw size={16} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.retakeBtnText}>Retake Exam</Text>
+                <Text style={styles.submitExamBtnText}>Submit Examination</Text>
               </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* =================================================================== */}
+      {/* 5. SLIDE-OUT LEFT MODAL: "ANSWER SHEET" (OMR BUBBLE SHEET)          */}
+      {/* =================================================================== */}
+      <Modal
+        visible={isAnswerSheetVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsAnswerSheetVisible(false)}>
+        <View style={styles.sheetModalOverlay}>
+          {/* Left Sliding Sheet Container */}
+          <View
+            style={[
+              styles.sheetModalDrawer,
+              {
+                backgroundColor: colors.background,
+                paddingTop: insets.top + 10,
+                paddingBottom: insets.bottom + 16,
+              },
+            ]}>
+            {/* Answer Sheet Drawer Header */}
+            <View style={styles.sheetHeader}>
+              <View>
+                <Text style={[styles.sheetTitle, { color: colors.text }]}>
+                  Answer Sheet
+                </Text>
+                <Text style={[styles.sheetSub, { color: colors.textSecondary }]}>
+                  {answeredCount} of {questions.length} Answered
+                </Text>
+              </View>
 
               <Pressable
-                onPress={() => router.back()}
-                style={({ pressed }) => [
-                  styles.returnBtn,
-                  {
-                    backgroundColor: isDark ? '#23262F' : '#FFFFFF',
-                    opacity: pressed ? 0.75 : 1,
-                  },
+                onPress={() => setIsAnswerSheetVisible(false)}
+                hitSlop={8}
+                style={[
+                  styles.sheetCloseBtn,
+                  { backgroundColor: isDark ? '#23262F' : '#F3F4F6' },
                 ]}>
-                <Text style={[styles.returnBtnText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                  Back to Hub
+                <X size={16} color={colors.text} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+
+            {/* Bubble Rows List */}
+            <ScrollView
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={styles.bubbleListContainer}>
+              {questions.map((q, idx) => {
+                const userChoiceId = selectedAnswers[q.id];
+                const isFlagged = Boolean(flaggedQuestions[q.id]);
+
+                return (
+                  <View
+                    key={q.id}
+                    style={[
+                      styles.bubbleRow,
+                      {
+                        borderBottomColor: isDark
+                          ? 'rgba(255, 255, 255, 0.05)'
+                          : 'rgba(0, 0, 0, 0.04)',
+                      },
+                    ]}>
+                    {/* Question Number (Click to Scroll directly to it) */}
+                    <Pressable
+                      onPress={() => handleScrollToQuestion(idx)}
+                      style={styles.bubbleQNumberBox}>
+                      <Text style={[styles.bubbleQNumber, { color: colors.text }]}>
+                        {idx + 1}.)
+                      </Text>
+                      {isFlagged && (
+                        <Flag
+                          size={11}
+                          color={colors.accent}
+                          fill={colors.accent}
+                          style={{ marginLeft: 2 }}
+                        />
+                      )}
+                    </Pressable>
+
+                    {/* Circular Bubbles (A) (B) (C) (D) */}
+                    <View style={styles.bubbleRowGroup}>
+                      {q.options.map((opt) => {
+                        const isShaded = userChoiceId === opt.id;
+
+                        return (
+                          <Pressable
+                            key={opt.id}
+                            onPress={() => handleSelectOption(q.id, opt.id)}
+                            style={({ pressed }) => [
+                              styles.scantronBubble,
+                              {
+                                backgroundColor: isShaded
+                                  ? colors.accent
+                                  : isDark
+                                    ? '#23262F'
+                                    : '#FFFFFF',
+                                borderColor: isShaded
+                                  ? colors.accent
+                                  : isDark
+                                    ? '#4B5563'
+                                    : '#D1D5DB',
+                                opacity: pressed ? 0.75 : 1,
+                                transform: [{ scale: isShaded ? 1.05 : 1 }],
+                              },
+                            ]}>
+                            <Text
+                              style={[
+                                styles.scantronBubbleText,
+                                {
+                                  color: isShaded
+                                    ? '#FFFFFF'
+                                    : isDark
+                                      ? '#D1D5DB'
+                                      : '#4B5563',
+                                  fontWeight: isShaded ? '900' : '700',
+                                },
+                              ]}>
+                              {opt.key}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            {/* Bottom Drawer CTA */}
+            <View style={styles.sheetFooter}>
+              <Pressable
+                onPress={() => {
+                  setIsAnswerSheetVisible(false);
+                  setIsSubmitConfirmVisible(true);
+                }}
+                style={[styles.sheetSubmitBtn, { backgroundColor: colors.accent }]}>
+                <Text style={styles.sheetSubmitBtnText}>
+                  Submit Exam ({answeredCount}/{questions.length})
                 </Text>
               </Pressable>
             </View>
           </View>
 
-          {/* Question Breakdown Section */}
-          <Text style={[styles.breakdownHeader, { color: colors.text }]}>
-            Detailed Answer Breakdown
-          </Text>
+          {/* Click outside to dismiss */}
+          <Pressable
+            style={styles.sheetModalDismiss}
+            onPress={() => setIsAnswerSheetVisible(false)}
+          />
+        </View>
+      </Modal>
 
-          <View style={styles.breakdownList}>
-            {questions.map((q, idx) => {
-              const uChoiceId = selectedAnswers[q.id];
-              const selectedOptionObj = q.options.find((o) => o.id === uChoiceId);
-              const isCorrectQ = selectedOptionObj?.key === q.correctKey;
+      {/* =================================================================== */}
+      {/* 6. SUBMISSION CONFIRMATION MODAL                                    */}
+      {/* =================================================================== */}
+      <Modal
+        visible={isSubmitConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsSubmitConfirmVisible(false)}>
+        <View style={styles.confirmOverlay}>
+          <Pressable
+            style={styles.modalDismissArea}
+            onPress={() => setIsSubmitConfirmVisible(false)}
+          />
+          <View
+            style={[
+              styles.confirmCard,
+              {
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+              },
+            ]}>
+            <View style={styles.confirmHeader}>
+              <Text style={[styles.confirmTitle, { color: colors.text }]}>
+                Submit Examination?
+              </Text>
+              <Pressable
+                onPress={() => setIsSubmitConfirmVisible(false)}
+                style={[
+                  styles.sheetCloseBtn,
+                  { backgroundColor: isDark ? '#23262F' : '#F3F4F6' },
+                ]}>
+                <X size={16} color={colors.text} strokeWidth={2.4} />
+              </Pressable>
+            </View>
 
-              return (
-                <View
-                  key={q.id}
-                  style={[
-                    styles.reviewCard,
-                    {
-                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                      borderColor: isDark
-                        ? 'rgba(255,255,255,0.08)'
-                        : 'rgba(0,0,0,0.06)',
-                    },
-                  ]}>
-                  <View style={styles.reviewCardHeader}>
-                    <Text style={[styles.reviewNumber, { color: colors.accent }]}>
-                      Question {idx + 1}
-                    </Text>
-                    <View
-                      style={[
-                        styles.reviewResultBadge,
-                        {
-                          backgroundColor: isCorrectQ
-                            ? isDark
-                              ? 'rgba(16, 185, 129, 0.2)'
-                              : '#E8F8F0'
-                            : isDark
-                              ? 'rgba(239, 68, 68, 0.2)'
-                              : '#FEECEB',
-                        },
-                      ]}>
-                      <Text
-                        style={[
-                          styles.reviewResultText,
-                          { color: isCorrectQ ? '#10B981' : '#EF4444' },
-                        ]}>
-                        {isCorrectQ ? 'Correct' : 'Incorrect'}
-                      </Text>
-                    </View>
-                  </View>
+            <Text style={[styles.confirmDesc, { color: colors.textSecondary }]}>
+              You have answered {answeredCount} out of {questions.length} questions.
+              {questions.length - answeredCount > 0
+                ? ` You still have ${questions.length - answeredCount} unanswered items.`
+                : ' All items have been answered.'}
+            </Text>
 
-                  <Text style={[styles.reviewQuestionText, { color: isDark ? '#F9FAFB' : '#111827' }]}>
-                    {q.question}
-                  </Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                onPress={() => setIsSubmitConfirmVisible(false)}
+                style={[
+                  styles.cancelBtn,
+                  { backgroundColor: isDark ? '#23262F' : '#F6F0ED' },
+                ]}>
+                <Text style={[styles.cancelBtnText, { color: colors.text }]}>
+                  Keep Reviewing
+                </Text>
+              </Pressable>
 
-                  <View style={styles.reviewAnswersRow}>
-                    <Text style={[styles.reviewAnswerLabel, { color: colors.textSecondary }]}>
-                      Your Choice:{' '}
-                      <Text
-                        style={{
-                          fontWeight: '800',
-                          color: isCorrectQ ? '#10B981' : '#EF4444',
-                        }}>
-                        {selectedOptionObj ? `${selectedOptionObj.key}: ${selectedOptionObj.text}` : 'None Selected'}
-                      </Text>
-                    </Text>
-                  </View>
-
-                  <Text style={[styles.reviewExplanation, { color: isDark ? '#9CA3AF' : '#4B5563' }]}>
-                    {q.explanation}
-                  </Text>
-                </View>
-              );
-            })}
+              <Pressable
+                onPress={handleFinalSubmit}
+                style={[styles.confirmBtn, { backgroundColor: colors.accent }]}>
+                <Text style={styles.confirmBtnText}>Submit Now</Text>
+              </Pressable>
+            </View>
           </View>
-        </ScrollView>
-      )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -664,267 +1163,472 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 12,
-    gap: 12,
+    paddingBottom: 10,
+    gap: 8,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  headerBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  headerTitles: {
-    flex: 1,
+  answerSheetHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  headerSubtitle: {
-    fontSize: 11,
+  answerSheetBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  answeredMiniPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  answeredMiniPillText: {
+    color: '#FFFFFF',
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
   },
-  headerTitle: {
+  submittedTitleBox: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  submittedTitle: {
     fontSize: 15,
     fontWeight: '800',
-    marginTop: 1,
+    letterSpacing: -0.2,
   },
   timerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    gap: 4,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 14,
-    gap: 6,
+    borderRadius: 12,
+    flexShrink: 0,
   },
   timerText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '800',
-    fontVariant: ['tabular-nums'],
+    letterSpacing: 0.2,
   },
-  track: {
-    height: 4,
-    width: '100%',
+  examFormContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 16,
   },
-  trackFill: {
-    height: '100%',
-  },
-  sessionLayout: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    gap: 14,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  topicBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 6,
-  },
-  topicBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  flagBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 6,
-  },
-  flagText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  questionBox: {
-    padding: 22,
-    borderRadius: 22,
-  },
-  questionText: {
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '700',
-  },
-  optionsList: {
-    gap: 12,
-  },
-  optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
+  examBanner: {
     borderRadius: 18,
-    gap: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 4,
   },
-  optionKeyCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  bannerTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  bannerSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  questionCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+      },
+    }),
+  },
+  questionCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  questionNumberText: {
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  questionTopicTag: {
+    flex: 1,
+    fontSize: 11.5,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  flagButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionKeyText: {
-    fontSize: 14,
-    fontWeight: '800',
+  questionBodyText: {
+    fontSize: 14.5,
+    fontWeight: '600',
+    lineHeight: 21,
+  },
+  optionsList: {
+    gap: 8,
+    marginTop: 2,
+  },
+  optionPressableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 13,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  radioCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  radioKeyText: {
+    fontSize: 11.5,
   },
   optionText: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  bottomNavContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    gap: 14,
-  },
-  navBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 18,
-    gap: 6,
-  },
-  navBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  navBtnPrimary: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 18,
-    gap: 6,
-  },
-  navBtnPrimaryText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  resultsContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    gap: 16,
-  },
-  summaryCard: {
-    padding: 24,
-    borderRadius: 26,
-    alignItems: 'center',
-    gap: 10,
-  },
-  summaryTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    marginTop: 4,
-  },
-  summaryScore: {
-    fontSize: 48,
-    fontWeight: '900',
-    letterSpacing: -1,
-  },
-  summaryDescription: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    width: '100%',
-    gap: 10,
-    marginTop: 8,
-  },
-  retakeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 18,
-    gap: 8,
-  },
-  retakeBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  returnBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 18,
-  },
-  returnBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  breakdownHeader: {
-    fontSize: 18,
-    fontWeight: '800',
-    marginTop: 6,
-  },
-  breakdownList: {
-    gap: 12,
-  },
-  reviewCard: {
-    padding: 18,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 10,
-  },
-  reviewCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  reviewNumber: {
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  reviewResultBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  reviewResultText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  reviewQuestionText: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '700',
-  },
-  reviewAnswersRow: {
-    paddingVertical: 4,
-  },
-  reviewAnswerLabel: {
     fontSize: 13,
     lineHeight: 18,
   },
-  reviewExplanation: {
-    fontSize: 13,
-    lineHeight: 19,
+  endExamBox: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  endExamTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  endExamStats: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  endActionsRow: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 6,
+  },
+  reviewSheetBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  reviewSheetBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  submitExamBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitExamBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '800',
+  },
+
+  /* Results View Styles */
+  resultsContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    gap: 16,
+  },
+  resultBannerCard: {
+    borderRadius: 22,
+    borderWidth: 1.5,
+    padding: 22,
+    alignItems: 'center',
+    gap: 8,
+  },
+  resultIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  resultStatusTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  resultScoreBig: {
+    fontSize: 44,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  resultScoreSub: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  reviewSectionHeader: {
+    paddingHorizontal: 4,
+    paddingTop: 8,
+  },
+  reviewHeading: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  reviewQuestionCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 12,
+  },
+  reviewOptionBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 13,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  explanationBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 4,
+    marginTop: 4,
+  },
+  explanationLabel: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  explanationText: {
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '500',
+  },
+  finishExamBtn: {
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  finishExamBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  /* Left Slide-out Answer Sheet Drawer */
+  sheetModalOverlay: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  },
+  sheetModalDrawer: {
+    width: '84%',
+    maxWidth: 360,
+    height: '100%',
+    borderTopRightRadius: 24,
+    borderBottomRightRadius: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 4, height: 0 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+      web: {
+        boxShadow: '4px 0 24px rgba(0,0,0,0.2)',
+      },
+    }),
+  },
+  sheetModalDismiss: {
+    flex: 1,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(150, 150, 150, 0.1)',
+  },
+  sheetTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  sheetSub: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  sheetCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bubbleListContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  bubbleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  bubbleQNumberBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 44,
+  },
+  bubbleQNumber: {
+    fontSize: 12.5,
+    fontWeight: '800',
+  },
+  bubbleRowGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  scantronBubble: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scantronBubbleText: {
+    fontSize: 12,
+  },
+  sheetFooter: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(150, 150, 150, 0.1)',
+  },
+  sheetSubmitBtn: {
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetSubmitBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '800',
+  },
+
+  /* Confirm Modal Styles */
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalDismissArea: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 18,
+    gap: 14,
+  },
+  confirmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  confirmTitle: {
+    fontSize: 16.5,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  confirmDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  cancelBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  confirmBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });
