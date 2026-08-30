@@ -33,6 +33,7 @@ export interface AddQuizFromFlashcardsModalProps {
   visible: boolean;
   onClose: () => void;
   onAddFlashcardToQuiz: (preset: FlashcardPreset) => void;
+  onRemoveFlashcardFromQuiz?: (preset: FlashcardPreset) => void;
   existingQuizTitles: Set<string>;
   bottomInset?: number;
 }
@@ -78,6 +79,7 @@ export function AddQuizFromFlashcardsModal({
   visible,
   onClose,
   onAddFlashcardToQuiz,
+  onRemoveFlashcardFromQuiz,
   existingQuizTitles,
   bottomInset = 0,
 }: AddQuizFromFlashcardsModalProps) {
@@ -112,6 +114,14 @@ export function AddQuizFromFlashcardsModal({
   const handleGoToFlashcards = () => {
     onClose();
     router.push('/(tabs)/learn/flashcards' as any);
+  };
+
+  const handleToggleCard = (preset: FlashcardPreset, isAdded: boolean) => {
+    if (isAdded) {
+      onRemoveFlashcardFromQuiz?.(preset);
+    } else {
+      onAddFlashcardToQuiz(preset);
+    }
   };
 
   return (
@@ -175,8 +185,7 @@ export function AddQuizFromFlashcardsModal({
                   return (
                     <Pressable
                       key={preset.id}
-                      disabled={isAdded}
-                      onPress={() => onAddFlashcardToQuiz(preset)}
+                      onPress={() => handleToggleCard(preset, isAdded)}
                       style={({ pressed }) => [
                         styles.bentoCard,
                         {
@@ -184,8 +193,8 @@ export function AddQuizFromFlashcardsModal({
                           borderColor: isDark
                             ? 'rgba(255, 255, 255, 0.06)'
                             : 'rgba(0, 0, 0, 0.04)',
-                          opacity: isAdded ? 0.8 : pressed ? 0.85 : 1,
-                          transform: [{ scale: pressed && !isAdded ? 0.97 : 1 }],
+                          opacity: pressed ? 0.85 : 1,
+                          transform: [{ scale: pressed ? 0.97 : 1 }],
                         },
                       ]}>
                       {/* Top Action Icon Button */}

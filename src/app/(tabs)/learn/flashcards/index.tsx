@@ -414,11 +414,8 @@ export default function FlashcardsHubScreen() {
                     backgroundColor: isDark ? '#23262F' : '#F0EBE8',
                   },
                 ]}>
-                <Plus size={24} color={colors.accent} strokeWidth={2.4} />
+                <Plus size={24} color={colors.accent} strokeWidth={2.6} />
               </View>
-              <Text style={[styles.dashedAddText, { color: colors.textSecondary }]}>
-                New Preset
-              </Text>
             </Pressable>
           </View>
         </ScrollView>

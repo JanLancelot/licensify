@@ -107,6 +107,15 @@ export function addFlashcardPresetToQuiz(flashcardPreset: FlashcardPreset): Quiz
   return newQuizPreset;
 }
 
+export function removeFlashcardFromQuiz(flashcardPresetId: string): QuizPreset[] {
+  const current = loadPresetsFromStorage();
+  const updated = current.filter(
+    (p) => p.id !== `quiz-${flashcardPresetId}` && p.id !== flashcardPresetId
+  );
+  persistPresets(updated);
+  return updated;
+}
+
 export function subscribeQuizPresets(listener: (presets: QuizPreset[]) => void): () => void {
   listeners.add(listener);
   listener(loadPresetsFromStorage());
@@ -130,5 +139,6 @@ export function useQuizPresets() {
     savePreset: saveQuizPreset,
     deletePreset: deleteQuizPreset,
     addFromFlashcard: addFlashcardPresetToQuiz,
+    removeFromFlashcard: removeFlashcardFromQuiz,
   };
 }

@@ -8,10 +8,12 @@ import {
   Play,
   Plus,
   Sparkles,
+  X,
   Zap,
 } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -49,7 +51,7 @@ import { FlashcardPreset, QuizPreset } from '@/types/curriculum';
 /* Custom Deck Gradient Icon Component */
 function CustomDeckIcon({
   iconName = 'Layers',
-  size = 50,
+  size = 48,
 }: {
   iconName?: string;
   size?: number;
@@ -89,7 +91,12 @@ export default function PracticeScreen() {
   const router = useRouter();
 
   const { curriculum, refetch: refetchCurriculum } = useLocalHierarchy();
-  const { presets: quizPresets, addFromFlashcard } = useQuizPresets();
+  const {
+    presets: quizPresets,
+    deletePreset,
+    addFromFlashcard,
+    removeFromFlashcard,
+  } = useQuizPresets();
 
   // Refresh curriculum when tab is focused
   useFocusEffect(
@@ -165,6 +172,22 @@ export default function PracticeScreen() {
     });
   };
 
+  // Remove / delete a quiz preset
+  const handleDeleteQuizPreset = (preset: QuizPreset) => {
+    Alert.alert(
+      'Remove Quiz Set',
+      `Remove "${preset.title}" from your quiz sets?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => deletePreset(preset.id),
+        },
+      ]
+    );
+  };
+
   // Launch modal for specialized computation set
   const handleSelectSpecializedSet = () => {
     setActiveQuizTarget({
@@ -199,6 +222,10 @@ export default function PracticeScreen() {
 
   const handleAddFlashcardPreset = (preset: FlashcardPreset) => {
     addFromFlashcard(preset);
+  };
+
+  const handleRemoveFlashcardPreset = (preset: FlashcardPreset) => {
+    removeFromFlashcard(preset.id);
   };
 
   return (
@@ -238,7 +265,7 @@ export default function PracticeScreen() {
             </Pressable>
           </View>
 
-          {/* 2-Column Bento Grid of Custom Decks + Bento Dashed Add Card */}
+          {/* 2-Column Bento Grid of Custom Decks + Bento Dashed Add Button */}
           <View style={styles.gridContainer}>
             {quizPresets.map((preset) => (
               <Pressable
@@ -252,6 +279,23 @@ export default function PracticeScreen() {
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}>
+                {/* Top-Right Remove Button */}
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleDeleteQuizPreset(preset);
+                  }}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.cardDeleteBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                      opacity: pressed ? 0.6 : 1,
+                    },
+                  ]}>
+                  <X size={12} color={isDark ? '#9CA3AF' : '#6B7280'} strokeWidth={2.4} />
+                </Pressable>
+
                 {/* Circular Icon */}
                 <CustomDeckIcon iconName={preset.iconName} size={48} />
 
@@ -272,7 +316,7 @@ export default function PracticeScreen() {
               </Pressable>
             ))}
 
-            {/* Bento Dashed Add Card */}
+            {/* Minimal Bento Dashed Add Button */}
             <Pressable
               onPress={() => setIsAddFromFlashcardsModalVisible(true)}
               style={({ pressed }) => [
@@ -290,11 +334,8 @@ export default function PracticeScreen() {
                     backgroundColor: isDark ? '#23262F' : '#F0EBE8',
                   },
                 ]}>
-                <Plus size={22} color={colors.accent} strokeWidth={2.4} />
+                <Plus size={24} color={colors.accent} strokeWidth={2.6} />
               </View>
-              <Text style={[styles.dashedAddText, { color: colors.textSecondary }]}>
-                Add from Flashcards
-              </Text>
             </Pressable>
           </View>
         </View>
@@ -569,6 +610,7 @@ export default function PracticeScreen() {
         visible={isAddFromFlashcardsModalVisible}
         onClose={() => setIsAddFromFlashcardsModalVisible(false)}
         onAddFlashcardToQuiz={handleAddFlashcardPreset}
+        onRemoveFlashcardFromQuiz={handleRemoveFlashcardPreset}
         existingQuizTitles={existingQuizTitles}
         bottomInset={insets.bottom}
       />
@@ -616,28 +658,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyQuizSetDashedCard: {
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  emptyDashedTextGroup: {
-    flex: 1,
-    gap: 3,
-  },
-  emptyDashedTitle: {
-    fontSize: 14.5,
-    fontWeight: '800',
-  },
-  emptyDashedSub: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -645,11 +665,13 @@ const styles = StyleSheet.create({
   },
   customDeckCard: {
     width: '48.2%',
+    minHeight: 132,
     borderRadius: 20,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    position: 'relative',
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
@@ -665,6 +687,17 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  cardDeleteBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
   customDeckTitle: {
     fontSize: 14,
     fontWeight: '800',
@@ -678,26 +711,20 @@ const styles = StyleSheet.create({
   },
   dashedAddCard: {
     width: '48.2%',
-    height: 138,
+    minHeight: 132,
     borderRadius: 20,
     borderWidth: 1.5,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    padding: 8,
+    padding: 16,
   },
   dashedIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  dashedAddText: {
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
   },
   listContainer: {
     gap: 12,
