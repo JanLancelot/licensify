@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
   BookOpen,
+  Clock,
   Compass,
   Landmark,
   Layers,
@@ -48,10 +49,10 @@ import {
 export const COMPREHENSIVE_MOCK_SETS = [
   {
     id: 'comprehensive-set-1',
-    setNumber: 'SET 1',
-    title: 'History, Theory, Tropical & Practice',
+    setNumber: '1',
+    title: 'Comprehensive Mock Set 1',
     itemsCount: 100,
-    itemsLabel: '100 Items',
+    itemsLabel: '100 ITEMS',
     durationLabel: '3 Hours',
     durationSeconds: 10800,
     subjects: [
@@ -60,15 +61,13 @@ export const COMPREHENSIVE_MOCK_SETS = [
       'Tropical Design',
       'Professional Practice',
     ],
-    icon: Landmark,
-    gradient: ['#A78BFA', '#7C3AED'] as [string, string],
   },
   {
     id: 'comprehensive-set-2',
-    setNumber: 'SET 2',
-    title: 'Building Utilities & Technology',
+    setNumber: '2',
+    title: 'Comprehensive Mock Set 2',
     itemsCount: 150,
-    itemsLabel: '150 Items',
+    itemsLabel: '150 ITEMS',
     durationLabel: '3 Hours',
     durationSeconds: 10800,
     subjects: [
@@ -76,15 +75,13 @@ export const COMPREHENSIVE_MOCK_SETS = [
       'Building Technology',
       'Materials & Specification',
     ],
-    icon: Compass,
-    gradient: ['#FBBF24', '#D97706'] as [string, string],
   },
   {
     id: 'comprehensive-set-3',
-    setNumber: 'SET 3',
-    title: 'Planning & Architectural Design',
+    setNumber: '3',
+    title: 'Comprehensive Mock Set 3',
     itemsCount: 200,
-    itemsLabel: '200 Items',
+    itemsLabel: '200 ITEMS',
     durationLabel: '7 Hours',
     durationSeconds: 25200,
     subjects: [
@@ -93,8 +90,6 @@ export const COMPREHENSIVE_MOCK_SETS = [
       'NBCP Rule 7 & 8',
       'Building Laws',
     ],
-    icon: PenTool,
-    gradient: ['#38BDF8', '#0284C7'] as [string, string],
   },
 ];
 
@@ -135,41 +130,6 @@ function CustomDeckIcon({
   );
 }
 
-/* Comprehensive Set Bento Icon */
-function ComprehensiveSetIcon({
-  icon: IconComponent,
-  colors: [startColor, endColor],
-  size = 48,
-}: {
-  icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
-  colors: [string, string];
-  size?: number;
-}) {
-  const gradId = `comp_set_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
-
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-      }}>
-      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={startColor} />
-            <Stop offset="100%" stopColor={endColor} />
-          </LinearGradient>
-        </Defs>
-        <Rect width={size} height={size} rx={size / 2} fill={`url(#${gradId})`} />
-      </Svg>
-      <IconComponent size={Math.round(size * 0.46)} color="#FFFFFF" strokeWidth={2.4} />
-    </View>
-  );
-}
 
 export default function ExamsSelectionScreen() {
   const { colors, isDark } = useAppTheme();
@@ -394,16 +354,15 @@ export default function ExamsSelectionScreen() {
             </Text>
           </View>
 
-          {/* 3 Set Cards in Clean Bento Layout */}
+          {/* 3 Set Cards Matching Drawing Layout */}
           <View style={styles.comprehensiveList}>
             {COMPREHENSIVE_MOCK_SETS.map((set) => {
-              const IconComp = set.icon;
               return (
                 <Pressable
                   key={set.id}
                   onPress={() => handleSelectComprehensiveSet(set)}
                   style={({ pressed }) => [
-                    styles.comprehensiveCard,
+                    styles.comprehensiveSetCard,
                     {
                       backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                       borderColor: isDark
@@ -413,69 +372,84 @@ export default function ExamsSelectionScreen() {
                       transform: [{ scale: pressed ? 0.985 : 1 }],
                     },
                   ]}>
-                  {/* Left: Gradient Circular Icon */}
-                  <ComprehensiveSetIcon
-                    icon={IconComp}
-                    colors={set.gradient}
-                    size={46}
-                  />
-
-                  {/* Middle: Set Info & Subjects */}
-                  <View style={styles.comprehensiveInfo}>
-                    <View style={styles.setTitleRow}>
-                      <View
-                        style={[
-                          styles.setNumberBadge,
-                          {
-                            backgroundColor: isDark
-                              ? 'rgba(224, 122, 95, 0.18)'
-                              : '#F8EAE4',
-                          },
-                        ]}>
-                        <Text style={[styles.setNumberText, { color: colors.accent }]}>
-                          {set.setNumber}
-                        </Text>
-                      </View>
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          styles.comprehensiveTitle,
-                          { color: isDark ? '#F9FAFB' : '#0F172A' },
-                        ]}>
-                        {set.title}
-                      </Text>
-                    </View>
-
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        styles.comprehensiveSubjectsText,
-                        { color: colors.textSecondary },
-                      ]}>
-                      {set.subjects.join(' • ')}
-                    </Text>
-
-                    {/* Meta Pill */}
+                  {/* Left Section: SET + Large Prominent Number */}
+                  <View style={styles.setNumberCol}>
                     <Text
                       style={[
-                        styles.comprehensiveMetaText,
+                        styles.setLabelText,
                         { color: colors.accent },
                       ]}>
-                      {set.itemsLabel} • {set.durationLabel}
+                      SET
+                    </Text>
+                    <Text
+                      style={[
+                        styles.setBigNumberText,
+                        { color: isDark ? '#F9FAFB' : '#0F172A' },
+                      ]}>
+                      {set.setNumber}
                     </Text>
                   </View>
 
-                  {/* Right: Quick Play Icon */}
+                  {/* Vertical Divider */}
                   <View
                     style={[
-                      styles.comprehensivePlayBtn,
+                      styles.setDivider,
                       {
                         backgroundColor: isDark
-                          ? 'rgba(224, 122, 95, 0.18)'
-                          : '#F8EAE4',
+                          ? 'rgba(255, 255, 255, 0.08)'
+                          : 'rgba(0, 0, 0, 0.06)',
                       },
-                    ]}>
-                    <Play size={12} color={colors.accent} fill={colors.accent} />
+                    ]}
+                  />
+
+                  {/* Right Section: Header + Stacked Subject List */}
+                  <View style={styles.setContentCol}>
+                    {/* Header: Items Count Title + Timer Icon in Hours */}
+                    <View style={styles.setHeaderRow}>
+                      <Text
+                        style={[
+                          styles.setItemsTitle,
+                          { color: isDark ? '#F9FAFB' : '#0F172A' },
+                        ]}>
+                        {set.itemsLabel}
+                      </Text>
+                      <View style={styles.durationBadge}>
+                        <Clock
+                          size={11.5}
+                          color={colors.accent}
+                          strokeWidth={2.4}
+                        />
+                        <Text
+                          style={[
+                            styles.setDurationText,
+                            { color: colors.accent },
+                          ]}>
+                          {set.durationLabel}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Stacked Subjects List with Bullet Points */}
+                    <View style={styles.subjectsStack}>
+                      {set.subjects.map((sub, sIdx) => (
+                        <View key={sIdx} style={styles.subjectItemRow}>
+                          <View
+                            style={[
+                              styles.bulletDot,
+                              { backgroundColor: isDark ? '#6B7280' : '#9CA3AF' },
+                            ]}
+                          />
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              styles.subjectItemText,
+                              { color: isDark ? '#D1D5DB' : '#4B5563' },
+                            ]}>
+                            {sub.toUpperCase()}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 </Pressable>
               );
@@ -616,13 +590,13 @@ const styles = StyleSheet.create({
   comprehensiveList: {
     gap: 12,
   },
-  comprehensiveCard: {
+  comprehensiveSetCard: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 20,
     borderWidth: 1,
-    padding: 14,
-    gap: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
@@ -634,49 +608,74 @@ const styles = StyleSheet.create({
         elevation: 2,
       },
       web: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
       },
     }),
   },
-  comprehensiveInfo: {
-    flex: 1,
-    gap: 3,
-  },
-  setTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  setNumberBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  setNumberText: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    letterSpacing: 0.2,
-  },
-  comprehensiveTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  comprehensiveSubjectsText: {
-    fontSize: 11.5,
-    fontWeight: '500',
-  },
-  comprehensiveMetaText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    marginTop: 1,
-  },
-  comprehensivePlayBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  setNumberCol: {
+    width: 58,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  setLabelText: {
+    fontSize: 12.5,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+  setBigNumberText: {
+    fontSize: 38,
+    fontWeight: '900',
+    lineHeight: 42,
+    marginTop: -2,
+    letterSpacing: -1,
+  },
+  setDivider: {
+    width: 1,
+    height: '84%',
+    marginHorizontal: 14,
+  },
+  setContentCol: {
+    flex: 1,
+    gap: 6,
+    justifyContent: 'center',
+  },
+  setHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  setItemsTitle: {
+    fontSize: 15.5,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+  },
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  setDurationText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  subjectsStack: {
+    gap: 4,
+    marginTop: 3,
+  },
+  subjectItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  bulletDot: {
+    width: 3.5,
+    height: 3.5,
+    borderRadius: 2,
+  },
+  subjectItemText: {
+    fontSize: 11,
+    fontWeight: '400',
+    letterSpacing: 0.3,
+    lineHeight: 16,
   },
 });
