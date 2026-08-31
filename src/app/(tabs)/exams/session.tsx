@@ -1,16 +1,23 @@
 import * as crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import {
   ArrowLeft,
   CheckCircle2,
+  CheckSquare,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   FileSpreadsheet,
   Flag,
+  Hand,
   HelpCircle,
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
+  Square,
   Timer,
   X,
   XCircle
@@ -27,6 +34,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,23 +55,27 @@ export interface ExamSessionQuestion {
 /* ========================================================================= */
 /* 1. ISOLATED TIMER BADGE (Prevents full-exam re-renders every second)      */
 /* ========================================================================= */
-const ExamTimerBadge = memo(function ExamTimerBadge({
-  initialSeconds,
-  isSubmitted,
-  computedScore,
-  isPassed,
-  onTimeUp,
-  accentColor,
-  isDark,
-}: {
+interface ExamTimerBadgeProps {
   initialSeconds: number;
   isSubmitted: boolean;
+  isPaused?: boolean;
   computedScore: number;
   isPassed: boolean;
   onTimeUp: () => void;
   accentColor: string;
   isDark: boolean;
-}) {
+}
+
+const ExamTimerBadge = memo(function ExamTimerBadge({
+  initialSeconds,
+  isSubmitted,
+  isPaused = false,
+  computedScore,
+  isPassed,
+  onTimeUp,
+  accentColor,
+  isDark,
+}: ExamTimerBadgeProps) {
   const [secondsRemaining, setSecondsRemaining] = useState(initialSeconds);
   const onTimeUpRef = useRef(onTimeUp);
   onTimeUpRef.current = onTimeUp;
@@ -73,7 +85,7 @@ const ExamTimerBadge = memo(function ExamTimerBadge({
   }, [initialSeconds]);
 
   useEffect(() => {
-    if (isSubmitted) return;
+    if (isSubmitted || isPaused) return;
     const interval = setInterval(() => {
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
@@ -85,7 +97,7 @@ const ExamTimerBadge = memo(function ExamTimerBadge({
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isSubmitted]);
+  }, [isSubmitted, isPaused]);
 
   const formatTimer = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -174,6 +186,8 @@ interface ExamQuestionCardProps {
   isDark: boolean;
   accentColor: string;
   textSecondaryColor: string;
+  firstOptionsRef?: React.RefObject<any>;
+  firstFlagRef?: React.RefObject<any>;
 }
 
 const ExamQuestionCard = memo(function ExamQuestionCard({
@@ -189,6 +203,8 @@ const ExamQuestionCard = memo(function ExamQuestionCard({
   isDark,
   accentColor,
   textSecondaryColor,
+  firstOptionsRef,
+  firstFlagRef,
 }: ExamQuestionCardProps) {
   return (
     <View
@@ -216,30 +232,34 @@ const ExamQuestionCard = memo(function ExamQuestionCard({
         </View>
 
         {/* Flag Button */}
-        <Pressable
-          onPress={() => onToggleFlag(q.id)}
-          hitSlop={8}
-          style={[
-            styles.flagButton,
-            {
-              backgroundColor: isFlagged
-                ? isDark
-                  ? 'rgba(224, 122, 95, 0.22)'
-                  : '#F8EAE4'
-                : 'transparent',
-            },
-          ]}>
-          <Flag
-            size={14}
-            color={isFlagged ? accentColor : textSecondaryColor}
-            fill={isFlagged ? accentColor : 'transparent'}
-            strokeWidth={2.2}
-          />
-        </Pressable>
+        <View ref={index === 0 ? firstFlagRef : undefined}>
+          <Pressable
+            onPress={() => onToggleFlag(q.id)}
+            hitSlop={8}
+            style={[
+              styles.flagButton,
+              {
+                backgroundColor: isFlagged
+                  ? isDark
+                    ? 'rgba(224, 122, 95, 0.22)'
+                    : '#F8EAE4'
+                  : 'transparent',
+              },
+            ]}>
+            <Flag
+              size={14}
+              color={isFlagged ? accentColor : textSecondaryColor}
+              fill={isFlagged ? accentColor : 'transparent'}
+              strokeWidth={2.2}
+            />
+          </Pressable>
+        </View>
       </View>
 
       {/* Options List (A, B, C, D) - Tap: Final, Hold: Tentative */}
-      <View style={styles.simpleOptionsList}>
+      <View
+        ref={index === 0 ? firstOptionsRef : undefined}
+        style={styles.simpleOptionsList}>
         {q.options.map((opt) => {
           const isSelected = selectedChoiceId === opt.id;
           const isTemporary = temporaryChoiceId === opt.id;
@@ -483,6 +503,255 @@ export default function ExamSessionScreen() {
   const [isReviewQuestionsVisible, setIsReviewQuestionsVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-260)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
+  // Spotlight Walkthrough Tutorial State & Target Element Measurement
+  const [isTutorialVisible, setIsTutorialVisible] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  const timerRef = useRef<View>(null);
+  const leftTabRef = useRef<View>(null);
+  const firstOptionsRef = useRef<View>(null);
+  const firstFlagRef = useRef<View>(null);
+
+  const [measuredLayouts, setMeasuredLayouts] = useState<
+    Record<string, { x: number; y: number; width: number; height: number }>
+  >({});
+
+  const measureSpotlightTargets = useCallback(() => {
+    const targets: Record<string, React.RefObject<any>> = {
+      timer: timerRef,
+      options: firstOptionsRef,
+      leftTab: leftTabRef,
+      flagBtn: firstFlagRef,
+    };
+
+    const newLayouts: Record<string, { x: number; y: number; width: number; height: number }> = {};
+    let pending = Object.keys(targets).length;
+
+    const checkComplete = () => {
+      pending -= 1;
+      if (pending <= 0) {
+        setMeasuredLayouts((prev) => ({ ...prev, ...newLayouts }));
+      }
+    };
+
+    Object.entries(targets).forEach(([key, ref]) => {
+      if (!ref.current) {
+        checkComplete();
+        return;
+      }
+
+      if (Platform.OS === 'web' && ref.current.getBoundingClientRect) {
+        const rect = ref.current.getBoundingClientRect();
+        if (rect && rect.width > 0 && rect.height > 0) {
+          newLayouts[key] = {
+            x: rect.left,
+            y: rect.top,
+            width: rect.width,
+            height: rect.height,
+          };
+        }
+        checkComplete();
+      } else if (ref.current.measureInWindow) {
+        ref.current.measureInWindow((x: number, y: number, width: number, height: number) => {
+          if (width > 0 && height > 0) {
+            newLayouts[key] = { x, y, width, height };
+          }
+          checkComplete();
+        });
+      } else {
+        checkComplete();
+      }
+    });
+  }, []);
+
+  // Measure targets whenever tutorial becomes visible or step changes
+  useEffect(() => {
+    if (isTutorialVisible) {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+      const timer = setTimeout(() => {
+        measureSpotlightTargets();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isTutorialVisible, tutorialStep, measureSpotlightTargets]);
+
+  const TUTORIAL_STEPS = useMemo(() => [
+    {
+      id: 'timer',
+      title: 'Countdown Timer',
+      description: 'The timer replicates PRC ALE board time limits. It stays paused during this walkthrough and alerts you when time is running out.',
+      icon: Timer,
+    },
+    {
+      id: 'options',
+      title: 'Dual-Mode Answer Shading',
+      description: '• Tap: Marks your solid Final answer.\n• Hold (Long-press): Marks an Amber Tentative choice (this will NOT count toward your score until confirmed).',
+      icon: Hand,
+    },
+    {
+      id: 'leftTab',
+      title: 'Left Answer Sheet Drawer',
+      description: 'Tap this tab anytime on the left edge to slide open your live Scantron sheet. You can quickly shade multiple bubbles or jump to any question without losing your place.',
+      icon: FileSpreadsheet,
+    },
+    {
+      id: 'flagBtn',
+      title: 'Flagging & Review Protocol',
+      description: 'Flag tricky questions to revisit before time expires. When you reach the end, all final submissions are completed safely through your Answer Sheet.',
+      icon: ShieldCheck,
+    },
+  ], []);
+
+  const currentStepData = TUTORIAL_STEPS[tutorialStep];
+  const activeLayout = measuredLayouts[currentStepData.id];
+
+  // 1. Safe Clamped Highlight Box Placement (Guaranteed within viewport bounds)
+  const targetHighlightStyle = useMemo(() => {
+    if (activeLayout) {
+      const pad = currentStepData.id === 'leftTab' ? 2 : 4;
+      const rawLeft = activeLayout.x - pad;
+      const rawTop = activeLayout.y - pad;
+      const rawWidth = activeLayout.width + pad * 2;
+      const rawHeight = activeLayout.height + pad * 2;
+
+      const clampedLeft = Math.max(0, Math.min(rawLeft, windowWidth - 20));
+      const clampedTop = Math.max(insets.top, Math.min(rawTop, windowHeight - 20));
+      const clampedWidth = Math.max(20, Math.min(rawWidth, windowWidth - clampedLeft));
+      const clampedHeight = Math.max(20, Math.min(rawHeight, windowHeight - clampedTop));
+
+      return {
+        top: clampedTop,
+        left: clampedLeft,
+        width: clampedWidth,
+        height: clampedHeight,
+        borderRadius: currentStepData.id === 'leftTab' ? 10 : 14,
+      };
+    }
+    // Reliable fallbacks based on insets if layout measurement is pending
+    if (currentStepData.id === 'timer') {
+      return { top: insets.top + 8, left: Math.max(16, windowWidth - 126), width: 110, height: 38, borderRadius: 12 };
+    }
+    if (currentStepData.id === 'leftTab') {
+      return { top: Math.round(windowHeight * 0.44), left: 0, width: 34, height: 104, borderRadius: 10 };
+    }
+    if (currentStepData.id === 'flagBtn') {
+      return { top: insets.top + 76, left: Math.max(16, windowWidth - 64), width: 38, height: 38, borderRadius: 10 };
+    }
+    return { top: insets.top + 160, left: 16, width: windowWidth - 32, height: 180, borderRadius: 16 };
+  }, [activeLayout, currentStepData.id, insets.top, windowHeight, windowWidth]);
+
+  // 2. Safe Clamped Step Pill Badge ("Step X of 4") (Guaranteed never off-screen)
+  const badgePositionStyle = useMemo(() => {
+    const BADGE_WIDTH_ESTIMATE = 96;
+    let targetLeft = 16;
+    let targetTop = insets.top + 8;
+
+    if (typeof targetHighlightStyle.left === 'number') {
+      targetLeft = targetHighlightStyle.left;
+    }
+    if (typeof targetHighlightStyle.top === 'number') {
+      targetTop = targetHighlightStyle.top - 14;
+    }
+
+    // Strictly clamp within viewport boundaries so it NEVER goes off-screen
+    const clampedLeft = Math.max(12, Math.min(targetLeft, windowWidth - BADGE_WIDTH_ESTIMATE - 12));
+    const clampedTop = Math.max(insets.top + 4, Math.min(targetTop, windowHeight - 48));
+
+    return {
+      top: clampedTop,
+      left: clampedLeft,
+      backgroundColor: tutorialStep === 1 ? '#D97706' : colors.accent,
+    };
+  }, [targetHighlightStyle, tutorialStep, colors.accent, insets.top, windowHeight, windowWidth]);
+
+  // 3. Safe Clamped Tooltip Card Placement positioned adjacent to the active target
+  const tooltipCardStyle = useMemo(() => {
+    const CARD_HEIGHT_ESTIMATE = 220;
+
+    if (currentStepData.id === 'leftTab') {
+      const targetY = activeLayout ? activeLayout.y : windowHeight * 0.44;
+      const clampedTop = Math.max(insets.top + 16, Math.min(targetY - 20, windowHeight - insets.bottom - CARD_HEIGHT_ESTIMATE - 16));
+      const leftPos = activeLayout ? activeLayout.x + activeLayout.width + 14 : 46;
+      return {
+        top: clampedTop,
+        left: Math.max(16, Math.min(leftPos, windowWidth - 300)),
+        right: 16,
+      };
+    }
+
+    if (activeLayout) {
+      const spaceBelow = windowHeight - insets.bottom - (activeLayout.y + activeLayout.height);
+      const spaceAbove = activeLayout.y - insets.top;
+
+      if (spaceBelow >= CARD_HEIGHT_ESTIMATE || spaceBelow >= spaceAbove) {
+        const topPos = Math.max(insets.top + 16, activeLayout.y + activeLayout.height + 14);
+        return {
+          top: Math.min(topPos, windowHeight - insets.bottom - CARD_HEIGHT_ESTIMATE - 12),
+          left: 16,
+          right: 16,
+        };
+      } else {
+        const bottomPos = Math.max(insets.bottom + 16, windowHeight - activeLayout.y + 14);
+        return {
+          bottom: Math.min(bottomPos, windowHeight - insets.top - CARD_HEIGHT_ESTIMATE - 12),
+          left: 16,
+          right: 16,
+        };
+      }
+    }
+
+    // Default fallbacks
+    if (currentStepData.id === 'timer') {
+      return { top: insets.top + 56, left: 16, right: 16 };
+    }
+    if (currentStepData.id === 'flagBtn') {
+      return { top: insets.top + 122, left: 16, right: 16 };
+    }
+    return { top: Math.min(insets.top + 348, windowHeight - insets.bottom - 240), left: 16, right: 16 };
+  }, [activeLayout, currentStepData.id, insets.top, insets.bottom, windowHeight, windowWidth]);
+
+  // Check if student skipped tutorial
+  useEffect(() => {
+    const checkTutorialPref = async () => {
+      try {
+        let skip = false;
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            skip = window.localStorage.getItem('skip_exam_tutorial') === 'true';
+          }
+        } else {
+          const val = await SecureStore.getItemAsync('skip_exam_tutorial');
+          skip = val === 'true';
+        }
+        if (!skip) {
+          setIsTutorialVisible(true);
+        }
+      } catch {
+        setIsTutorialVisible(true);
+      }
+    };
+    checkTutorialPref();
+  }, []);
+
+  const handleStartExamFromTutorial = useCallback(async () => {
+    setIsTutorialVisible(false);
+    setTutorialStep(0);
+    if (dontShowAgain) {
+      try {
+        if (Platform.OS === 'web') {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem('skip_exam_tutorial', 'true');
+          }
+        } else {
+          await SecureStore.setItemAsync('skip_exam_tutorial', 'true');
+        }
+      } catch {}
+    }
+  }, [dontShowAgain]);
 
   // Subject Performance Breakdown for Bar Chart (Filtered strictly by Exam Set syllabus)
   const subjectBreakdown = useMemo(() => {
@@ -940,16 +1209,35 @@ export default function ExamSessionScreen() {
           </Text>
         </View>
 
+        {/* Tutorial / Protocol Help Button */}
+        {!isSubmitted && (
+          <Pressable
+            onPress={() => setIsTutorialVisible(true)}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.headerBtn,
+              {
+                backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}>
+            <HelpCircle size={17} color={colors.accent} strokeWidth={2.4} />
+          </Pressable>
+        )}
+
         {/* Isolated Timer Badge */}
-        <ExamTimerBadge
-          initialSeconds={customTimerSeconds}
-          isSubmitted={isSubmitted}
-          computedScore={computedScore}
-          isPassed={isPassed}
-          onTimeUp={handleFinalSubmit}
-          accentColor={colors.accent}
-          isDark={isDark}
-        />
+        <View ref={timerRef} collapsable={false}>
+          <ExamTimerBadge
+            initialSeconds={customTimerSeconds}
+            isSubmitted={isSubmitted}
+            isPaused={isTutorialVisible}
+            computedScore={computedScore}
+            isPassed={isPassed}
+            onTimeUp={handleFinalSubmit}
+            accentColor={colors.accent}
+            isDark={isDark}
+          />
+        </View>
       </View>
 
       {/* =================================================================== */}
@@ -957,6 +1245,8 @@ export default function ExamSessionScreen() {
       {/* =================================================================== */}
       {!isSubmitted && (
         <Pressable
+          ref={leftTabRef}
+          collapsable={false}
           onPress={openAnswerSheet}
           style={({ pressed }) => [
             styles.floatingLeftTab,
@@ -1351,6 +1641,8 @@ export default function ExamSessionScreen() {
               isDark={isDark}
               accentColor={colors.accent}
               textSecondaryColor={colors.textSecondary}
+              firstOptionsRef={firstOptionsRef}
+              firstFlagRef={firstFlagRef}
             />
           ))}
 
@@ -1546,6 +1838,203 @@ export default function ExamSessionScreen() {
                 style={[styles.confirmBtn, { backgroundColor: colors.accent }]}>
                 <Text style={styles.confirmBtnText}>Submit Now</Text>
               </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* =================================================================== */}
+      {/* 8. INTERACTIVE SPOTLIGHT WALKTHROUGH TUTORIAL (COACHMARK TOUR)      */}
+      {/* =================================================================== */}
+      <Modal
+        visible={isTutorialVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsTutorialVisible(false)}>
+        <View style={styles.spotlightOverlayContainer}>
+          {/* 1. Backdrop */}
+          <View style={styles.spotlightBackdrop} />
+
+          {/* 2. Spotlight Target Glow & Focus Box (Directly Highlighting the Actual UI Element) */}
+          <View
+            style={[
+              styles.spotlightTargetBox,
+              targetHighlightStyle,
+              {
+                borderColor: tutorialStep === 1 ? '#D97706' : colors.accent,
+                backgroundColor: isDark
+                  ? tutorialStep === 1 ? 'rgba(217, 119, 6, 0.14)' : 'rgba(224, 122, 95, 0.12)'
+                  : tutorialStep === 1 ? 'rgba(217, 119, 6, 0.08)' : 'rgba(224, 122, 95, 0.08)',
+              },
+            ]}
+          />
+
+          {/* 2b. Spotlight Step Pill Badge (Positioned independently with boundary safety) */}
+          <View
+            style={[
+              styles.spotlightPillBadge,
+              badgePositionStyle,
+            ]}>
+            <Text style={styles.spotlightPillBadgeText}>
+              Step {tutorialStep + 1} of 4
+            </Text>
+          </View>
+
+          {/* 3. Floating Coachmark Tooltip Card */}
+          <View
+            style={[
+              styles.spotlightTooltipCard,
+              tooltipCardStyle,
+              {
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
+              },
+            ]}>
+            {/* Header */}
+            <View style={styles.spotlightCardHeader}>
+              <View style={styles.spotlightHeaderLeft}>
+                {(() => {
+                  const CurrentIcon = TUTORIAL_STEPS[tutorialStep].icon;
+                  const iconColor = tutorialStep === 1 ? '#D97706' : colors.accent;
+                  return (
+                    <View
+                      style={[
+                        styles.spotlightIconWrapper,
+                        {
+                          backgroundColor: isDark
+                            ? tutorialStep === 1 ? 'rgba(217, 119, 6, 0.2)' : 'rgba(224, 122, 95, 0.2)'
+                            : tutorialStep === 1 ? '#FEF3C7' : '#F8EAE4',
+                        },
+                      ]}>
+                      <CurrentIcon size={18} color={iconColor} strokeWidth={2.4} />
+                    </View>
+                  );
+                })()}
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.spotlightStepTitle, { color: colors.text }]}>
+                    {TUTORIAL_STEPS[tutorialStep].title}
+                  </Text>
+                  <Text style={[styles.spotlightStepSubtitle, { color: colors.textSecondary }]}>
+                    Walkthrough {tutorialStep + 1} of 4
+                  </Text>
+                </View>
+              </View>
+
+              {/* Close / Skip button */}
+              <Pressable
+                onPress={handleStartExamFromTutorial}
+                hitSlop={8}
+                style={[
+                  styles.sheetCloseBtn,
+                  { backgroundColor: isDark ? '#23262F' : '#F3F4F6' },
+                ]}>
+                <X size={15} color={colors.text} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+
+            {/* Description Text */}
+            <Text style={[styles.spotlightStepDesc, { color: isDark ? '#E5E7EB' : '#374151' }]}>
+              {TUTORIAL_STEPS[tutorialStep].description}
+            </Text>
+
+            {/* Progress Indicator Dots */}
+            <View style={styles.spotlightDotsRow}>
+              {TUTORIAL_STEPS.map((step, idx) => (
+                <View
+                  key={step.id}
+                  style={[
+                    styles.spotlightDot,
+                    {
+                      backgroundColor: idx === tutorialStep
+                        ? colors.accent
+                        : isDark
+                          ? '#374151'
+                          : '#E5E7EB',
+                      width: idx === tutorialStep ? 18 : 6,
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Don't show next time checkbox */}
+            <Pressable
+              onPress={() => setDontShowAgain((prev) => !prev)}
+              hitSlop={6}
+              style={styles.spotlightCheckboxRow}>
+              {dontShowAgain ? (
+                <CheckSquare size={17} color={colors.accent} strokeWidth={2.4} />
+              ) : (
+                <Square size={17} color={colors.textSecondary} strokeWidth={2} />
+              )}
+              <Text style={[styles.spotlightCheckboxLabel, { color: colors.textSecondary }]}>
+                Don't show this walkthrough next time
+              </Text>
+            </Pressable>
+
+            {/* Navigation Actions Row */}
+            <View style={styles.spotlightNavActionsRow}>
+              {tutorialStep > 0 ? (
+                <Pressable
+                  onPress={() => setTutorialStep((prev) => Math.max(0, prev - 1))}
+                  style={({ pressed }) => [
+                    styles.spotlightBackBtn,
+                    {
+                      backgroundColor: isDark ? '#23262F' : '#F3F4F6',
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}>
+                  <ChevronLeft size={16} color={colors.text} strokeWidth={2.4} />
+                  <Text style={[styles.spotlightBackBtnText, { color: colors.text }]}>
+                    Back
+                  </Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={handleStartExamFromTutorial}
+                  style={({ pressed }) => [
+                    styles.spotlightBackBtn,
+                    {
+                      backgroundColor: isDark ? '#23262F' : '#F3F4F6',
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}>
+                  <Text style={[styles.spotlightBackBtnText, { color: colors.textSecondary }]}>
+                    Skip Tour
+                  </Text>
+                </Pressable>
+              )}
+
+              {tutorialStep < TUTORIAL_STEPS.length - 1 ? (
+                <Pressable
+                  onPress={() => setTutorialStep((prev) => prev + 1)}
+                  style={({ pressed }) => [
+                    styles.spotlightNextBtn,
+                    {
+                      backgroundColor: colors.accent,
+                      opacity: pressed ? 0.9 : 1,
+                    },
+                  ]}>
+                  <Text style={styles.spotlightNextBtnText}>
+                    Next
+                  </Text>
+                  <ChevronRight size={16} color="#FFFFFF" strokeWidth={2.4} />
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={handleStartExamFromTutorial}
+                  style={({ pressed }) => [
+                    styles.spotlightNextBtn,
+                    {
+                      backgroundColor: colors.accent,
+                      opacity: pressed ? 0.9 : 1,
+                    },
+                  ]}>
+                  <Text style={styles.spotlightNextBtnText}>
+                    Start Exam
+                  </Text>
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
@@ -2196,5 +2685,186 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
+  },
+
+  /* Spotlight Tour Overlay Styles */
+  spotlightOverlayContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
+  spotlightBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+  },
+  spotlightTargetBox: {
+    position: 'absolute',
+    borderWidth: 2.5,
+    zIndex: 1000,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#E07A5F',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: '0 0 16px rgba(224,122,95,0.7)',
+      },
+    }),
+  },
+  spotlightPillBadge: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 3.5,
+    borderRadius: 10,
+    minWidth: 80,
+    zIndex: 1002,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+        whiteSpace: 'nowrap',
+      },
+    }),
+  },
+  spotlightPillBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    includeFontPadding: false,
+    textAlign: 'center',
+    flexShrink: 0,
+  },
+  spotlightTooltipCard: {
+    position: 'absolute',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 12,
+    zIndex: 1001,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: '0 8px 30px rgba(0,0,0,0.35)',
+      },
+    }),
+  },
+  spotlightCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  spotlightHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  spotlightIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spotlightStepTitle: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  spotlightStepSubtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  spotlightStepDesc: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  spotlightDotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 2,
+  },
+  spotlightDot: {
+    height: 5,
+    borderRadius: 3,
+  },
+  spotlightCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  spotlightCheckboxLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  spotlightNavActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 2,
+  },
+  spotlightBackBtn: {
+    flex: 1,
+    height: 42,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  spotlightBackBtnText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  spotlightNextBtn: {
+    flex: 1.4,
+    height: 42,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  spotlightNextBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
 });
