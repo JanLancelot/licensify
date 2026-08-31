@@ -1,15 +1,15 @@
 import { useQuery } from 'convex/react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
-  Award,
   BookOpen,
-  Building2,
+  ChevronDown,
   ChevronRight,
-  ClipboardList,
-  FileText,
-  Layers,
+  ChevronUp,
+  Flame,
+  Landmark,
+  User,
 } from 'lucide-react-native';
-import React, { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -18,53 +18,17 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
-import { api } from '../../../convex/_generated/api';
 import { useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
+import { api } from '../../../convex/_generated/api';
 
-/* Reusable Gradient Squircle / Circle Container */
-function GradientIconBox({
-  colors: [startColor, endColor],
-  size = 54,
-  borderRadius = 16,
-  children,
-}: {
-  colors: [string, string];
-  size?: number;
-  borderRadius?: number;
-  children: React.ReactNode;
-}) {
-  const gradId = `grad_${startColor.replace(/[^a-zA-Z0-9]/g, '')}_${endColor.replace(/[^a-zA-Z0-9]/g, '')}_${size}`;
-
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-      }}>
-      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={startColor} />
-            <Stop offset="100%" stopColor={endColor} />
-          </LinearGradient>
-        </Defs>
-        <Rect
-          width={size}
-          height={size}
-          rx={borderRadius}
-          fill={`url(#${gradId})`}
-        />
-      </Svg>
-      {children}
-    </View>
-  );
+interface ConfidenceItem {
+  id: string;
+  lessonName: string;
+  topicName?: string;
+  confidencePercent: number;
 }
 
 export default function HomeScreen() {
@@ -73,8 +37,10 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const userProfile = useQuery(api.users.getCurrentUserProfile);
-  const { stats, refetch } = useLocalStats();
+  const { refetch } = useLocalStats();
   const { curriculum } = useLocalHierarchy();
+
+  const [showAllLessons, setShowAllLessons] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -82,21 +48,108 @@ export default function HomeScreen() {
     }, [refetch])
   );
 
-  const greetingName = userProfile?.firstName || userProfile?.username || 'Candidate';
-  const progressPercent = stats?.progressPercentage || 75;
-  const continueSubject = curriculum[0] || {
-    title: 'Architectural Design & Planning',
-    topics: [{ title: 'Space Planning & Ergonomics' }],
-  };
+  const userName =
+    userProfile?.firstName ||
+    userProfile?.username ||
+    'User';
+
+  // Active Continue Learning subjects/lessons matching user design specification
+  const continueItems = useMemo(() => {
+    if (curriculum && curriculum.length >= 2) {
+      return [
+        {
+          id: curriculum[0].id,
+          title: curriculum[0].title.toUpperCase(),
+          percent: 32,
+          icon: BookOpen,
+        },
+        {
+          id: curriculum[1].id,
+          title: curriculum[1].title.toUpperCase(),
+          percent: 61,
+          icon: Landmark,
+        },
+      ];
+    }
+    return [
+      {
+        id: 'c1',
+        title: 'HISTORY OF ARCHITECTURE',
+        percent: 32,
+        icon: BookOpen,
+      },
+      {
+        id: 'c2',
+        title: 'STRUCTURAL DESIGN',
+        percent: 61,
+        icon: Landmark,
+      },
+    ];
+  }, [curriculum]);
+
+  // Up to 10 Recent / Syllabus Lessons for the Confidence Rate Section
+  const confidenceLessons: ConfidenceItem[] = useMemo(() => {
+    const collected: ConfidenceItem[] = [];
+    const defaultPercents = [50, 70, 60, 93, 100, 45, 82, 68, 77, 88];
+    let idx = 0;
+
+    for (const sub of curriculum) {
+      for (const topic of sub.topics) {
+        for (const les of topic.lessons) {
+          collected.push({
+            id: les.id,
+            lessonName: les.title,
+            confidencePercent: defaultPercents[idx % defaultPercents.length],
+          });
+          idx++;
+          if (collected.length >= 10) break;
+        }
+        if (collected.length >= 10) break;
+      }
+      if (collected.length >= 10) break;
+    }
+
+    if (collected.length < 10) {
+      return [
+        { id: 'l1', lessonName: 'History of Architecture', confidencePercent: 50 },
+        { id: 'l2', lessonName: 'Theory of Design', confidencePercent: 70 },
+        { id: 'l3', lessonName: 'Building Utilities', confidencePercent: 60 },
+        { id: 'l4', lessonName: 'Space Planning', confidencePercent: 93 },
+        { id: 'l5', lessonName: 'RA 9266 Architecture Act', confidencePercent: 100 },
+        { id: 'l6', lessonName: 'NBCP Rule 7 & 8', confidencePercent: 45 },
+        { id: 'l7', lessonName: 'Structural Concepts', confidencePercent: 82 },
+        { id: 'l8', lessonName: 'Plumbing & Sanitary', confidencePercent: 68 },
+        { id: 'l9', lessonName: 'Electrical Systems', confidencePercent: 77 },
+        { id: 'l10', lessonName: 'Site Planning & Ecology', confidencePercent: 88 },
+      ];
+    }
+
+    return collected.slice(0, 10);
+  }, [curriculum]);
+
+  const displayedLessons = useMemo(() => {
+    return showAllLessons ? confidenceLessons : confidenceLessons.slice(0, 5);
+  }, [confidenceLessons, showAllLessons]);
+
+  const greetingTime = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
 
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* 1. Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerGreeting, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-          Good morning, {greetingName}!
+      {/* Top Header Bar */}
+      <View style={styles.topHeader}>
+        <Text
+          style={[
+            styles.topHeaderGreeting,
+            { color: isDark ? '#F9FAFB' : '#0F172A' },
+          ]}>
+          {greetingTime}, {userName}!
         </Text>
       </View>
 
@@ -105,286 +158,321 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.contentContainer,
-          { paddingBottom: insets.bottom + 90 },
+          { paddingBottom: insets.bottom + 100 },
         ]}>
-        {/* 2. Light Terracotta Hero Progress Card with Right Icon */}
+        {/* ================================================================= */}
+        {/* 1. MAIN HERO BLOCK (Circular Avatar on Left, Motivation & Centered Fire on Right) */}
+        {/* ================================================================= */}
         <View
           style={[
-            styles.progressHeroCard,
+            styles.mainHeroCard,
             {
-              backgroundColor: isDark ? '#2B1D19' : '#F8EBE5',
+              backgroundColor: isDark ? colors.backgroundElement : '#FFFFFF',
+              borderColor: isDark
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.06)',
             },
           ]}>
-          {/* Left Column: Progress details */}
-          <View style={styles.progressHeroLeft}>
-            <Text
-              style={[
-                styles.progressHeroLabel,
-                { color: isDark ? '#F4A261' : '#B84922' },
-              ]}>
-              YOUR PROGRESS
-            </Text>
-            <Text
-              style={[
-                styles.progressHeroPercentage,
-                { color: isDark ? '#FFFFFF' : '#2D120B' },
-              ]}>
-              {progressPercent}%
-            </Text>
-            <Text
-              style={[
-                styles.progressHeroMotivation,
-                { color: isDark ? '#E07A5F' : '#A23F1C' },
-              ]}>
-              {"You're doing great! Keep up the consistency."}
-            </Text>
-
-            {/* Progress Bar */}
-            <View
-              style={[
-                styles.progressBarTrack,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(255, 255, 255, 0.12)'
-                    : '#EAD5CC',
-                },
-              ]}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  { width: `${progressPercent}%`, backgroundColor: colors.accent },
-                ]}
-              />
-            </View>
-          </View>
-
-          {/* Right Column: Gradient Award Icon */}
-          <View style={styles.progressHeroRight}>
-            <GradientIconBox
-              colors={['#E58368', '#C85A32']}
-              size={68}
-              borderRadius={34}>
-              <Award size={34} color="#FFFFFF" strokeWidth={2.2} />
-            </GradientIconBox>
-          </View>
-        </View>
-
-        {/* 3. Bento 2x2 Grid with Bigger Gradient Icons */}
-        <View style={styles.bentoGrid}>
-          {/* Row 1 */}
-          <View style={styles.bentoGridRow}>
-            {/* 1. Review (Learn) */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn' as any)}
-              style={({ pressed }) => [
-                styles.bentoTile,
-                {
-                  backgroundColor: isDark ? '#261C19' : '#FDF4F0',
-                  opacity: pressed ? 0.88 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                },
-              ]}>
-              <GradientIconBox
-                colors={['#E58368', '#C85A32']}
-                size={50}
-                borderRadius={15}>
-                <BookOpen size={26} color="#FFFFFF" strokeWidth={2.2} />
-              </GradientIconBox>
-
-              <View style={styles.bentoTileBottom}>
-                <Text
-                  style={[
-                    styles.bentoTileTitle,
-                    { color: isDark ? '#F9FAFB' : '#1C1917' },
-                  ]}>
-                  Review
-                </Text>
-                <ChevronRight
-                  size={19}
-                  color={colors.accent}
-                  strokeWidth={2.4}
-                />
-              </View>
-            </Pressable>
-
-            {/* 2. Flashcards */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn/flashcards' as any)}
-              style={({ pressed }) => [
-                styles.bentoTile,
-                {
-                  backgroundColor: isDark ? '#281E15' : '#FEF8EE',
-                  opacity: pressed ? 0.88 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                },
-              ]}>
-              <GradientIconBox
-                colors={['#FBBF24', '#D97706']}
-                size={50}
-                borderRadius={15}>
-                <Layers size={26} color="#FFFFFF" strokeWidth={2.2} />
-              </GradientIconBox>
-
-              <View style={styles.bentoTileBottom}>
-                <Text
-                  style={[
-                    styles.bentoTileTitle,
-                    { color: isDark ? '#F9FAFB' : '#1C1917' },
-                  ]}>
-                  Flashcards
-                </Text>
-                <ChevronRight size={19} color="#D97706" strokeWidth={2.4} />
-              </View>
-            </Pressable>
-          </View>
-
-          {/* Row 2 */}
-          <View style={styles.bentoGridRow}>
-            {/* 3. Practice Quiz */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/practice/quiz' as any)}
-              style={({ pressed }) => [
-                styles.bentoTile,
-                {
-                  backgroundColor: isDark ? '#17261D' : '#F0F8F3',
-                  opacity: pressed ? 0.88 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                },
-              ]}>
-              <GradientIconBox
-                colors={['#34D399', '#059669']}
-                size={50}
-                borderRadius={15}>
-                <ClipboardList size={26} color="#FFFFFF" strokeWidth={2.2} />
-              </GradientIconBox>
-
-              <View style={styles.bentoTileBottom}>
-                <Text
-                  style={[
-                    styles.bentoTileTitle,
-                    { color: isDark ? '#F9FAFB' : '#1C1917' },
-                  ]}>
-                  Practice Quiz
-                </Text>
-                <ChevronRight size={19} color="#059669" strokeWidth={2.4} />
-              </View>
-            </Pressable>
-
-            {/* 4. Mock Exam */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/exams' as any)}
-              style={({ pressed }) => [
-                styles.bentoTile,
-                {
-                  backgroundColor: isDark ? '#261A23' : '#F9F1F6',
-                  opacity: pressed ? 0.88 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                },
-              ]}>
-              <GradientIconBox
-                colors={['#F472B6', '#BE185D']}
-                size={50}
-                borderRadius={15}>
-                <FileText size={26} color="#FFFFFF" strokeWidth={2.2} />
-              </GradientIconBox>
-
-              <View style={styles.bentoTileBottom}>
-                <Text
-                  style={[
-                    styles.bentoTileTitle,
-                    { color: isDark ? '#F9FAFB' : '#1C1917' },
-                  ]}>
-                  Mock Exam
-                </Text>
-                <ChevronRight size={19} color="#BE185D" strokeWidth={2.4} />
-              </View>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* 4. Continue Learning (Clean, Flat with Gradient Icon) */}
-        <View style={styles.continueSection}>
-          <View style={styles.continueSectionHeader}>
-            <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
-              Continue Learning
-            </Text>
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn' as any)}
-              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
-              <Text style={[styles.seeAllText, { color: colors.accent }]}>
-                See all
-              </Text>
-            </Pressable>
-          </View>
-
+          {/* Left: Large User Profile Circular Avatar */}
           <Pressable
-            onPress={() => router.push('/(tabs)/learn/building-tech' as any)}
+            onPress={() => router.push('/(tabs)/profile' as any)}
             style={({ pressed }) => [
-              styles.continueCard,
+              styles.heroAvatarBox,
               {
-                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
-                opacity: pressed ? 0.88 : 1,
+                backgroundColor: colors.accentMuted,
+                borderColor: colors.accentBorder,
+                opacity: pressed ? 0.85 : 1,
               },
             ]}>
-            {/* Left Gradient Squircle Icon */}
-            <GradientIconBox
-              colors={['#E58368', '#C85A32']}
-              size={50}
-              borderRadius={15}>
-              <Building2 size={26} color="#FFFFFF" strokeWidth={2.2} />
-            </GradientIconBox>
+            <User size={46} color={colors.accent} strokeWidth={2.3} />
+          </Pressable>
 
-            {/* Middle Title & Progress */}
-            <View style={styles.continueCardBody}>
-              <View style={styles.continueTitleRow}>
-                <Text
-                  style={[styles.continueCourseTitle, { color: colors.text }]}
-                  numberOfLines={1}>
-                  {continueSubject.title}
-                </Text>
-                <Text
-                  style={[
-                    styles.continuePercentageText,
-                    { color: colors.accent },
-                  ]}>
-                  {progressPercent}%
-                </Text>
-              </View>
-
+          {/* Right Column: Centered Flame, 3 DAYS, and 20% Milestone Progress */}
+          <View style={styles.heroRightColumn}>
+            {/* Flame & 3 DAYS centered along the progress bar */}
+            <View style={styles.heroStreakCenteredBox}>
+              <Flame size={50} color="#F59E0B" fill="#F59E0B" />
               <Text
                 style={[
-                  styles.continueCourseSubtitle,
-                  { color: colors.textSecondary },
+                  styles.heroStreakText,
+                  { color: isDark ? '#FBBF24' : '#D97706' },
                 ]}>
-                {continueSubject.topics[0]?.title || 'Core Syllabus Modules'}
+                3 DAYS
               </Text>
+            </View>
 
-              {/* Progress Line */}
+            {/* Bottom: Progress Bar (20%) & Milestone Voucher Caption */}
+            <View style={styles.heroBottomProgressArea}>
+              {/* Progress Bar Track */}
               <View
                 style={[
-                  styles.continueProgressTrack,
+                  styles.heroProgressTrack,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.12)'
-                      : '#E8DCD6',
+                      ? 'rgba(255, 255, 255, 0.10)'
+                      : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
                 <View
                   style={[
-                    styles.continueProgressFill,
-                    { width: `${progressPercent}%`, backgroundColor: colors.accent },
+                    styles.heroProgressFill,
+                    {
+                      width: '20%',
+                      backgroundColor: colors.accent,
+                    },
                   ]}
                 />
               </View>
-            </View>
 
-            {/* Right Action Chevron */}
-            <ChevronRight
-              size={19}
-              color={colors.textSecondary}
-              strokeWidth={2.2}
+              {/* Caption directly under the bar - full text without ellipsis */}
+              <Text
+                style={[
+                  styles.heroMilestoneVoucherText,
+                  { color: colors.textSecondary },
+                ]}>
+                COMPLETE 10 DAYS TO GET DISCOUNT VOUCHER
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ================================================================= */}
+        {/* 2. CONFIDENCE RATE SECTION                                        */}
+        {/* ================================================================= */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Confidence Rate
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.confidenceChartCard,
+              {
+                backgroundColor: isDark ? colors.backgroundElement : '#FFFFFF',
+                borderColor: isDark
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(0, 0, 0, 0.06)',
+              },
+            ]}>
+            <View style={styles.confidenceChartWrapper}>
+              {/* Rows Area with Bounded Vertical Axis Line */}
+              <View style={styles.chartContentArea}>
+                {/* Continuous Vertical Axis Line strictly bounded to the rows */}
+                <View
+                  style={[
+                    styles.chartVerticalAxis,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255, 255, 255, 0.35)'
+                        : '#111827',
+                    },
+                  ]}
+                />
+
+                {/* Rows */}
+                <View style={styles.chartRowsContainer}>
+                  {displayedLessons.map((item) => {
+                    // Bar width ratio relative to 68% max container width so % fits on right
+                    const barWidthPercent = Math.max(3, Math.min(100, item.confidencePercent)) * 0.68;
+
+                    return (
+                      <View key={item.id} style={styles.chartRow}>
+                        {/* Left Column: Actual Lesson Name */}
+                        <View style={styles.chartLeftLabelBox}>
+                          <Text
+                            style={[
+                              styles.chartLessonText,
+                              { color: colors.text },
+                            ]}>
+                            {item.lessonName}
+                          </Text>
+                        </View>
+
+                        {/* Right Area: Horizontal Bar sprouting directly from vertical line + % at the tip */}
+                        <View style={styles.chartRightBarArea}>
+                          <View
+                            style={[
+                              styles.chartHorizontalBar,
+                              {
+                                width: `${barWidthPercent}%`,
+                                backgroundColor: colors.accent,
+                              },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.chartPercentLabel,
+                              { color: colors.accent },
+                            ]}>
+                            {item.confidencePercent}%
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Show More / Show Less Toggle Button (Up to 10) - Outside Axis Boundary */}
+              {confidenceLessons.length > 5 && (
+                <Pressable
+                  onPress={() => setShowAllLessons((prev) => !prev)}
+                  style={({ pressed }) => [
+                    styles.toggleLessonsBtn,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255, 255, 255, 0.06)'
+                        : 'rgba(0, 0, 0, 0.03)',
+                      borderColor: isDark
+                        ? 'rgba(255, 255, 255, 0.08)'
+                        : 'rgba(0, 0, 0, 0.06)',
+                      opacity: pressed ? 0.75 : 1,
+                    },
+                  ]}>
+                  <Text
+                    style={[styles.toggleLessonsBtnText, { color: colors.accent }]}>
+                    {showAllLessons ? 'Show Top 5' : 'Show Up to 10 Lessons'}
+                  </Text>
+                  {showAllLessons ? (
+                    <ChevronUp size={14} color={colors.accent} strokeWidth={2.4} />
+                  ) : (
+                    <ChevronDown size={14} color={colors.accent} strokeWidth={2.4} />
+                  )}
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* ================================================================= */}
+        {/* 3. CONTINUE LEARNING SECTION                                      */}
+        {/* ================================================================= */}
+        <View style={styles.sectionContainer}>
+          {/* Section Header Row with Vertical Accent Bar */}
+          <View style={styles.continueSectionHeader}>
+            <View
+              style={[
+                styles.continueHeaderAccentBar,
+                { backgroundColor: colors.accent },
+              ]}
             />
-          </Pressable>
+            <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
+              CONTINUE LEARNING
+            </Text>
+          </View>
+
+          {/* List of Continue Learning Cards */}
+          <View style={styles.continueCardsList}>
+            {continueItems.map((item) => {
+              const IconComp = item.icon;
+
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => router.push('/(tabs)/learn' as any)}
+                  style={({ pressed }) => [
+                    styles.continueLearningCard,
+                    {
+                      backgroundColor: isDark
+                        ? colors.backgroundElement
+                        : '#FFFFFF',
+                      borderColor: isDark
+                        ? 'rgba(255, 255, 255, 0.08)'
+                        : 'rgba(0, 0, 0, 0.06)',
+                      opacity: pressed ? 0.92 : 1,
+                      transform: [{ scale: pressed ? 0.99 : 1 }],
+                    },
+                  ]}>
+                  {/* Left: Soft Tinted Circular Icon Container */}
+                  <View
+                    style={[
+                      styles.circularIconWrap,
+                      {
+                        backgroundColor: colors.accentMuted,
+                        borderColor: colors.accentBorder,
+                      },
+                    ]}>
+                    <IconComp
+                      size={22}
+                      color={colors.accent}
+                      strokeWidth={2.2}
+                    />
+                  </View>
+
+                  {/* Middle: Title & % on header row, Progress track below */}
+                  <View style={styles.continueCardContent}>
+                    <View style={styles.continueCardHeaderRow}>
+                      <Text
+                        style={[
+                          styles.continueSubjectTitle,
+                          { color: colors.text },
+                        ]}>
+                        {item.title}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.continuePercentBadge,
+                          { color: colors.accent },
+                        ]}>
+                        {item.percent}%
+                      </Text>
+                    </View>
+
+                    {/* Progress Track */}
+                    <View
+                      style={[
+                        styles.continueProgressTrack,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255, 255, 255, 0.10)'
+                            : 'rgba(239, 241, 245, 1)',
+                        },
+                      ]}>
+                      <View
+                        style={[
+                          styles.continueProgressFill,
+                          {
+                            width: `${item.percent}%`,
+                            backgroundColor: colors.accent,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Right Divider & Circular Chevron Action Button */}
+                  <View
+                    style={[
+                      styles.continueRightDivider,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.08)'
+                          : 'rgba(0, 0, 0, 0.06)',
+                      },
+                    ]}
+                  />
+
+                  <View
+                    style={[
+                      styles.chevronCircleWrap,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.06)'
+                          : '#F8FAFC',
+                      },
+                    ]}>
+                    <ChevronRight
+                      size={18}
+                      color={colors.text}
+                      strokeWidth={2.4}
+                    />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -398,109 +486,91 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    gap: 16,
-  },
-
-  /* 1. Header */
-  header: {
+  topHeader: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 10,
+    paddingBottom: 4,
   },
-  headerGreeting: {
+  topHeaderGreeting: {
     fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    gap: 20,
+  },
 
-  /* 2. Hero Progress Card (Lighter Terracotta, No Outlines, No Shadows) */
-  progressHeroCard: {
-    borderRadius: 22,
-    padding: 20,
+  /* ======================================================================= */
+  /* 1. Main Hero Block                                                      */
+  /* ======================================================================= */
+  mainHeroCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 16,
   },
-  progressHeroLeft: {
+  heroAvatarBox: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroRightColumn: {
     flex: 1,
-    paddingRight: 14,
-    gap: 2,
+    gap: 10,
+    justifyContent: 'center',
   },
-  progressHeroLabel: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+  heroStreakCenteredBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    alignSelf: 'center',
   },
-  progressHeroPercentage: {
-    fontSize: 38,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginTop: 2,
-    lineHeight: 42,
+  heroStreakText: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    letterSpacing: 0.4,
   },
-  progressHeroMotivation: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 2,
-    marginBottom: 12,
+  heroBottomProgressArea: {
+    gap: 5,
+    width: '100%',
   },
-  progressBarTrack: {
-    height: 6.5,
+  heroProgressTrack: {
+    height: 6,
     borderRadius: Radius.full,
     overflow: 'hidden',
     width: '100%',
   },
-  progressBarFill: {
+  heroProgressFill: {
     height: '100%',
     borderRadius: Radius.full,
   },
-  progressHeroRight: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* 3. Bento 2x2 Grid (Flat, Bigger Gradient Icons) */
-  bentoGrid: {
-    gap: 12,
-  },
-  bentoGridRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  bentoTile: {
-    flex: 1,
-    borderRadius: 20,
-    padding: 16,
-    height: 126,
-    justifyContent: 'space-between',
-  },
-  bentoTileBottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  bentoTileTitle: {
-    fontSize: 15,
+  heroMilestoneVoucherText: {
+    fontSize: 8.8,
     fontWeight: '700',
-    letterSpacing: -0.2,
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
 
-  /* 4. Continue Learning (Flat, Clean) */
-  continueSection: {
-    gap: 10,
-    marginTop: 2,
+  /* ======================================================================= */
+  /* 2. Confidence Rate Section                                              */
+  /* ======================================================================= */
+  sectionContainer: {
+    gap: 12,
   },
-  continueSectionHeader: {
+  sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  continueSectionTitle: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
@@ -508,46 +578,158 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  continueCard: {
+  confidenceChartCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+  },
+  confidenceChartWrapper: {
+    gap: 4,
+  },
+  chartContentArea: {
+    position: 'relative',
+  },
+  chartVerticalAxis: {
+    position: 'absolute',
+    left: 130,
+    top: 2,
+    bottom: 2,
+    width: 2,
+    borderRadius: 1,
+    zIndex: 1,
+  },
+  chartRowsContainer: {
+    gap: 16,
+  },
+  chartRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 20,
+    minHeight: 28,
+    paddingVertical: 2,
+  },
+  chartLeftLabelBox: {
+    width: 130,
+    paddingRight: 10,
+    justifyContent: 'center',
+  },
+  chartLessonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+    lineHeight: 15,
+  },
+  chartRightBarArea: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chartHorizontalBar: {
+    height: 4.5,
+    borderRadius: 2.5,
+  },
+  chartPercentLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  toggleLessonsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    alignSelf: 'center',
+    gap: 5,
+  },
+  toggleLessonsBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  /* ======================================================================= */
+  /* 3. Continue Learning Section                                            */
+  /* ======================================================================= */
+  continueSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  continueHeaderAccentBar: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+  },
+  continueSectionTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  continueCardsList: {
+    gap: 12,
+  },
+  continueLearningCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 22,
+    borderWidth: 1,
     gap: 14,
   },
-  continueCardBody: {
-    flex: 1,
-    gap: 3,
+  circularIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  continueTitleRow: {
+  continueCardContent: {
+    flex: 1,
+    gap: 8,
+  },
+  continueCardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
   },
-  continueCourseTitle: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+  continueSubjectTitle: {
+    fontSize: 13.5,
+    fontWeight: '900',
+    letterSpacing: 0.3,
     flex: 1,
-    marginRight: 8,
   },
-  continuePercentageText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-  },
-  continueCourseSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 4,
+  continuePercentBadge: {
+    fontSize: 14,
+    fontWeight: '900',
   },
   continueProgressTrack: {
-    height: 4.5,
-    borderRadius: Radius.full,
+    height: 7,
+    borderRadius: 3.5,
     overflow: 'hidden',
     width: '100%',
   },
   continueProgressFill: {
     height: '100%',
-    borderRadius: Radius.full,
+    borderRadius: 3.5,
+  },
+  continueRightDivider: {
+    width: 1,
+    height: 32,
+    marginHorizontal: 2,
+  },
+  chevronCircleWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -1,14 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import { Calculator, Play, Plus, X } from 'lucide-react-native';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Award,
-  BookOpen,
-  Compass,
-  Layers,
-  Play,
-  Zap,
-} from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
-import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -17,121 +11,181 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
+import { SUBJECT_PALETTES } from '@/components/ui/CircularProgressIconBadge';
+import { PRESET_ICONS } from '@/components/flashcards/FlashcardPresetBuilderModal';
+import { AddQuizFromFlashcardsModal } from '@/components/practice/AddQuizFromFlashcardsModal';
+import {
+  QuizLaunchConfig,
+  QuizLauncherModal,
+} from '@/components/practice/QuizLauncherModal';
 import { useAppTheme } from '@/context/theme-context';
-import { useLocalAttempts, useLocalSubjects } from '@/hooks/useLocalData';
+import { useLocalHierarchy } from '@/hooks/useLocalData';
+import { useQuizPresets } from '@/services/quizPresetStore';
+import { FlashcardPreset, QuizPreset } from '@/types/curriculum';
 
-type Difficulty = 'easy' | 'medium' | 'hard';
-type QuestionCount = 5 | 10 | 20;
+/* Custom Deck Gradient Icon Component */
+function CustomDeckIcon({
+  iconName = 'Layers',
+  size = 48,
+}: {
+  iconName?: string;
+  size?: number;
+}) {
+  const iconConfig = PRESET_ICONS.find((i) => i.id === iconName) || PRESET_ICONS[0];
+  const IconComp = iconConfig.icon;
+  const [startC, endC] = iconConfig.gradient;
+  const gradId = `deck_icon_${iconConfig.id}_${size}`;
 
-const AREA_PALETTES = [
-  { icon: BookOpen, bg: '#FCE7F3', darkBg: 'rgba(236, 72, 153, 0.2)', iconColor: '#DB2777' },
-  { icon: Zap, bg: '#E0F2FE', darkBg: 'rgba(14, 165, 233, 0.2)', iconColor: '#0284C7' },
-  { icon: Compass, bg: '#FFEDD5', darkBg: 'rgba(249, 115, 22, 0.2)', iconColor: '#EA580C' },
-  { icon: Layers, bg: '#EDE9FE', darkBg: 'rgba(139, 92, 246, 0.2)', iconColor: '#7C3AED' },
-];
-
-const DEFAULT_DRILLS = [
-  {
-    id: 'h1',
-    topic: 'NBCP Rule 7 & 8 Computations',
-    score: '90%',
-    isPassed: true,
-    bg: '#D1FAE5',
-    darkBg: 'rgba(16, 185, 129, 0.2)',
-    iconColor: '#10B981',
-  },
-  {
-    id: 'h2',
-    topic: 'Classical Greek & Roman Orders',
-    score: '80%',
-    isPassed: true,
-    bg: '#EDE9FE',
-    darkBg: 'rgba(139, 92, 246, 0.2)',
-    iconColor: '#7C3AED',
-  },
-  {
-    id: 'h3',
-    topic: 'Plumbing & Electrical Systems',
-    score: '70%',
-    isPassed: false,
-    bg: '#FFEDD5',
-    darkBg: 'rgba(249, 115, 22, 0.2)',
-    iconColor: '#EA580C',
-  },
-];
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={startC} />
+            <Stop offset="100%" stopColor={endC} />
+          </LinearGradient>
+        </Defs>
+        <Rect width={size} height={size} rx={size / 2} fill={`url(#${gradId})`} />
+      </Svg>
+      <IconComp size={22} color="#FFFFFF" strokeWidth={2.4} />
+    </View>
+  );
+}
 
 export default function PracticeScreen() {
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { attempts, refetch } = useLocalAttempts();
-  const { subjects: dbSubjects } = useLocalSubjects();
 
-  // Auto-refresh attempts whenever this screen comes into focus
+  const { curriculum, refetch: refetchCurriculum } = useLocalHierarchy();
+  const {
+    presets: quizPresets,
+    deletePreset,
+    addFromFlashcard,
+    removeFromFlashcard,
+  } = useQuizPresets();
+
+  // Refresh curriculum when tab is focused
   useFocusEffect(
     useCallback(() => {
-      refetch?.();
-    }, [refetch])
+      refetchCurriculum?.();
+    }, [refetchCurriculum])
   );
 
-  // Dynamic Subjects List: All Subjects + Real DB Subjects
-  const subjectOptions = [
-    {
-      key: 'all',
-      title: 'All Subjects',
-      icon: Layers,
-      bg: '#EDE9FE',
-      darkBg: 'rgba(139, 92, 246, 0.2)',
-      iconColor: '#7C3AED',
-    },
-    ...dbSubjects.map((sub, idx) => {
-      const palette = AREA_PALETTES[idx % AREA_PALETTES.length];
-      return {
-        key: sub.id,
-        title: sub.name,
-        icon: palette.icon,
-        bg: palette.bg,
-        darkBg: palette.darkBg,
-        iconColor: palette.iconColor,
-      };
-    }),
-  ];
+  // Flashcards Selection Modal State
+  const [isAddFromFlashcardsModalVisible, setIsAddFromFlashcardsModalVisible] = useState(false);
 
-  // Launcher State
-  const [selectedArea, setSelectedArea] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>('medium');
-  const [selectedCount, setSelectedCount] = useState<QuestionCount>(10);
+  // Existing Quiz Titles Set for Duplicate Detection
+  const existingQuizTitles = useMemo(
+    () => new Set(quizPresets.map((p) => p.title)),
+    [quizPresets]
+  );
 
-  const displayDrills = attempts.length > 0
-    ? attempts.slice(0, 4).map((att, i) => {
-        const isPassed = (att.score ?? 0) >= 75;
-        const palettes = [
-          { bg: '#D1FAE5', darkBg: 'rgba(16, 185, 129, 0.2)', iconColor: '#10B981' },
-          { bg: '#EDE9FE', darkBg: 'rgba(139, 92, 246, 0.2)', iconColor: '#7C3AED' },
-          { bg: '#FFEDD5', darkBg: 'rgba(249, 115, 22, 0.2)', iconColor: '#EA580C' },
-          { bg: '#E0F2FE', darkBg: 'rgba(14, 165, 233, 0.2)', iconColor: '#0284C7' },
-        ];
-        const p = palettes[i % palettes.length];
-        return {
-          id: att.id,
-          topic: att.quizTitle || 'Practice Assessment Drill',
-          score: `${att.score ?? 0}%`,
-          isPassed,
-          ...p,
-        };
-      })
-    : DEFAULT_DRILLS;
+  // Active Quiz Target for Launcher Modal
+  const [activeQuizTarget, setActiveQuizTarget] = useState<{
+    quizTitle: string;
+    quizSubtitle?: string;
+    subjectId?: string;
+    topicId?: string;
+    lessonId?: string;
+    specializedType?: string;
+    initialTimerSeconds?: number;
+    initialQuestionCount?: number;
+  } | null>(null);
 
-  const handleStartQuiz = () => {
+  // Launch modal for a user quiz preset
+  const handleSelectQuizPreset = (preset: QuizPreset) => {
+    setActiveQuizTarget({
+      quizTitle: preset.title,
+      quizSubtitle: `${preset.questionCount || 10} Questions • ${preset.subjectNames?.join(' • ') || 'Custom Drill'}`,
+      subjectId: preset.subjectId,
+      topicId: preset.topicId,
+      specializedType: preset.specializedType,
+      initialTimerSeconds: preset.defaultTimerSeconds || 15,
+      initialQuestionCount: preset.questionCount || 10,
+    });
+  };
+
+  // Remove / delete a quiz preset
+  const handleDeleteQuizPreset = (preset: QuizPreset) => {
+    Alert.alert(
+      'Remove Quiz Set',
+      `Remove "${preset.title}" from your quiz sets?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => deletePreset(preset.id),
+        },
+      ]
+    );
+  };
+
+  // Launch modal for a premade subject note quiz
+  const handleSelectPremadeSubject = (subject: any) => {
+    setActiveQuizTarget({
+      quizTitle: subject.title,
+      quizSubtitle: `${subject.topics?.length || 0} Topics • Comprehensive Drill`,
+      subjectId: subject.id,
+      initialTimerSeconds: 15,
+      initialQuestionCount: 15,
+    });
+  };
+
+  // Launch modal for specialized computation set
+  const handleSelectSpecializedSet = () => {
+    setActiveQuizTarget({
+      quizTitle: 'Developmental control computation set',
+      quizSubtitle: 'NBCP Rule 7 & 8 • Floor Area, Height Limit & Setbacks',
+      specializedType: 'developmental_control',
+      initialTimerSeconds: 30,
+      initialQuestionCount: 10,
+    });
+  };
+
+  // Start the quiz once configured in the modal
+  const handleStartQuizFromModal = (config: QuizLaunchConfig) => {
+    if (!activeQuizTarget) return;
+
+    const { quizTitle, subjectId, topicId, specializedType } = activeQuizTarget;
+    setActiveQuizTarget(null);
+
     router.push({
       pathname: '/(tabs)/practice/quiz' as any,
       params: {
-        area: selectedArea,
-        difficulty: selectedDifficulty,
-        count: String(selectedCount),
+        area: subjectId || 'all',
+        topicId: topicId || undefined,
+        title: quizTitle,
+        count: String(config.questionCount),
+        timer: String(config.timerSeconds),
+        difficulty: 'medium',
+        specializedType: specializedType || undefined,
       },
     });
+  };
+
+  const handleAddFlashcardPreset = (preset: FlashcardPreset) => {
+    addFromFlashcard(preset);
+  };
+
+  const handleRemoveFlashcardPreset = (preset: FlashcardPreset) => {
+    removeFromFlashcard(preset.id);
   };
 
   return (
@@ -149,247 +203,294 @@ export default function PracticeScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 90 },
         ]}>
-        {/* 2. CONFIGURE DRILL CARD BOX */}
-        <View
-          style={[
-            styles.cardBox,
-            {
-              backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-            },
-          ]}>
-          {/* Section: Select Subject */}
-          <View style={styles.configGroup}>
-            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>
-              SUBJECT AREA
+        {/* =================================================================== */}
+        {/* PART 1: YOUR QUIZ SETS                                              */}
+        {/* =================================================================== */}
+        <View style={styles.sectionWrapper}>
+          <View style={styles.sectionHeadingRow}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              YOUR QUIZ SETS
             </Text>
-
-            <View style={styles.subjectGrid}>
-              {subjectOptions.map((item) => {
-                const isSelected = selectedArea === item.key;
-                const IconComp = item.icon;
-
-                return (
-                  <Pressable
-                    key={item.key}
-                    onPress={() => setSelectedArea(item.key)}
-                    style={({ pressed }) => [
-                      styles.subjectOptionBtn,
-                      {
-                        backgroundColor: isSelected
-                          ? isDark
-                            ? 'rgba(224, 122, 95, 0.18)'
-                            : '#F8EAE4'
-                          : isDark
-                            ? '#23262F'
-                            : '#F8FAFC',
-                        borderColor: isSelected
-                          ? colors.accent
-                          : isDark
-                            ? 'rgba(255, 255, 255, 0.06)'
-                            : 'rgba(0, 0, 0, 0.04)',
-                        opacity: pressed ? 0.8 : 1,
-                      },
-                    ]}>
-                    <View
-                      style={[
-                        styles.pastelIconBadge,
-                        {
-                          backgroundColor: isDark ? item.darkBg : item.bg,
-                        },
-                      ]}>
-                      <IconComp size={16} color={item.iconColor} strokeWidth={2.3} />
-                    </View>
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        styles.subjectOptionText,
-                        {
-                          color: isSelected ? colors.accent : colors.text,
-                          fontWeight: isSelected ? '700' : '600',
-                        },
-                      ]}>
-                      {item.title}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Pressable
+              onPress={() => setIsAddFromFlashcardsModalVisible(true)}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.addCircleBtn,
+                {
+                  backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}>
+              <Plus size={16} color={colors.accent} strokeWidth={2.5} />
+            </Pressable>
           </View>
 
-          {/* Section: Difficulty */}
-          <View style={styles.configGroup}>
-            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>
-              DIFFICULTY
-            </Text>
-            <View style={styles.segmentedRow}>
-              {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => {
-                const isSelected = selectedDifficulty === level;
-                return (
-                  <Pressable
-                    key={level}
-                    onPress={() => setSelectedDifficulty(level)}
-                    style={({ pressed }) => [
-                      styles.segmentBtn,
-                      {
-                        backgroundColor: isSelected
-                          ? colors.accent
-                          : isDark
-                            ? '#23262F'
-                            : '#F8FAFC',
-                        opacity: pressed ? 0.8 : 1,
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.segmentBtnText,
-                        {
-                          color: isSelected ? '#FFFFFF' : colors.text,
-                          fontWeight: isSelected ? '700' : '500',
-                        },
-                      ]}>
-                      {level.charAt(0).toUpperCase() + level.slice(1)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+          {/* 2-Column Bento Grid of Custom Decks + Bento Dashed Add Button */}
+          <View style={styles.gridContainer}>
+            {quizPresets.map((preset) => (
+              <Pressable
+                key={preset.id}
+                onPress={() => handleSelectQuizPreset(preset)}
+                style={({ pressed }) => [
+                  styles.customDeckCard,
+                  {
+                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
+                  },
+                ]}>
+                {/* Top-Right Remove Button */}
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleDeleteQuizPreset(preset);
+                  }}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.cardDeleteBtn,
+                    {
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                      opacity: pressed ? 0.6 : 1,
+                    },
+                  ]}>
+                  <X size={12} color={isDark ? '#9CA3AF' : '#6B7280'} strokeWidth={2.4} />
+                </Pressable>
 
-          {/* Section: Questions Count */}
-          <View style={styles.configGroup}>
-            <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>
-              QUESTIONS
-            </Text>
-            <View style={styles.segmentedRow}>
-              {([5, 10, 20] as QuestionCount[]).map((count) => {
-                const isSelected = selectedCount === count;
-                return (
-                  <Pressable
-                    key={count}
-                    onPress={() => setSelectedCount(count)}
-                    style={({ pressed }) => [
-                      styles.segmentBtn,
-                      {
-                        backgroundColor: isSelected
-                          ? colors.accent
-                          : isDark
-                            ? '#23262F'
-                            : '#F8FAFC',
-                        opacity: pressed ? 0.8 : 1,
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.segmentBtnText,
-                        {
-                          color: isSelected ? '#FFFFFF' : colors.text,
-                          fontWeight: isSelected ? '700' : '500',
-                        },
-                      ]}>
-                      {count} Questions
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+                {/* Circular Icon */}
+                <CustomDeckIcon iconName={preset.iconName} size={48} />
 
-          {/* Start Drill CTA Button */}
-          <Pressable
-            onPress={handleStartQuiz}
-            style={({ pressed }) => [
-              styles.startBtn,
-              {
-                backgroundColor: colors.accent,
-                opacity: pressed ? 0.9 : 1,
-                transform: [{ scale: pressed ? 0.985 : 1 }],
-              },
-            ]}>
-            <Play size={16} color="#FFFFFF" fill="#FFFFFF" />
-            <Text style={styles.startBtnText}>Start Drill</Text>
-          </Pressable>
+                {/* Deck Title */}
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.customDeckTitle,
+                    { color: isDark ? '#F9FAFB' : '#0F172A' },
+                  ]}>
+                  {preset.title}
+                </Text>
+
+                {/* Question Count */}
+                <Text style={[styles.customDeckSub, { color: colors.textSecondary }]}>
+                  {preset.questionCount || 10} Questions
+                </Text>
+              </Pressable>
+            ))}
+
+            {/* Minimal Bento Dashed Add Button */}
+            <Pressable
+              onPress={() => setIsAddFromFlashcardsModalVisible(true)}
+              style={({ pressed }) => [
+                styles.dashedAddCard,
+                {
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.18)',
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}>
+              <View
+                style={[
+                  styles.dashedIconCircle,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F0EBE8',
+                  },
+                ]}>
+                <Plus size={24} color={colors.accent} strokeWidth={2.6} />
+              </View>
+            </Pressable>
+          </View>
         </View>
 
-        {/* 3. RECENT DRILLS LIST (Matching reference design) */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Recent Drills
-          </Text>
+        {/* =================================================================== */}
+        {/* PART 2: PREMADE QUIZ SETS                                           */}
+        {/* =================================================================== */}
+        <View style={styles.sectionWrapper}>
+          <View style={styles.sectionHeadingRow}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              PREMADE QUIZ SETS
+            </Text>
+          </View>
 
+          {/* Curriculum Subjects (Clean One-Line Cards) */}
+          <View style={styles.listContainer}>
+            {curriculum.map((subject, sIdx) => {
+              const IconComponent = subject.icon;
+              const palette = SUBJECT_PALETTES[sIdx % SUBJECT_PALETTES.length];
+
+              return (
+                <View
+                  key={subject.id}
+                  style={[
+                    styles.subjectCardBox,
+                    {
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                      borderColor: isDark
+                        ? 'rgba(255, 255, 255, 0.07)'
+                        : 'rgba(0, 0, 0, 0.05)',
+                    },
+                  ]}>
+                  {/* Single Line Subject Card */}
+                  <Pressable
+                    onPress={() => handleSelectPremadeSubject(subject)}
+                    style={({ pressed }) => [
+                      styles.subjectHeader,
+                      {
+                        backgroundColor: pressed
+                          ? isDark
+                            ? 'rgba(255, 255, 255, 0.04)'
+                            : 'rgba(0, 0, 0, 0.02)'
+                          : 'transparent',
+                      },
+                    ]}>
+                    {/* Clean Solid Pastel Circle Icon */}
+                    <View
+                      style={[
+                        styles.subjectIconBox,
+                        {
+                          backgroundColor: isDark ? palette.darkBg : palette.bg,
+                        },
+                      ]}>
+                      <IconComponent
+                        size={20}
+                        color={isDark ? palette.darkIcon : palette.icon}
+                        strokeWidth={2.2}
+                      />
+                    </View>
+
+                    {/* Subject Title */}
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        styles.subjectTitle,
+                        { color: isDark ? '#F9FAFB' : '#111827' },
+                      ]}>
+                      {subject.title}
+                    </Text>
+
+                    {/* Quick Subject Play Button */}
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleSelectPremadeSubject(subject);
+                      }}
+                      hitSlop={8}
+                      style={({ pressed }) => [
+                        styles.quickSubjectPlayBtn,
+                        {
+                          backgroundColor: colors.accentMuted,
+                          opacity: pressed ? 0.7 : 1,
+                        },
+                      ]}>
+                      <Play size={12} color={colors.accent} fill={colors.accent} />
+                    </Pressable>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* =================================================================== */}
+        {/* PART 3: SPECIALIZED QUIZ SETS                                       */}
+        {/* =================================================================== */}
+        <View style={styles.sectionWrapper}>
+          <View style={styles.sectionHeadingRow}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              SPECIALIZED QUIZ SETS
+            </Text>
+          </View>
+
+          {/* Single-Line Block Matching Premade Quiz Sets Design */}
           <View
             style={[
-              styles.cardBoxGroup,
+              styles.subjectCardBox,
               {
                 backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                borderColor: isDark
+                  ? 'rgba(255, 255, 255, 0.07)'
+                  : 'rgba(0, 0, 0, 0.05)',
               },
             ]}>
-            {displayDrills.map((item, idx) => (
-              <React.Fragment key={item.id}>
-                <View style={styles.drillRow}>
-                  {/* Pastel Icon Badge */}
-                  <View
-                    style={[
-                      styles.drillIconBadge,
-                      {
-                        backgroundColor: isDark ? item.darkBg : item.bg,
-                      },
-                    ]}>
-                    <Award size={18} color={item.iconColor} strokeWidth={2.2} />
-                  </View>
+            <Pressable
+              onPress={handleSelectSpecializedSet}
+              style={({ pressed }) => [
+                styles.subjectHeader,
+                {
+                  backgroundColor: pressed
+                    ? isDark
+                      ? 'rgba(255, 255, 255, 0.04)'
+                      : 'rgba(0, 0, 0, 0.02)'
+                    : 'transparent',
+                },
+              ]}>
+              {/* Circular Pastel Icon Box */}
+              <View
+                style={[
+                  styles.subjectIconBox,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(14, 165, 233, 0.22)'
+                      : '#E0F2FE',
+                  },
+                ]}>
+                <Calculator
+                  size={20}
+                  color={isDark ? '#7DD3FC' : '#0284C7'}
+                  strokeWidth={2.2}
+                />
+              </View>
 
-                  {/* Drill Title */}
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.drillTitle,
-                      { color: isDark ? '#F9FAFB' : '#111827' },
-                    ]}>
-                    {item.topic}
-                  </Text>
+              {/* Title */}
+              <Text
+                numberOfLines={2}
+                style={[
+                  styles.subjectTitle,
+                  { color: isDark ? '#F9FAFB' : '#111827' },
+                ]}>
+                Developmental control computation set
+              </Text>
 
-                  {/* Score Tag */}
-                  <View
-                    style={[
-                      styles.scoreTag,
-                      {
-                        backgroundColor: item.isPassed
-                          ? isDark
-                            ? 'rgba(16, 185, 129, 0.2)'
-                            : '#D1FAE5'
-                          : isDark
-                            ? 'rgba(249, 115, 22, 0.2)'
-                            : '#FFEDD5',
-                      },
-                    ]}>
-                    <Text
-                      style={[
-                        styles.scoreText,
-                        { color: item.isPassed ? '#10B981' : '#F97316' },
-                      ]}>
-                      {item.score}
-                    </Text>
-                  </View>
-                </View>
-
-                {idx < displayDrills.length - 1 && (
-                  <View
-                    style={[
-                      styles.itemDivider,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(255,255,255,0.06)'
-                          : 'rgba(0,0,0,0.05)',
-                      },
-                    ]}
-                  />
-                )}
-              </React.Fragment>
-            ))}
+              {/* Quick Play Button */}
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleSelectSpecializedSet();
+                }}
+                hitSlop={8}
+                style={({ pressed }) => [
+                  styles.quickSubjectPlayBtn,
+                  {
+                    backgroundColor: colors.accentMuted,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}>
+                <Play size={12} color={colors.accent} fill={colors.accent} />
+              </Pressable>
+            </Pressable>
           </View>
         </View>
       </ScrollView>
+
+      {/* Quiz Launcher Modal (Question Timer & Question Count) */}
+      <QuizLauncherModal
+        visible={activeQuizTarget !== null}
+        quizTitle={activeQuizTarget?.quizTitle || 'Practice Drill'}
+        quizSubtitle={activeQuizTarget?.quizSubtitle}
+        initialTimerSeconds={activeQuizTarget?.initialTimerSeconds || 15}
+        initialQuestionCount={activeQuizTarget?.initialQuestionCount || 10}
+        onClose={() => setActiveQuizTarget(null)}
+        onStartQuiz={handleStartQuizFromModal}
+        bottomInset={insets.bottom}
+      />
+
+      {/* Add From Flashcards Modal */}
+      <AddQuizFromFlashcardsModal
+        visible={isAddFromFlashcardsModalVisible}
+        onClose={() => setIsAddFromFlashcardsModalVisible(false)}
+        onAddFlashcardToQuiz={handleAddFlashcardPreset}
+        onRemoveFlashcardFromQuiz={handleRemoveFlashcardPreset}
+        existingQuizTitles={existingQuizTitles}
+        bottomInset={insets.bottom}
+      />
     </SafeAreaView>
   );
 }
@@ -411,13 +512,43 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    gap: 18,
+    gap: 22,
   },
-  cardBox: {
+  sectionWrapper: {
+    gap: 12,
+  },
+  sectionHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  addCircleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  customDeckCard: {
+    width: '48.2%',
+    minHeight: 132,
     borderRadius: 20,
-    borderWidth: 1,
     padding: 16,
-    gap: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    position: 'relative',
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
@@ -433,82 +564,52 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  configGroup: {
-    gap: 8,
-  },
-  groupLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  subjectGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  subjectOptionBtn: {
-    width: '48.5%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 10,
-  },
-  pastelIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  subjectOptionText: {
-    fontSize: 13,
-    flex: 1,
-  },
-  segmentedRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  segmentBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
+  cardDeleteBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
     borderRadius: 12,
-  },
-  segmentBtnText: {
-    fontSize: 12.5,
-  },
-  startBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 48,
-    borderRadius: 14,
+    zIndex: 2,
+  },
+  customDeckTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    textAlign: 'center',
+    letterSpacing: -0.2,
     marginTop: 2,
   },
-  startBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
+  customDeckSub: {
+    fontSize: 11.5,
+    fontWeight: '600',
   },
-  sectionContainer: {
-    gap: 10,
+  dashedAddCard: {
+    width: '48.2%',
+    minHeight: 132,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-    paddingHorizontal: 4,
+  dashedIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cardBoxGroup: {
+  listContainer: {
+    gap: 12,
+  },
+  subjectCardBox: {
     borderRadius: 20,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
@@ -524,35 +625,30 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  drillRow: {
+  subjectHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    padding: 14,
     gap: 12,
   },
-  drillIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  subjectIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  drillTitle: {
+  subjectTitle: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  scoreTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  scoreText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  itemDivider: {
-    height: 1,
+  quickSubjectPlayBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

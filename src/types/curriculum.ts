@@ -73,6 +73,22 @@ export interface FlashcardPreset {
   iconName?: string;
 }
 
+export interface QuizPreset {
+  id: string;
+  title: string;
+  questionCount?: number;
+  lessonCount?: number;
+  iconName?: string;
+  createdAt?: string;
+  subjectNames?: string[];
+  selectedLessonIds?: string[];
+  subjectId?: string;
+  topicId?: string;
+  difficulty?: string;
+  defaultTimerSeconds?: number;
+  specializedType?: string;
+}
+
 export interface QuizQuestion {
   id: string;
   area: string;

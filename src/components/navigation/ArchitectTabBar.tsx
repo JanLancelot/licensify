@@ -238,9 +238,7 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
               {
                 width: PILL_WIDTH,
                 height: PILL_HEIGHT,
-                backgroundColor: isDark
-                  ? 'rgba(224, 122, 95, 0.22)'
-                  : '#F8EAE4',
+                backgroundColor: colors.accentMuted,
               },
             ]}
           />

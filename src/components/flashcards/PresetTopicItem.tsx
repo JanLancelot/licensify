@@ -5,7 +5,7 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from 'react-native-reanimated';
-import { Check, FileText, Plus } from 'lucide-react-native';
+import { Check, FileText, Minus } from 'lucide-react-native';
 
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
@@ -57,9 +57,7 @@ export function PresetTopicItem({
     ? isDark
       ? parentPalette.darkBg
       : parentPalette.bg
-    : isDark
-      ? 'rgba(224, 122, 95, 0.22)'
-      : '#FCE7F3';
+    : colors.accentMuted;
 
   const badgeIconColor = parentPalette
     ? isDark
@@ -74,9 +72,7 @@ export function PresetTopicItem({
         styles.topicCardBox,
         {
           backgroundColor: hasTopicSelected
-            ? isDark
-              ? 'rgba(224, 122, 95, 0.12)'
-              : '#FAF0EB'
+            ? colors.accentMuted
             : isDark
               ? '#232731'
               : '#F9FAFB',
@@ -132,7 +128,7 @@ export function PresetTopicItem({
           </View>
         </Pressable>
 
-        {/* Selection Check/Plus Toggle */}
+        {/* Minimal Topic-Level Checkbox */}
         <Pressable
           onPress={() => toggleTopicSelection(topic)}
           hitSlop={8}
@@ -142,45 +138,43 @@ export function PresetTopicItem({
               backgroundColor: isAllTopicSelected
                 ? colors.accent
                 : isSomeTopicSelected
-                  ? colors.accent
+                  ? isDark
+                    ? '#374151'
+                    : '#E5E7EB'
                   : isDark
-                    ? '#1C1F26'
-                    : '#FFFFFF',
-              borderColor: isAllTopicSelected || isSomeTopicSelected
+                    ? '#2A2E39'
+                    : '#F3F4F6',
+              borderColor: isAllTopicSelected
                 ? colors.accent
                 : isDark
-                  ? 'rgba(255, 255, 255, 0.1)'
-                  : '#E5E7EB',
-              opacity: pressed ? 0.75 : 1,
+                  ? 'rgba(255, 255, 255, 0.15)'
+                  : 'rgba(0, 0, 0, 0.12)',
+              opacity: pressed ? 0.8 : 1,
             },
           ]}>
           {isAllTopicSelected ? (
-            <Check size={13} color="#FFFFFF" strokeWidth={3} />
+            <Check size={14} color="#FFFFFF" strokeWidth={3} />
           ) : isSomeTopicSelected ? (
-            <Text style={styles.someSelectedText}>-</Text>
-          ) : (
-            <Plus size={13} color={colors.textSecondary} strokeWidth={2.4} />
-          )}
+            <Minus size={13} color={colors.textSecondary} strokeWidth={3} />
+          ) : null}
         </Pressable>
       </View>
 
-      {/* LEVEL 3: LESSONS LIST DROPDOWN */}
+      {/* LEVEL 3: LESSONS LIST INSIDE TOPIC */}
       {isTopicOpen && (
         <Animated.View
           entering={FadeInDown.duration(200)}
-          exiting={FadeOutUp.duration(160)}
-          layout={LinearTransition.duration(200)}
+          exiting={FadeOutUp.duration(150)}
           style={[
             styles.lessonsWrapper,
             {
               borderTopColor: isDark
-                ? 'rgba(255, 255, 255, 0.06)'
-                : 'rgba(0, 0, 0, 0.05)',
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.06)',
             },
           ]}>
           {topic.lessons.map((lesson, lIdx) => {
             const isLessonSelected = selectedLessonIds.has(lesson.id);
-            const isLast = lIdx === topic.lessons.length - 1;
 
             return (
               <Pressable
@@ -189,15 +183,13 @@ export function PresetTopicItem({
                 style={({ pressed }) => [
                   styles.lessonRow,
                   {
-                    borderBottomWidth: isLast ? 0 : 1,
-                    borderBottomColor: isDark
-                      ? 'rgba(255, 255, 255, 0.05)'
-                      : 'rgba(0, 0, 0, 0.04)',
-                    backgroundColor: pressed
-                      ? isDark
-                        ? 'rgba(255, 255, 255, 0.04)'
-                        : 'rgba(0, 0, 0, 0.03)'
-                      : 'transparent',
+                    backgroundColor: isLessonSelected
+                      ? colors.accentMuted
+                      : pressed
+                        ? isDark
+                          ? 'rgba(255, 255, 255, 0.04)'
+                          : 'rgba(0, 0, 0, 0.02)'
+                        : 'transparent',
                   },
                 ]}>
                 {/* Lesson Circular Icon Badge */}
@@ -206,9 +198,7 @@ export function PresetTopicItem({
                     styles.lessonIconBadge,
                     {
                       backgroundColor: isLessonSelected
-                        ? isDark
-                          ? 'rgba(224, 122, 95, 0.25)'
-                          : '#FCECE6'
+                        ? colors.accentMuted
                         : badgeBg,
                     },
                   ]}>

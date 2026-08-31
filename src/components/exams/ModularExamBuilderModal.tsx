@@ -19,15 +19,16 @@ import {
   BookOpen,
   Brain,
   Check,
+  Clock,
   Compass,
   Edit2,
   Flame,
+  HelpCircle,
   Landmark,
   Layers,
   Lightbulb,
   PenTool,
   Plus,
-  Shuffle,
   Sparkles,
   Target,
   Trophy,
@@ -44,6 +45,7 @@ import Svg, {
 import { PresetTopicItem } from '@/components/flashcards/PresetTopicItem';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
+import { ModularExamPreset } from '@/services/modularExamStore';
 import { SubjectNote, Topic } from '@/types/curriculum';
 
 export const PRESET_ICONS = [
@@ -67,40 +69,49 @@ export const SUBJECT_PALETTES = [
     darkBg: 'rgba(139, 92, 246, 0.22)',
     icon: '#7C3AED',
     darkIcon: '#C4B5FD',
-  }, // Lavender / Purple
+  },
   {
     bg: '#FCE7F3',
     darkBg: 'rgba(236, 72, 153, 0.22)',
     icon: '#DB2777',
     darkIcon: '#F472B6',
-  }, // Soft Pink
+  },
   {
     bg: '#E0E7FF',
     darkBg: 'rgba(99, 102, 241, 0.22)',
     icon: '#4F46E5',
     darkIcon: '#A5B4FC',
-  }, // Indigo / Violet
+  },
   {
     bg: '#FFEDD5',
     darkBg: 'rgba(249, 115, 22, 0.22)',
     icon: '#EA580C',
     darkIcon: '#FDBA74',
-  }, // Peach / Orange
+  },
   {
     bg: '#E0F2FE',
     darkBg: 'rgba(14, 165, 233, 0.22)',
     icon: '#0284C7',
     darkIcon: '#7DD3FC',
-  }, // Sky Blue / Cyan
+  },
   {
     bg: '#D1FAE5',
     darkBg: 'rgba(16, 185, 129, 0.22)',
     icon: '#059669',
     darkIcon: '#6EE7B7',
-  }, // Mint / Emerald
+  },
 ];
 
-/* Custom Deck Gradient Icon Component */
+const QUESTION_COUNT_OPTIONS = [25, 50, 75, 100];
+const TIMER_OPTIONS = [
+  { label: '45m', seconds: 2700 },
+  { label: '1h', seconds: 3600 },
+  { label: '1.5h', seconds: 5400 },
+  { label: '2h', seconds: 7200 },
+  { label: '3h', seconds: 10800 },
+];
+
+/* Custom Bento Squircle Icon Component */
 function CustomDeckIcon({
   iconName = 'Layers',
   size = 48,
@@ -111,7 +122,7 @@ function CustomDeckIcon({
   const iconConfig = PRESET_ICONS.find((i) => i.id === iconName) || PRESET_ICONS[0];
   const IconComp = iconConfig.icon;
   const [startC, endC] = iconConfig.gradient;
-  const gradId = `bento_preview_icon_${iconConfig.id}_${size}`;
+  const gradId = `modular_preview_icon_${iconConfig.id}_${size}`;
 
   return (
     <View
@@ -137,60 +148,110 @@ function CustomDeckIcon({
   );
 }
 
-export interface FlashcardPresetBuilderModalProps {
+export interface ModularExamBuilderModalProps {
   visible: boolean;
-  isEditing?: boolean;
   subjects?: SubjectNote[];
   onClose: () => void;
-  onSubmit: () => void;
-  expandedSubjects: Record<string, boolean>;
-  expandedTopics: Record<string, boolean>;
-  selectedLessonIds: Set<string>;
-  toggleSubject: (subjectId: string) => void;
-  toggleSubjectSelection: (subject: SubjectNote) => void;
-  toggleTopic: (topicId: string) => void;
-  toggleTopicSelection: (topic: Topic) => void;
-  toggleLessonSelection: (lessonId: string) => void;
-  isShuffled: boolean;
-  setIsShuffled: (val: boolean) => void;
-  customTitle: string;
-  setCustomTitle: (val: string) => void;
-  selectedIconId: string;
-  setSelectedIconId: (val: string) => void;
+  onSavePreset: (preset: ModularExamPreset) => void;
   bottomInset: number;
-  theme?: any;
 }
 
-export function FlashcardPresetBuilderModal({
+export function ModularExamBuilderModal({
   visible,
-  isEditing = false,
   subjects = [],
   onClose,
-  onSubmit,
-  expandedSubjects,
-  expandedTopics,
-  selectedLessonIds,
-  toggleSubject,
-  toggleSubjectSelection,
-  toggleTopic,
-  toggleTopicSelection,
-  toggleLessonSelection,
-  isShuffled,
-  setIsShuffled,
-  customTitle,
-  setCustomTitle,
-  selectedIconId,
-  setSelectedIconId,
+  onSavePreset,
   bottomInset,
-}: FlashcardPresetBuilderModalProps) {
+}: ModularExamBuilderModalProps) {
   const { colors, isDark } = useAppTheme();
+
+  // Preset configuration state
+  const [customTitle, setCustomTitle] = useState('');
+  const [selectedIconId, setSelectedIconId] = useState('Landmark');
+  const [selectedQuestionCount, setSelectedQuestionCount] = useState(50);
+  const [selectedTimerSeconds, setSelectedTimerSeconds] = useState(3600); // 1 hr default
+
+  // Curriculum selections
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
+  const [selectedLessonIds, setSelectedLessonIds] = useState<Set<string>>(new Set());
 
   // Pop-up states
   const [isIconPickerVisible, setIsIconPickerVisible] = useState(false);
   const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);
-  const [tempTitle, setTempTitle] = useState(customTitle);
+  const [tempTitle, setTempTitle] = useState('');
 
-  // Sync tempTitle when opening name editor
+  const [prevVisible, setPrevVisible] = useState(visible);
+
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
+    if (visible) {
+      setCustomTitle('');
+      setSelectedIconId('Landmark');
+      setSelectedQuestionCount(50);
+      setSelectedTimerSeconds(3600);
+      setSelectedLessonIds(new Set());
+      setExpandedSubjects({});
+      setExpandedTopics({});
+    }
+  }
+
+  const toggleSubject = (subjectId: string) => {
+    setExpandedSubjects((prev) => ({
+      ...prev,
+      [subjectId]: !prev[subjectId],
+    }));
+  };
+
+  const toggleSubjectSelection = (subject: SubjectNote) => {
+    const subjectLessonIds = subject.topics.flatMap((t) => t.lessons.map((l) => l.id));
+    const allSelected = subjectLessonIds.every((id) => selectedLessonIds.has(id));
+
+    setSelectedLessonIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        subjectLessonIds.forEach((id) => next.delete(id));
+      } else {
+        subjectLessonIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const toggleTopic = (topicId: string) => {
+    setExpandedTopics((prev) => ({
+      ...prev,
+      [topicId]: !prev[topicId],
+    }));
+  };
+
+  const toggleTopicSelection = (topic: Topic) => {
+    const topicLessonIds = topic.lessons.map((l) => l.id);
+    const allSelected = topicLessonIds.every((id) => selectedLessonIds.has(id));
+
+    setSelectedLessonIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        topicLessonIds.forEach((id) => next.delete(id));
+      } else {
+        topicLessonIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const toggleLessonSelection = (lessonId: string) => {
+    setSelectedLessonIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(lessonId)) {
+        next.delete(lessonId);
+      } else {
+        next.add(lessonId);
+      }
+      return next;
+    });
+  };
+
   const handleOpenNameEditor = () => {
     setTempTitle(customTitle);
     setIsNameEditorVisible(true);
@@ -199,6 +260,34 @@ export function FlashcardPresetBuilderModal({
   const handleSaveName = () => {
     setCustomTitle(tempTitle);
     setIsNameEditorVisible(false);
+  };
+
+  const handleCreate = () => {
+    const lessonArr = Array.from(selectedLessonIds);
+    if (lessonArr.length === 0) {
+      alert('Please select at least one lesson for this modular test.');
+      return;
+    }
+
+    const matchedSubjectNames = subjects
+      .filter((s) => s.topics.some((t) => t.lessons.some((l) => selectedLessonIds.has(l.id))))
+      .map((s) => s.title);
+
+    const title = customTitle.trim() || `Modular Test (${lessonArr.length} Lessons)`;
+
+    const newPreset: ModularExamPreset = {
+      id: `modular-${Date.now()}`,
+      title,
+      iconName: selectedIconId,
+      lessonIds: lessonArr,
+      subjectNames: matchedSubjectNames,
+      questionCount: selectedQuestionCount,
+      timeLimitSeconds: selectedTimerSeconds,
+      createdAt: Date.now(),
+    };
+
+    onSavePreset(newPreset);
+    onClose();
   };
 
   return (
@@ -232,7 +321,7 @@ export function FlashcardPresetBuilderModal({
           <View style={styles.modalHeader}>
             <View style={styles.modalHeaderTitleBox}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {isEditing ? 'Edit Flashcard Preset' : 'New Flashcard Preset'}
+                New Modular Test
               </Text>
             </View>
 
@@ -266,7 +355,7 @@ export function FlashcardPresetBuilderModal({
                       : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
-                {/* 1A. Clickable Icon to open Icon Picker Pop-up */}
+                {/* 1A. Clickable Icon with Gray Edit Badge */}
                 <Pressable
                   onPress={() => setIsIconPickerVisible(true)}
                   style={({ pressed }) => [
@@ -295,7 +384,7 @@ export function FlashcardPresetBuilderModal({
                   </View>
                 </Pressable>
 
-                {/* 1B. Clickable Preset Title to open Name Editor Pop-up */}
+                {/* 1B. Clickable Preset Title with Gray Edit Pencil */}
                 <Pressable
                   onPress={handleOpenNameEditor}
                   style={({ pressed }) => [
@@ -310,7 +399,7 @@ export function FlashcardPresetBuilderModal({
                       styles.bentoPreviewTitle,
                       { color: isDark ? '#F9FAFB' : '#0F172A' },
                     ]}>
-                    {customTitle.trim() || 'Preset Name'}
+                    {customTitle.trim() || 'Modular Test Name'}
                   </Text>
                   <Edit2
                     size={11}
@@ -326,16 +415,15 @@ export function FlashcardPresetBuilderModal({
                     { color: colors.textSecondary },
                   ]}>
                   {selectedLessonIds.size > 0
-                    ? `${selectedLessonIds.size} Lessons`
-                    : '0 Cards'}
+                    ? `${selectedLessonIds.size} Lessons • ${selectedQuestionCount} Qs`
+                    : `${selectedQuestionCount} Questions`}
                 </Text>
               </View>
 
-              {/* Shuffle Toggle Row */}
-              <Pressable
-                onPress={() => setIsShuffled(!isShuffled)}
+              {/* Configuration Controls Box */}
+              <View
                 style={[
-                  styles.shuffleToggleCard,
+                  styles.configContainer,
                   {
                     backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                     borderColor: isDark
@@ -343,38 +431,98 @@ export function FlashcardPresetBuilderModal({
                       : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
-                <View style={styles.shuffleLeft}>
-                  <Shuffle size={16} color={colors.accent} strokeWidth={2.2} />
-                  <Text
-                    style={[
-                      styles.shuffleLabel,
-                      { color: isDark ? '#E2E8F0' : '#1E293B' },
-                    ]}>
-                    Shuffle Cards in Session
-                  </Text>
+                {/* Question Items Selector */}
+                <View style={styles.configBlock}>
+                  <View style={styles.configLabelRow}>
+                    <HelpCircle size={14} color={colors.accent} strokeWidth={2.4} />
+                    <Text style={[styles.configLabel, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+                      QUESTION ITEMS
+                    </Text>
+                  </View>
+                  <View style={styles.optionPillRow}>
+                    {QUESTION_COUNT_OPTIONS.map((count) => {
+                      const isSelected = selectedQuestionCount === count;
+                      return (
+                        <Pressable
+                          key={count}
+                          onPress={() => setSelectedQuestionCount(count)}
+                          style={[
+                            styles.optionPill,
+                            {
+                              backgroundColor: isSelected
+                                ? colors.accent
+                                : isDark
+                                  ? '#23262F'
+                                  : '#F6F0ED',
+                              borderColor: isSelected
+                                ? colors.accent
+                                : isDark
+                                  ? 'rgba(255, 255, 255, 0.06)'
+                                  : 'rgba(0, 0, 0, 0.05)',
+                            },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.optionPillText,
+                              {
+                                color: isSelected ? '#FFFFFF' : colors.text,
+                                fontWeight: isSelected ? '800' : '600',
+                              },
+                            ]}>
+                            {count}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
 
-                <View
-                  style={[
-                    styles.shuffleSwitchPill,
-                    {
-                      backgroundColor: isShuffled
-                        ? colors.accent
-                        : isDark
-                          ? '#23262F'
-                          : '#E2E8F0',
-                    },
-                  ]}>
-                  <View
-                    style={[
-                      styles.switchThumb,
-                      {
-                        transform: [{ translateX: isShuffled ? 18 : 2 }],
-                      },
-                    ]}
-                  />
+                {/* Total Exam Timer Selector */}
+                <View style={styles.configBlock}>
+                  <View style={styles.configLabelRow}>
+                    <Clock size={14} color={colors.accent} strokeWidth={2.4} />
+                    <Text style={[styles.configLabel, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
+                      EXAM TIMER LIMIT
+                    </Text>
+                  </View>
+                  <View style={styles.optionPillRow}>
+                    {TIMER_OPTIONS.map((item) => {
+                      const isSelected = selectedTimerSeconds === item.seconds;
+                      return (
+                        <Pressable
+                          key={item.label}
+                          onPress={() => setSelectedTimerSeconds(item.seconds)}
+                          style={[
+                            styles.optionPill,
+                            {
+                              backgroundColor: isSelected
+                                ? colors.accent
+                                : isDark
+                                  ? '#23262F'
+                                  : '#F6F0ED',
+                              borderColor: isSelected
+                                ? colors.accent
+                                : isDark
+                                  ? 'rgba(255, 255, 255, 0.06)'
+                                  : 'rgba(0, 0, 0, 0.05)',
+                            },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.optionPillText,
+                              {
+                                color: isSelected ? '#FFFFFF' : colors.text,
+                                fontWeight: isSelected ? '800' : '600',
+                              },
+                            ]}>
+                            {item.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
-              </Pressable>
+              </View>
             </View>
 
             {/* 2. Section Header: Curriculum Selection */}
@@ -534,7 +682,7 @@ export function FlashcardPresetBuilderModal({
           {/* Bottom Submit CTA */}
           <View style={styles.modalFooterBar}>
             <Pressable
-              onPress={onSubmit}
+              onPress={handleCreate}
               style={({ pressed }) => [
                 styles.submitBtn,
                 {
@@ -544,9 +692,7 @@ export function FlashcardPresetBuilderModal({
                 },
               ]}>
               <Text style={styles.submitBtnText}>
-                {isEditing
-                  ? `Save Preset (${selectedLessonIds.size} Lessons)`
-                  : `Create Preset (${selectedLessonIds.size} Lessons)`}
+                Create Modular Test ({selectedLessonIds.size} Lessons)
               </Text>
               <ArrowRight size={18} color="#FFFFFF" strokeWidth={2.4} />
             </Pressable>
@@ -554,9 +700,7 @@ export function FlashcardPresetBuilderModal({
         </View>
       </View>
 
-      {/* =================================================================== */}
-      {/* POP-UP 1: CHOOSE PRESET ICON MODAL                                  */}
-      {/* =================================================================== */}
+      {/* Pop-up 1: Choose Preset Icon */}
       <Modal
         visible={isIconPickerVisible}
         transparent
@@ -577,10 +721,9 @@ export function FlashcardPresetBuilderModal({
                   : 'rgba(0, 0, 0, 0.08)',
               },
             ]}>
-            {/* Pop-up Header */}
             <View style={styles.subModalHeader}>
               <Text style={[styles.subModalTitle, { color: colors.text }]}>
-                Choose Preset Icon
+                Choose Test Icon
               </Text>
               <Pressable
                 onPress={() => setIsIconPickerVisible(false)}
@@ -593,13 +736,12 @@ export function FlashcardPresetBuilderModal({
               </Pressable>
             </View>
 
-            {/* Grid of Icons */}
             <View style={styles.iconPickerGrid}>
               {PRESET_ICONS.map((item) => {
                 const isSelected = selectedIconId === item.id;
                 const IconComp = item.icon;
                 const [startC, endC] = item.gradient;
-                const gradId = `popup_icon_${item.id}`;
+                const gradId = `modular_popup_icon_${item.id}`;
 
                 return (
                   <Pressable
@@ -649,9 +791,7 @@ export function FlashcardPresetBuilderModal({
         </View>
       </Modal>
 
-      {/* =================================================================== */}
-      {/* POP-UP 2: EDIT PRESET NAME MODAL                                    */}
-      {/* =================================================================== */}
+      {/* Pop-up 2: Edit Preset Name */}
       <Modal
         visible={isNameEditorVisible}
         transparent
@@ -672,10 +812,9 @@ export function FlashcardPresetBuilderModal({
                   : 'rgba(0, 0, 0, 0.08)',
               },
             ]}>
-            {/* Pop-up Header */}
             <View style={styles.subModalHeader}>
               <Text style={[styles.subModalTitle, { color: colors.text }]}>
-                Edit Preset Name
+                Edit Test Name
               </Text>
               <Pressable
                 onPress={() => setIsNameEditorVisible(false)}
@@ -688,12 +827,11 @@ export function FlashcardPresetBuilderModal({
               </Pressable>
             </View>
 
-            {/* Input Field */}
             <View style={styles.nameEditorBody}>
               <TextInput
                 value={tempTitle}
                 onChangeText={setTempTitle}
-                placeholder="Enter preset name..."
+                placeholder="Enter modular test name..."
                 placeholderTextColor={colors.textSecondary}
                 autoFocus
                 onSubmitEditing={handleSaveName}
@@ -859,47 +997,42 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '600',
   },
-  shuffleToggleCard: {
+  configContainer: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
+    padding: 14,
+    gap: 14,
   },
-  shuffleLeft: {
+  configBlock: {
+    gap: 8,
+  },
+  configLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
   },
-  shuffleLabel: {
-    fontSize: 13.5,
-    fontWeight: '600',
+  configLabel: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
-  shuffleSwitchPill: {
-    width: 40,
-    height: 22,
-    borderRadius: 11,
+  optionPillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  optionPill: {
+    flex: 1,
+    height: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  switchThumb: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#FFFFFF',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+  optionPillText: {
+    fontSize: 13,
+    letterSpacing: -0.2,
   },
   sectionHeaderRow: {
     flexDirection: 'row',

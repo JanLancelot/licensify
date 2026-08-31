@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Pencil, Play, Shuffle, Trash2 } from 'lucide-react-native';
+import { Pencil, Play, Plus, Shuffle, Trash2 } from 'lucide-react-native';
 
 import { useAppTheme } from '@/context/theme-context';
 import { FlashcardPreset } from '@/types/curriculum';
@@ -10,6 +10,7 @@ export interface FlashcardPresetCardProps {
   onStartDrill: (preset: FlashcardPreset) => void;
   onEditPreset: (preset: FlashcardPreset) => void;
   onDeletePreset: (id: string) => void;
+  onAddToQuizSets?: (preset: FlashcardPreset) => void;
   theme?: any;
 }
 
@@ -18,6 +19,7 @@ export function FlashcardPresetCard({
   onStartDrill,
   onEditPreset,
   onDeletePreset,
+  onAddToQuizSets,
 }: FlashcardPresetCardProps) {
   const { colors, isDark } = useAppTheme();
 
@@ -36,9 +38,7 @@ export function FlashcardPresetCard({
             style={[
               styles.presetPill,
               {
-                backgroundColor: isDark
-                  ? 'rgba(224, 122, 95, 0.2)'
-                  : '#F8EAE4',
+                backgroundColor: colors.accentMuted,
               },
             ]}>
             <Text style={[styles.presetPillText, { color: colors.accent }]}>
@@ -75,6 +75,21 @@ export function FlashcardPresetCard({
         </View>
 
         <View style={styles.topActionsRow}>
+          {onAddToQuizSets && (
+            <Pressable
+              onPress={() => onAddToQuizSets(preset)}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.iconBtn,
+                {
+                  backgroundColor: colors.accentMuted,
+                  opacity: pressed ? 0.6 : 1,
+                },
+              ]}>
+              <Plus size={13} color={colors.accent} strokeWidth={2.8} />
+            </Pressable>
+          )}
+
           <Pressable
             onPress={() => onEditPreset(preset)}
             hitSlop={8}
@@ -207,6 +222,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  addQuizBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  addQuizBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
   },
   startDrillBtn: {
     flexDirection: 'row',

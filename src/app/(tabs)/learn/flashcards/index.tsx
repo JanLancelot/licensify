@@ -24,10 +24,13 @@ import {
 import { FlashcardStudyView } from '@/components/flashcards/FlashcardStudyView';
 import { buildCardsForLessons } from '@/components/flashcards/flashcard-utils';
 import { useAppTheme } from '@/context/theme-context';
-import { useLocalHierarchy, useLocalFlashcards } from '@/hooks/useLocalData';
+import { useLocalFlashcards, useLocalHierarchy } from '@/hooks/useLocalData';
+import { useFlashcardPresets } from '@/services/flashcardPresetStore';
+import { addFlashcardPresetToQuiz } from '@/services/quizPresetStore';
 import {
   FlashcardItem,
   FlashcardPreset,
+  Lesson,
   SubjectNote,
   Topic,
 } from '@/types/curriculum';
@@ -76,9 +79,7 @@ export default function FlashcardsHubScreen() {
 
   const { curriculum } = useLocalHierarchy();
   const { flashcards: dbFlashcards } = useLocalFlashcards();
-
-  // User-created Custom Flashcard Decks (Top Grid)
-  const [userPresets, setUserPresets] = useState<FlashcardPreset[]>([]);
+  const { presets: userPresets, savePreset: saveUserFlashcardPreset } = useFlashcardPresets();
 
   // Compute all presets (user created + default system deck from database)
   const customPresets = React.useMemo(() => {
@@ -127,6 +128,14 @@ export default function FlashcardsHubScreen() {
     setIsFlipped(false);
   };
 
+  const handleAddPresetToQuizSets = (preset: FlashcardPreset) => {
+    addFlashcardPresetToQuiz(preset);
+    Alert.alert(
+      'Added to Quiz Sets',
+      `"${preset.title}" is now available under "Your Quiz Sets" in the Practice tab.`
+    );
+  };
+
   // ── Modal Actions (Create / Edit Preset) ──────────────────────────────────
   const handleOpenAddModal = () => {
     setSelectedLessonIds(new Set());
@@ -154,9 +163,9 @@ export default function FlashcardsHubScreen() {
     }
 
     const selectedSubjectsSet = new Set<string>();
-    curriculum.forEach((sub) => {
-      const hasAny = sub.topics.some((t) =>
-        t.lessons.some((l) => selectedLessonIds.has(l.id))
+    curriculum.forEach((sub: SubjectNote) => {
+      const hasAny = sub.topics.some((t: Topic) =>
+        t.lessons.some((l: Lesson) => selectedLessonIds.has(l.id))
       );
       if (hasAny) {
         selectedSubjectsSet.add(sub.title);
@@ -183,7 +192,7 @@ export default function FlashcardsHubScreen() {
       selectedLessonIds: Array.from(selectedLessonIds),
     };
 
-    setUserPresets((prev) => [newPreset, ...prev]);
+    saveUserFlashcardPreset(newPreset);
     setIsAddModalVisible(false);
   };
 
@@ -192,7 +201,7 @@ export default function FlashcardsHubScreen() {
   };
 
   const toggleModalSubjectSelection = (subject: SubjectNote) => {
-    const allLessonIds = subject.topics.flatMap((t) => t.lessons.map((l) => l.id));
+    const allLessonIds = subject.topics.flatMap((t: Topic) => t.lessons.map((l: Lesson) => l.id));
     const allSelected = allLessonIds.every((id) => selectedLessonIds.has(id));
 
     setSelectedLessonIds((prev) => {
@@ -211,7 +220,7 @@ export default function FlashcardsHubScreen() {
   };
 
   const toggleModalTopicSelection = (topic: Topic) => {
-    const lessonIds = topic.lessons.map((l) => l.id);
+    const lessonIds = topic.lessons.map((l: Lesson) => l.id);
     const allSelected = lessonIds.every((id) => selectedLessonIds.has(id));
 
     setSelectedLessonIds((prev) => {
@@ -350,8 +359,25 @@ export default function FlashcardsHubScreen() {
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}>
+                {/* Top-Right Add to Quiz Icon Button */}
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleAddPresetToQuizSets(preset);
+                  }}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.cardCornerAddBtn,
+                    {
+                      backgroundColor: colors.accentMuted,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}>
+                  <Plus size={13} color={colors.accent} strokeWidth={2.8} />
+                </Pressable>
+
                 {/* Customizable Circular Icon on Top */}
-                <CustomDeckIcon iconName={preset.iconName} size={52} />
+                <CustomDeckIcon iconName={preset.iconName} size={48} />
 
                 {/* Deck Title */}
                 <Text
@@ -388,11 +414,8 @@ export default function FlashcardsHubScreen() {
                     backgroundColor: isDark ? '#23262F' : '#F0EBE8',
                   },
                 ]}>
-                <Plus size={24} color={colors.accent} strokeWidth={2.4} />
+                <Plus size={24} color={colors.accent} strokeWidth={2.6} />
               </View>
-              <Text style={[styles.dashedAddText, { color: colors.textSecondary }]}>
-                New Preset
-              </Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -500,6 +523,17 @@ const styles = StyleSheet.create({
   customDeckSub: {
     fontSize: 11.5,
     fontWeight: '500',
+  },
+  cardCornerAddBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
   dashedAddCard: {
     width: '48%',
