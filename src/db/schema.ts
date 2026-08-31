@@ -150,6 +150,13 @@ export const quizAnswers = sqliteTable('quiz_answers', {
   answeredAt: integer('answered_at'),
 });
 
+export const lessonProgress = sqliteTable('lesson_progress', {
+  id: text('id').primaryKey(), // local ID e.g. `lp_${lessonId}`
+  lessonId: text('lesson_id').notNull().unique(),
+  isCompleted: integer('is_completed', { mode: 'boolean' }).notNull().default(true),
+  completedAt: integer('completed_at').notNull(),
+});
+
 // ---------------------------------------------------------------------------
 // 4. METADATA
 // ---------------------------------------------------------------------------
@@ -157,3 +164,6 @@ export const syncMetadata = sqliteTable('sync_metadata', {
   tableName: text('table_name').primaryKey(),
   lastSyncedAt: integer('last_synced_at').notNull(),
 });
+
+
+

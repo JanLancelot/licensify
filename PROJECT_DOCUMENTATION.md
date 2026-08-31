@@ -86,16 +86,23 @@ The schema is defined in Drizzle (`src/db/schema.ts`) and mirrored in Convex:
 
 ## 6. Data Synchronization Strategy
 
-### Down-Sync (Cloud ➔ Device)
-Handled by `syncDown` in `useSyncService.ts`:
-1. Fetches all updated `subjects`, `topics`, `materials`, `flashcards`, `quizzes`, and `questions` from Convex.
-2. Uses `drizzle-orm` `onConflictDoUpdate` to cleanly upsert data into local SQLite.
+### Down-Sync (Cloud ➔ Device - High-Performance Bulk & Delta Sync)
+Handled by `syncDown` in `useSyncService.ts` via `api.sync.getSyncBundle`:
+1. **Single-Roundtrip Bundle (`api.sync.getSyncBundle`)**: Convex atomically collects all published `subjects`, `branches`, `topics`, `lessons`, `materials`, `flashcards`, `questions`, and `quizzes` in 1 single query instead of 100+ nested loops.
+2. **Server-Side SHA-256 Hashing**: Answer choice hashes are computed on the Convex backend using the standard Web Crypto API, eliminating client-side mobile bridge crypto overhead and never exposing raw answer IDs over the wire.
+3. **Delta Syncing**: Uses `lastSyncedAt` timestamps from SQLite `sync_metadata`. If no cloud updates have occurred since the last sync, Convex returns `{ upToDate: true }` instantly (<50ms).
+4. **Chunked SQLite Batch Ingestion**: Uses `drizzle-orm` chunked batch inserts (`db.insert().values(chunk).onConflictDoUpdate()`) to write records into SQLite in milliseconds.
 
-### Up-Sync (Device ➔ Cloud)
-Handled by `syncUp` in `useSyncService.ts`:
-1. Scans local SQLite for `quizAttempts` where `syncStatus = 'pending_sync'`.
-2. Pushes these attempts to the Convex `syncAttempt` mutation.
-3. Upon success, updates the local `syncStatus` to `synced`.
+### Up-Sync (Device ➔ Cloud - Single Batch Mutation)
+Handled by `syncUp` in `useSyncService.ts` via `api.sync.syncAttemptsBatch`:
+1. Scans local SQLite for `quiz_attempts` where `sync_status = 'pending_sync'` along with their recorded answers.
+2. Sends all pending attempts in 1 unified batch payload to `api.sync.syncAttemptsBatch`, avoiding rate limits and multiple sequential network calls.
+3. Convex authoritatively grades the attempts, records the server attempts, and returns synced IDs.
+4. Upon success, updates local `sync_status` to `'synced'` in SQLite.
+
+### Automatic Sync Lifecycle & Debouncing (`src/components/SyncProvider.tsx`)
+- Triggers on initial app mount and whenever the app transitions to the foreground (`AppState === 'active'`).
+- Integrated 3-second debouncing to prevent redundant concurrent sync executions when switching between screens or apps.
 
 ### Cryptographic Answer Verification
 To allow offline grading without exposing correct answers in the local database, Licensify uses **Zero-Trust Hashing**:

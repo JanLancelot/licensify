@@ -155,9 +155,19 @@ function initDatabase() {
       table_name TEXT PRIMARY KEY,
       last_synced_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS lesson_progress (
+      id TEXT PRIMARY KEY,
+      lesson_id TEXT UNIQUE NOT NULL,
+      is_completed INTEGER NOT NULL DEFAULT 1,
+      completed_at INTEGER NOT NULL
+    );
   `);
 
   return drizzle(expoDb, { schema });
 }
 
+
+
 export const db = initDatabase();
+

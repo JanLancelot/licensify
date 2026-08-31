@@ -147,12 +147,12 @@ console.log(`Score: ${result.score}% (${result.correctAnswers}/${result.totalQue
 
 ---
 
-### 🔔 Domain 5: System Notifications (`convex/notifications.ts`)
+### 🔄 Domain 6: High-Performance Offline Sync (`convex/sync.ts`)
 
 | Function | Type | Parameters | Description |
 |---|---|---|---|
-| `api.notifications.getUserNotifications` | Query | `{ unreadOnly?: boolean }` | User notifications list |
-| `api.notifications.markAsRead` | Mutation | `{ notificationId }` | Mark notification as read |
+| `api.sync.getSyncBundle` | Query | `{ sinceTimestamp?: number }` | Fetches entire published curriculum in 1 single atomic query with precomputed SHA-256 choice hashes (supports Delta sync) |
+| `api.sync.syncAttemptsBatch` | Mutation | `{ attempts: Array<{ localId, quizId, status, score?, correctAnswers?, totalQuestions, startedAt, submittedAt?, answers: Array<{ questionId, selectedChoiceId?, answeredAt? }> }> }` | Batch uploads and authoritatively grades multiple offline quiz attempts in 1 network call |
 
 ---
 

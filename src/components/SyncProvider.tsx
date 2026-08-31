@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import * as Network from 'expo-network';
 import { useSyncService } from '../services/useSyncService';
@@ -6,8 +6,9 @@ import { useSyncService } from '../services/useSyncService';
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const { syncDown, syncUp } = useSyncService();
 
-  const syncDownRef = React.useRef(syncDown);
-  const syncUpRef = React.useRef(syncUp);
+  const syncDownRef = useRef(syncDown);
+  const syncUpRef = useRef(syncUp);
+  const lastSyncTimestampRef = useRef(0);
 
   useEffect(() => {
     syncDownRef.current = syncDown;
@@ -16,6 +17,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkAndSync = async () => {
+      // Debounce sync triggers within 3 seconds
+      const now = Date.now();
+      if (now - lastSyncTimestampRef.current < 3000) {
+        return;
+      }
+      lastSyncTimestampRef.current = now;
+
       try {
         let isOnline = true;
         try {
@@ -24,20 +32,20 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         } catch {
           // Assume online if network check throws
         }
-        
+
         if (isOnline) {
-          // Down-sync first so the local device has all latest questions, subjects, and quizzes
+          // 1. Down-sync first (fast single-query bundle / delta)
           try {
             await syncDownRef.current();
           } catch (e) {
-            console.warn('[SyncProvider] syncDown error:', e);
+            console.warn('[SyncProvider] syncDown notice:', e);
           }
 
-          // Up-sync pending attempts in background
+          // 2. Up-sync pending attempts in background (single batch mutation)
           try {
             await syncUpRef.current();
           } catch (e) {
-            console.warn('[SyncProvider] syncUp error:', e);
+            console.warn('[SyncProvider] syncUp notice:', e);
           }
         }
       } catch (err) {

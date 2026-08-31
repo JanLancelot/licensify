@@ -22,10 +22,18 @@ The application implements an **offline-first, sync-eventual** data architecture
   * Added foreign keys (`branch_id`, `lesson_id`) to the `materials`, `flashcards`, `questions`, and `quizzes` schemas.
   * Configured `sync_status` columns on transactional tables (`quiz_attempts`, `quiz_answers`) to tracking synchronization state.
 
-### B. Sync Provider Wrapper
+### B. High-Performance Sync Engine
+* **[`convex/sync.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/sync.ts)**
+  * `getSyncBundle`: Single-roundtrip bulk query that fetches all published curriculum data atomically.
+  * Server-side SHA-256 choice hashing via Web Crypto API (fast + secure).
+  * Delta sync support with `sinceTimestamp` (<50ms when database is unchanged).
+  * `syncAttemptsBatch`: Single atomic mutation to sync multiple offline quiz attempts and answers.
+* **[`src/services/useSyncService.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/services/useSyncService.ts)**
+  * Integrated chunked SQLite batch inserts (`drizzle-orm`) replacing slow row-by-row loops.
+  * Manages `lastSyncedAt` in SQLite `sync_metadata` table.
 * **[`src/components/SyncProvider.tsx`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/components/SyncProvider.tsx)**
   * Listens to network connectivity state (`expo-network`).
-  * Triggers down-sync (curriculum updates) and up-sync (pending attempts) automatically on application mount and foreground events.
+  * Debounced down-sync and up-sync execution on application mount and foreground events.
 
 ### C. SQLite Web Client Mock
 * **[`src/db/client.web.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/db/client.web.ts)**

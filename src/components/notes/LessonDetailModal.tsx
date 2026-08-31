@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { ArrowRight, X } from 'lucide-react-native';
+import { ArrowRight, Check, CheckCircle2, Circle, X } from 'lucide-react-native';
 
 import { useAppTheme } from '@/context/theme-context';
 import { Lesson } from '@/types/curriculum';
@@ -21,15 +21,21 @@ export interface LessonDetailModalProps {
     lesson: Lesson;
   } | null;
   onClose: () => void;
+  isCompleted?: boolean;
+  onToggleComplete?: (lessonId: string) => void;
   theme?: any;
 }
 
 export function LessonDetailModal({
   selectedLesson,
   onClose,
+  isCompleted = false,
+  onToggleComplete,
 }: LessonDetailModalProps) {
   const { colors, isDark } = useAppTheme();
   const router = useRouter();
+
+  if (!selectedLesson) return null;
 
   return (
     <Modal
@@ -69,6 +75,66 @@ export function LessonDetailModal({
         <ScrollView
           contentContainerStyle={styles.modalContent}
           showsVerticalScrollIndicator={false}>
+          {/* Completion Status Pill / Action */}
+          {onToggleComplete && selectedLesson && (
+            <Pressable
+              onPress={() => onToggleComplete(selectedLesson.lesson.id)}
+              style={({ pressed }) => [
+                styles.completionToggleBtn,
+                {
+                  backgroundColor: isCompleted
+                    ? isDark
+                      ? 'rgba(16, 185, 129, 0.18)'
+                      : '#ECFDF5'
+                    : isDark
+                      ? '#232731'
+                      : '#F3F4F6',
+                  borderColor: isCompleted
+                    ? '#10B981'
+                    : isDark
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'rgba(0, 0, 0, 0.06)',
+                  opacity: pressed ? 0.8 : 1,
+                  transform: [{ scale: pressed ? 0.99 : 1 }],
+                },
+              ]}>
+              <View
+                style={[
+                  styles.completionIconBox,
+                  {
+                    backgroundColor: isCompleted ? '#10B981' : isDark ? '#374151' : '#E5E7EB',
+                  },
+                ]}>
+                {isCompleted ? (
+                  <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                ) : (
+                  <Circle size={14} color={isDark ? '#9CA3AF' : '#6B7280'} strokeWidth={2} />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.completionTitle,
+                    { color: isCompleted ? '#10B981' : colors.text },
+                  ]}>
+                  {isCompleted ? 'Completed Lesson' : 'Mark as Completed'}
+                </Text>
+                <Text
+                  style={[
+                    styles.completionSubtitle,
+                    { color: isDark ? '#9CA3AF' : '#6B7280' },
+                  ]}>
+                  {isCompleted
+                    ? 'Saved to your progress • Tap to mark uncompleted'
+                    : 'Tap when finished studying this lesson'}
+                </Text>
+              </View>
+              {isCompleted && (
+                <CheckCircle2 size={20} color="#10B981" strokeWidth={2.4} />
+              )}
+            </Pressable>
+          )}
+
           {/* Overview Card */}
           <View
             style={[
@@ -178,6 +244,31 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 14,
     paddingBottom: 40,
+  },
+  completionToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 12,
+  },
+  completionIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completionTitle: {
+    fontSize: 14.5,
+    fontWeight: '700',
+  },
+  completionSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 1,
   },
   modalCard: {
     borderRadius: 20,

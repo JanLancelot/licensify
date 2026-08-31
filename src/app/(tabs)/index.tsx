@@ -21,7 +21,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
-import { useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
+import { useLessonProgress, useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
 import { api } from '../../../convex/_generated/api';
 
 interface ConfidenceItem {
@@ -39,13 +39,15 @@ export default function HomeScreen() {
   const userProfile = useQuery(api.users.getCurrentUserProfile);
   const { refetch } = useLocalStats();
   const { curriculum } = useLocalHierarchy();
+  const { completedLessonIds, refetch: refetchProgress } = useLessonProgress();
 
   const [showAllLessons, setShowAllLessons] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       refetch?.();
-    }, [refetch])
+      refetchProgress?.();
+    }, [refetch, refetchProgress])
   );
 
   const userName =
@@ -53,61 +55,61 @@ export default function HomeScreen() {
     userProfile?.username ||
     'User';
 
-  // Active Continue Learning subjects/lessons matching user design specification
+  // Active Continue Learning subjects/lessons matching real SQLite progress
   const continueItems = useMemo(() => {
-    if (curriculum && curriculum.length >= 2) {
-      return [
-        {
-          id: curriculum[0].id,
-          title: curriculum[0].title.toUpperCase(),
-          percent: 32,
-          icon: BookOpen,
-        },
-        {
-          id: curriculum[1].id,
-          title: curriculum[1].title.toUpperCase(),
-          percent: 61,
-          icon: Landmark,
-        },
-      ];
+    if (curriculum && curriculum.length > 0) {
+      return curriculum.slice(0, 2).map((sub, sIdx) => {
+        const allLessonIds = sub.topics.flatMap((t) => t.lessons.map((l) => l.id));
+        const total = allLessonIds.length;
+        const done = allLessonIds.filter((id) => completedLessonIds.has(id)).length;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        return {
+          id: sub.id,
+          title: sub.title.toUpperCase(),
+          percent: pct,
+          icon: sIdx === 0 ? BookOpen : Landmark,
+        };
+      });
     }
     return [
       {
         id: 'c1',
         title: 'HISTORY OF ARCHITECTURE',
-        percent: 32,
+        percent: 0,
         icon: BookOpen,
       },
       {
         id: 'c2',
         title: 'STRUCTURAL DESIGN',
-        percent: 61,
+        percent: 0,
         icon: Landmark,
       },
     ];
-  }, [curriculum]);
+  }, [curriculum, completedLessonIds]);
 
   // Up to 10 Recent / Syllabus Lessons for the Confidence Rate Section
   const confidenceLessons: ConfidenceItem[] = useMemo(() => {
     const collected: ConfidenceItem[] = [];
-    const defaultPercents = [50, 70, 60, 93, 100, 45, 82, 68, 77, 88];
-    let idx = 0;
 
     for (const sub of curriculum) {
       for (const topic of sub.topics) {
         for (const les of topic.lessons) {
+          const isDone = completedLessonIds.has(les.id);
           collected.push({
             id: les.id,
             lessonName: les.title,
-            confidencePercent: defaultPercents[idx % defaultPercents.length],
+            topicName: topic.title,
+            confidencePercent: isDone ? 100 : 50,
           });
-          idx++;
           if (collected.length >= 10) break;
         }
         if (collected.length >= 10) break;
       }
       if (collected.length >= 10) break;
     }
+
+
+
 
     if (collected.length < 10) {
       return [
