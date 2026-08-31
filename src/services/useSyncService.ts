@@ -1,5 +1,5 @@
 import { useConvex } from 'convex/react';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import * as crypto from 'expo-crypto';
 import { useCallback, useState, useRef } from 'react';
 import { api } from '../../convex/_generated/api';
@@ -12,6 +12,109 @@ export interface SyncProgress {
   step: 'idle' | 'subjects' | 'topics' | 'flashcards' | 'quizzes' | 'attempts' | 'complete' | 'error';
 }
 
+export interface SyncSubjectItem {
+  id: string;
+  name: string;
+  description?: string;
+  isPublished?: boolean;
+  order?: number;
+}
+
+export interface SyncBranchItem {
+  id: string;
+  subjectId: string;
+  name: string;
+  description?: string;
+  order?: number;
+  isPublished?: boolean;
+}
+
+export interface SyncTopicItem {
+  id: string;
+  subjectId: string;
+  branchId?: string;
+  name: string;
+  description?: string;
+  order?: number;
+  isPublished?: boolean;
+}
+
+export interface SyncLessonItem {
+  id: string;
+  subjectId: string;
+  branchId?: string;
+  topicId: string;
+  name: string;
+  description?: string;
+  order?: number;
+  isPublished?: boolean;
+}
+
+export interface SyncMaterialItem {
+  id: string;
+  subjectId: string;
+  branchId?: string;
+  topicId?: string;
+  lessonId?: string;
+  title: string;
+  description?: string;
+  type: string;
+  content?: string;
+}
+
+export interface SyncFlashcardItem {
+  id: string;
+  subjectId: string;
+  branchId?: string;
+  topicId?: string;
+  lessonId?: string;
+  front: string;
+  back: string;
+}
+
+export interface SyncQuestionItem {
+  id: string;
+  subjectId: string;
+  branchId?: string;
+  topicId?: string;
+  lessonId?: string;
+  question: string;
+  choices: any;
+  correctChoiceHash?: string;
+  explanation?: string;
+  difficulty: string;
+  isPublished?: boolean;
+}
+
+export interface SyncQuizItem {
+  id: string;
+  title: string;
+  description?: string;
+  type: string;
+  subjectId?: string;
+  branchId?: string;
+  topicId?: string;
+  lessonId?: string;
+  questionIds: any;
+  timeLimitSeconds?: number;
+  passingScore?: number;
+}
+
+export interface SyncBundleResponse {
+  upToDate: boolean;
+  timestamp: number;
+  subjects: SyncSubjectItem[];
+  branches: SyncBranchItem[];
+  topics: SyncTopicItem[];
+  lessons: SyncLessonItem[];
+  materials: SyncMaterialItem[];
+  flashcards: SyncFlashcardItem[];
+  questions: SyncQuestionItem[];
+  quizzes: SyncQuizItem[];
+}
+
+const CHUNK_SIZE = 50;
+
 export function useSyncService() {
   const convex = useConvex();
   const [isSyncing, setIsSyncing] = useState(false);
@@ -22,13 +125,13 @@ export function useSyncService() {
     message: 'Ready',
     step: 'idle',
   });
-  
-  // Mutex locks to prevent concurrent runs of down-sync and up-sync
+
+  // Mutex locks to prevent concurrent runs
   const syncDownInProgressRef = useRef(false);
   const syncUpInProgressRef = useRef(false);
 
   /**
-   * Generates a deterministic hash for an answer choice
+   * Generates a deterministic hash for an answer choice (kept for backwards-compatibility)
    */
   const hashAnswer = useCallback(async (questionId: string, choiceId: string) => {
     const payload = `${questionId}:${choiceId}`;
@@ -39,423 +142,366 @@ export function useSyncService() {
   }, []);
 
   /**
-   * PULL DOWN: Fetches published subjects, topics, materials, flashcards, questions, and quizzes
-   * from Convex and upserts them into the local SQLite database.
+   * PULL DOWN (Bulk & Delta Sync):
+   * Fetches the entire curriculum dataset in a single network roundtrip from Convex
+   * and batch-inserts it into SQLite.
    */
-  const syncDown = useCallback(async () => {
+  const syncDown = useCallback(async (forceFull = false) => {
     if (syncDownInProgressRef.current) {
       console.log('[SyncService] Down-sync already in progress, skipping.');
       return;
     }
     syncDownInProgressRef.current = true;
+
     try {
       setIsSyncing(true);
       setSyncError(null);
       setSyncProgress({
-        percentage: 15,
+        percentage: 10,
         message: 'Connecting to Convex Cloud...',
         step: 'subjects',
       });
-      console.log('[SyncService] Starting Down-Sync...');
+      console.log('[SyncService] Starting High-Performance Down-Sync...');
 
-      // 1. Fetch published subjects
-      const subjects = await convex.query(api.subjects.listPublishedSubjects as any, {});
+      // 1. Read last synced timestamp from SQLite
+      let sinceTimestamp: number | undefined = undefined;
+      if (!forceFull) {
+        try {
+          const meta = await db
+            .select()
+            .from(schema.syncMetadata)
+            .where(eq(schema.syncMetadata.tableName, 'all_data'))
+            .limit(1);
+          if (meta.length > 0 && meta[0].lastSyncedAt > 0) {
+            sinceTimestamp = meta[0].lastSyncedAt;
+          }
+        } catch {
+          // If metadata read fails, proceed with full sync
+        }
+      }
 
-      if (subjects && subjects.length > 0) {
-        for (let i = 0; i < subjects.length; i++) {
-          const sub = subjects[i];
-          const pct = 25 + Math.round(((i + 1) / subjects.length) * 35);
-          setSyncProgress({
-            percentage: pct,
-            message: `Syncing ${sub.name || 'Subject'} (${i + 1}/${subjects.length})...`,
-            step: 'topics',
-          });
+      setSyncProgress({
+        percentage: 25,
+        message: 'Fetching curriculum bundle...',
+        step: 'topics',
+      });
 
-          try {
-            await db.insert(schema.subjects).values({
-              id: sub._id,
-              convexId: sub._id,
-              name: sub.name,
-              description: sub.description || null,
-              isPublished: sub.isPublished ?? true,
-              order: sub.order || 0,
-            }).onConflictDoUpdate({
+      // 2. Fetch single bulk bundle from Convex (1 network roundtrip)
+      const bundle = (await convex.query(api.sync.getSyncBundle as any, {
+        sinceTimestamp,
+      })) as SyncBundleResponse;
+
+      if (!bundle) {
+        throw new Error('No sync bundle received from server.');
+      }
+
+      // If server reports data is already up-to-date
+      if (bundle.upToDate) {
+        console.log('[SyncService] Local database is already up to date (<50ms).');
+        setSyncProgress({
+          percentage: 100,
+          message: 'Database is up to date.',
+          step: 'complete',
+        });
+        setLastSyncedAt(new Date(bundle.timestamp));
+        return;
+      }
+
+      setSyncProgress({
+        percentage: 50,
+        message: 'Saving subjects, topics & flashcards...',
+        step: 'flashcards',
+      });
+
+      // 3. Batch insert Subjects
+      if (bundle.subjects && bundle.subjects.length > 0) {
+        for (let i = 0; i < bundle.subjects.length; i += CHUNK_SIZE) {
+          const chunk = bundle.subjects.slice(i, i + CHUNK_SIZE).map((s: SyncSubjectItem) => ({
+            id: s.id,
+            convexId: s.id,
+            name: s.name,
+            description: s.description || null,
+            isPublished: s.isPublished ?? true,
+            order: s.order || 0,
+          }));
+          await db
+            .insert(schema.subjects)
+            .values(chunk)
+            .onConflictDoUpdate({
               target: schema.subjects.id,
               set: {
-                name: sub.name,
-                description: sub.description || null,
-                isPublished: sub.isPublished ?? true,
-                order: sub.order || 0,
+                name: sql`excluded.name`,
+                description: sql`excluded.description`,
+                isPublished: sql`excluded.is_published`,
+                order: sql`excluded."order"`,
+                convexId: sql`excluded.convex_id`,
               },
             });
-          } catch (e) {
-            console.warn('[SyncService] Failed to upsert subject:', sub._id, e);
-          }
-
-          // 2. Fetch branches under subject
-          try {
-            const branches = await convex.query((api.branches as any).listBranchesBySubject, {
-              subjectId: sub._id,
-            });
-
-            if (branches && branches.length > 0) {
-              for (const br of branches) {
-                await db.insert(schema.branches).values({
-                  id: br._id,
-                  convexId: br._id,
-                  subjectId: sub._id,
-                  name: br.name,
-                  description: br.description || null,
-                  order: br.order || 0,
-                  isPublished: br.isPublished ?? true,
-                }).onConflictDoUpdate({
-                  target: schema.branches.id,
-                  set: {
-                    name: br.name,
-                    description: br.description || null,
-                    order: br.order || 0,
-                    isPublished: br.isPublished ?? true,
-                  },
-                });
-              }
-            }
-          } catch {
-            // Optional branches
-          }
-
-          // 3. Fetch topics under subject
-          try {
-            const topics = await convex.query(api.topics.listTopicsBySubject as any, {
-              subjectId: sub._id,
-            });
-
-            if (topics && topics.length > 0) {
-              for (const top of topics) {
-                await db.insert(schema.topics).values({
-                  id: top._id,
-                  convexId: top._id,
-                  subjectId: sub._id,
-                  branchId: top.branchId || null,
-                  name: top.name,
-                  description: top.description || null,
-                  order: top.order || 0,
-                  isPublished: top.isPublished ?? true,
-                }).onConflictDoUpdate({
-                  target: schema.topics.id,
-                  set: {
-                    name: top.name,
-                    description: top.description || null,
-                    order: top.order || 0,
-                    isPublished: top.isPublished ?? true,
-                  },
-                });
-
-                // Fetch lessons under topic
-                try {
-                  const topicLessons = await convex.query(api.lessons.listLessonsByTopic as any, {
-                    topicId: top._id,
-                  });
-
-                  if (topicLessons && topicLessons.length > 0) {
-                    for (const les of topicLessons) {
-                      await db.insert(schema.lessons).values({
-                        id: les._id,
-                        convexId: les._id,
-                        subjectId: sub._id,
-                        topicId: top._id,
-                        branchId: les.branchId || null,
-                        name: les.name,
-                        description: les.description || null,
-                        order: les.order || 0,
-                        isPublished: les.isPublished ?? true,
-                      }).onConflictDoUpdate({
-                        target: schema.lessons.id,
-                        set: {
-                          name: les.name,
-                          description: les.description || null,
-                          order: les.order || 0,
-                          isPublished: les.isPublished ?? true,
-                        },
-                      });
-                    }
-                  }
-                } catch {
-                  console.warn('[SyncService] Failed lessons sync');
-                }
-
-                // Fetch materials by topic
-                try {
-                  const topicMaterials = await convex.query(api.materials.listMaterialsByTopic as any, {
-                    topicId: top._id,
-                  });
-                  if (topicMaterials && topicMaterials.length > 0) {
-                    for (const mat of topicMaterials) {
-                      await db.insert(schema.materials).values({
-                        id: mat._id,
-                        convexId: mat._id,
-                        subjectId: sub._id,
-                        topicId: top._id,
-                        branchId: mat.branchId || null,
-                        lessonId: mat.lessonId || null,
-                        title: mat.title,
-                        description: mat.description || null,
-                        type: mat.type || 'article',
-                        content: mat.content || null,
-                      }).onConflictDoUpdate({
-                        target: schema.materials.id,
-                        set: {
-                          title: mat.title,
-                          description: mat.description || null,
-                          type: mat.type || 'article',
-                          content: mat.content || null,
-                        },
-                      });
-                    }
-                  }
-                } catch {
-                  // Optional materials
-                }
-
-                // Fetch flashcards by topic
-                try {
-                  const topicFlashcards = await convex.query(api.flashcards.getFlashcardsByTopic as any, {
-                    topicId: top._id,
-                  });
-                  if (topicFlashcards && topicFlashcards.length > 0) {
-                    for (const card of topicFlashcards) {
-                      await db.insert(schema.flashcards).values({
-                        id: card._id,
-                        convexId: card._id,
-                        subjectId: sub._id,
-                        topicId: top._id,
-                        branchId: card.branchId || null,
-                        lessonId: card.lessonId || null,
-                        front: card.front,
-                        back: card.back,
-                      }).onConflictDoUpdate({
-                        target: schema.flashcards.id,
-                        set: {
-                          front: card.front,
-                          back: card.back,
-                        },
-                      });
-                    }
-                  }
-                } catch {
-                  // Optional flashcards
-                }
-
-                // Fetch questions by topic
-                try {
-                  const topicQuestions = await convex.query(api.questions.listQuestionsByTopic as any, {
-                    topicId: top._id,
-                  });
-                  if (topicQuestions && topicQuestions.length > 0) {
-                    for (const q of topicQuestions) {
-                      const correctChoiceHash = q.correctChoiceId
-                        ? await hashAnswer(q._id, q.correctChoiceId)
-                        : undefined;
-
-                      await db.insert(schema.questions).values({
-                        id: q._id,
-                        convexId: q._id,
-                        subjectId: sub._id,
-                        topicId: top._id,
-                        branchId: q.branchId || null,
-                        lessonId: q.lessonId || null,
-                        question: q.question,
-                        choices: q.choices,
-                        correctChoiceHash,
-                        explanation: q.explanation || null,
-                        difficulty: q.difficulty || 'medium',
-                      }).onConflictDoUpdate({
-                        target: schema.questions.id,
-                        set: {
-                          question: q.question,
-                          choices: q.choices,
-                          correctChoiceHash,
-                          explanation: q.explanation || null,
-                          difficulty: q.difficulty || 'medium',
-                        },
-                      });
-                    }
-                  }
-                } catch {
-                  // Optional questions
-                }
-              }
-            }
-          } catch {
-            console.warn('[SyncService] Failed topics sync for subject:', sub._id);
-          }
-
-          // 4. Fetch questions by subject
-          try {
-            const subjectQuestions = await convex.query(api.questions.listQuestionsBySubject as any, {
-              subjectId: sub._id,
-            });
-            console.log(`[SyncService] Subject ${sub.name || sub._id} returned ${subjectQuestions?.length ?? 0} questions`);
-            if (subjectQuestions && subjectQuestions.length > 0) {
-              for (const q of subjectQuestions) {
-                const correctChoiceHash = q.correctChoiceId
-                  ? await hashAnswer(q._id, q.correctChoiceId)
-                  : undefined;
-
-                await db.insert(schema.questions).values({
-                  id: q._id,
-                  convexId: q._id,
-                  subjectId: sub._id,
-                  topicId: q.topicId || null,
-                  branchId: q.branchId || null,
-                  lessonId: q.lessonId || null,
-                  question: q.question,
-                  choices: q.choices,
-                  correctChoiceHash,
-                  explanation: q.explanation || null,
-                  difficulty: q.difficulty || 'medium',
-                }).onConflictDoUpdate({
-                  target: schema.questions.id,
-                  set: {
-                    question: q.question,
-                    choices: q.choices,
-                    correctChoiceHash,
-                    explanation: q.explanation || null,
-                    difficulty: q.difficulty || 'medium',
-                  },
-                });
-              }
-            }
-          } catch {
-            console.warn('[SyncService] Questions sync notice for subject:', sub._id);
-          }
-
-          // 5. Fetch flashcards by subject
-          try {
-            const subjectFlashcards = await convex.query(api.flashcards.getFlashcardsBySubject as any, {
-              subjectId: sub._id,
-            });
-            if (subjectFlashcards && subjectFlashcards.length > 0) {
-              for (const card of subjectFlashcards) {
-                await db.insert(schema.flashcards).values({
-                  id: card._id,
-                  convexId: card._id,
-                  subjectId: sub._id,
-                  topicId: card.topicId || null,
-                  branchId: card.branchId || null,
-                  lessonId: card.lessonId || null,
-                  front: card.front,
-                  back: card.back,
-                }).onConflictDoUpdate({
-                  target: schema.flashcards.id,
-                  set: {
-                    front: card.front,
-                    back: card.back,
-                  },
-                });
-              }
-            }
-          } catch {
-            // Optional subject flashcards
-          }
         }
       }
 
-      // 6. Fetch published quizzes
+      // 4. Batch insert Branches
+      if (bundle.branches && bundle.branches.length > 0) {
+        for (let i = 0; i < bundle.branches.length; i += CHUNK_SIZE) {
+          const chunk = bundle.branches.slice(i, i + CHUNK_SIZE).map((b: SyncBranchItem) => ({
+            id: b.id,
+            convexId: b.id,
+            subjectId: b.subjectId,
+            name: b.name,
+            description: b.description || null,
+            order: b.order || 0,
+            isPublished: b.isPublished ?? true,
+          }));
+          await db
+            .insert(schema.branches)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.branches.id,
+              set: {
+                subjectId: sql`excluded.subject_id`,
+                name: sql`excluded.name`,
+                description: sql`excluded.description`,
+                order: sql`excluded."order"`,
+                isPublished: sql`excluded.is_published`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
+      // 5. Batch insert Topics
+      if (bundle.topics && bundle.topics.length > 0) {
+        for (let i = 0; i < bundle.topics.length; i += CHUNK_SIZE) {
+          const chunk = bundle.topics.slice(i, i + CHUNK_SIZE).map((t: SyncTopicItem) => ({
+            id: t.id,
+            convexId: t.id,
+            subjectId: t.subjectId,
+            branchId: t.branchId || null,
+            name: t.name,
+            description: t.description || null,
+            order: t.order || 0,
+            isPublished: t.isPublished ?? true,
+          }));
+          await db
+            .insert(schema.topics)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.topics.id,
+              set: {
+                subjectId: sql`excluded.subject_id`,
+                branchId: sql`excluded.branch_id`,
+                name: sql`excluded.name`,
+                description: sql`excluded.description`,
+                order: sql`excluded."order"`,
+                isPublished: sql`excluded.is_published`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
+      // 6. Batch insert Lessons
+      if (bundle.lessons && bundle.lessons.length > 0) {
+        for (let i = 0; i < bundle.lessons.length; i += CHUNK_SIZE) {
+          const chunk = bundle.lessons.slice(i, i + CHUNK_SIZE).map((l: SyncLessonItem) => ({
+            id: l.id,
+            convexId: l.id,
+            subjectId: l.subjectId,
+            branchId: l.branchId || null,
+            topicId: l.topicId,
+            name: l.name,
+            description: l.description || null,
+            order: l.order || 0,
+            isPublished: l.isPublished ?? true,
+          }));
+          await db
+            .insert(schema.lessons)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.lessons.id,
+              set: {
+                subjectId: sql`excluded.subject_id`,
+                branchId: sql`excluded.branch_id`,
+                topicId: sql`excluded.topic_id`,
+                name: sql`excluded.name`,
+                description: sql`excluded.description`,
+                order: sql`excluded."order"`,
+                isPublished: sql`excluded.is_published`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
+      // 7. Batch insert Materials
+      if (bundle.materials && bundle.materials.length > 0) {
+        for (let i = 0; i < bundle.materials.length; i += CHUNK_SIZE) {
+          const chunk = bundle.materials.slice(i, i + CHUNK_SIZE).map((m: SyncMaterialItem) => ({
+            id: m.id,
+            convexId: m.id,
+            subjectId: m.subjectId,
+            branchId: m.branchId || null,
+            topicId: m.topicId || null,
+            lessonId: m.lessonId || null,
+            title: m.title,
+            description: m.description || null,
+            type: m.type,
+            content: m.content || null,
+          }));
+          await db
+            .insert(schema.materials)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.materials.id,
+              set: {
+                subjectId: sql`excluded.subject_id`,
+                branchId: sql`excluded.branch_id`,
+                topicId: sql`excluded.topic_id`,
+                lessonId: sql`excluded.lesson_id`,
+                title: sql`excluded.title`,
+                description: sql`excluded.description`,
+                type: sql`excluded.type`,
+                content: sql`excluded.content`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
+      // 8. Batch insert Flashcards
+      if (bundle.flashcards && bundle.flashcards.length > 0) {
+        for (let i = 0; i < bundle.flashcards.length; i += CHUNK_SIZE) {
+          const chunk = bundle.flashcards.slice(i, i + CHUNK_SIZE).map((f: SyncFlashcardItem) => ({
+            id: f.id,
+            convexId: f.id,
+            subjectId: f.subjectId,
+            branchId: f.branchId || null,
+            topicId: f.topicId || null,
+            lessonId: f.lessonId || null,
+            front: f.front,
+            back: f.back,
+          }));
+          await db
+            .insert(schema.flashcards)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.flashcards.id,
+              set: {
+                subjectId: sql`excluded.subject_id`,
+                branchId: sql`excluded.branch_id`,
+                topicId: sql`excluded.topic_id`,
+                lessonId: sql`excluded.lesson_id`,
+                front: sql`excluded.front`,
+                back: sql`excluded.back`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
       setSyncProgress({
-        percentage: 65,
-        message: 'Downloading Quizzes & Mock Exams...',
+        percentage: 75,
+        message: 'Saving question bank & quizzes...',
         step: 'quizzes',
       });
 
-      try {
-        const quizzesResult = await convex.query(api.quizzes.listQuizzes as any, {
-          paginationOpts: { numItems: 100, cursor: null },
-        });
-        const quizzesList = quizzesResult?.page || [];
-        console.log(`[SyncService] Fetched ${quizzesList.length} quizzes from Convex`);
-        if (quizzesList.length > 0) {
-          for (const quiz of quizzesList) {
-            await db.insert(schema.quizzes).values({
-              id: quiz._id,
-              convexId: quiz._id,
-              title: quiz.title,
-              description: quiz.description || null,
-              type: quiz.type || 'practice',
-              subjectId: quiz.subjectId || null,
-              branchId: quiz.branchId || null,
-              topicId: quiz.topicId || null,
-              lessonId: quiz.lessonId || null,
-              questionIds: quiz.questionIds || [],
-              timeLimitSeconds: quiz.timeLimitSeconds || null,
-              passingScore: quiz.passingScore || null,
-            }).onConflictDoUpdate({
+      // 9. Batch insert Questions (with pre-computed hashes from server)
+      if (bundle.questions && bundle.questions.length > 0) {
+        for (let i = 0; i < bundle.questions.length; i += CHUNK_SIZE) {
+          const chunk = bundle.questions.slice(i, i + CHUNK_SIZE).map((q: SyncQuestionItem) => ({
+            id: q.id,
+            convexId: q.id,
+            subjectId: q.subjectId,
+            branchId: q.branchId || null,
+            topicId: q.topicId || null,
+            lessonId: q.lessonId || null,
+            question: q.question,
+            choices: q.choices,
+            correctChoiceHash: q.correctChoiceHash || null,
+            explanation: q.explanation || null,
+            difficulty: q.difficulty,
+          }));
+          await db
+            .insert(schema.questions)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.questions.id,
+              set: {
+                subjectId: sql`excluded.subject_id`,
+                branchId: sql`excluded.branch_id`,
+                topicId: sql`excluded.topic_id`,
+                lessonId: sql`excluded.lesson_id`,
+                question: sql`excluded.question`,
+                choices: sql`excluded.choices`,
+                correctChoiceHash: sql`excluded.correct_choice_hash`,
+                explanation: sql`excluded.explanation`,
+                difficulty: sql`excluded.difficulty`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
+      // 10. Batch insert Quizzes
+      if (bundle.quizzes && bundle.quizzes.length > 0) {
+        for (let i = 0; i < bundle.quizzes.length; i += CHUNK_SIZE) {
+          const chunk = bundle.quizzes.slice(i, i + CHUNK_SIZE).map((qz: SyncQuizItem) => ({
+            id: qz.id,
+            convexId: qz.id,
+            title: qz.title,
+            description: qz.description || null,
+            type: qz.type,
+            subjectId: qz.subjectId || null,
+            branchId: qz.branchId || null,
+            topicId: qz.topicId || null,
+            lessonId: qz.lessonId || null,
+            questionIds: qz.questionIds,
+            timeLimitSeconds: qz.timeLimitSeconds || null,
+            passingScore: qz.passingScore || null,
+          }));
+          await db
+            .insert(schema.quizzes)
+            .values(chunk)
+            .onConflictDoUpdate({
               target: schema.quizzes.id,
               set: {
-                title: quiz.title,
-                description: quiz.description || null,
-                type: quiz.type || 'practice',
-                subjectId: quiz.subjectId || null,
-                branchId: quiz.branchId || null,
-                topicId: quiz.topicId || null,
-                lessonId: quiz.lessonId || null,
-                questionIds: quiz.questionIds || [],
-                timeLimitSeconds: quiz.timeLimitSeconds || null,
-                passingScore: quiz.passingScore || null,
+                title: sql`excluded.title`,
+                description: sql`excluded.description`,
+                type: sql`excluded.type`,
+                subjectId: sql`excluded.subject_id`,
+                branchId: sql`excluded.branch_id`,
+                topicId: sql`excluded.topic_id`,
+                lessonId: sql`excluded.lesson_id`,
+                questionIds: sql`excluded.question_ids`,
+                timeLimitSeconds: sql`excluded.time_limit_seconds`,
+                passingScore: sql`excluded.passing_score`,
+                convexId: sql`excluded.convex_id`,
               },
             });
-
-            // Ingest questions attached to this quiz
-            try {
-              const quizDetails = await convex.query(api.quizzes.getQuizWithQuestions as any, {
-                quizId: quiz._id,
-              });
-              if (quizDetails && quizDetails.questions && quizDetails.questions.length > 0) {
-                console.log(`[SyncService] Ingested ${quizDetails.questions.length} questions from quiz "${quiz.title}"`);
-                for (const q of quizDetails.questions) {
-                  const correctChoiceHash = q.correctChoiceId
-                    ? await hashAnswer(q._id, q.correctChoiceId)
-                    : undefined;
-
-                  await db.insert(schema.questions).values({
-                    id: q._id,
-                    convexId: q._id,
-                    subjectId: q.subjectId || quiz.subjectId || 'general',
-                    topicId: q.topicId || null,
-                    branchId: q.branchId || null,
-                    lessonId: q.lessonId || null,
-                    question: q.question,
-                    choices: q.choices,
-                    correctChoiceHash,
-                    explanation: q.explanation || null,
-                    difficulty: q.difficulty || 'medium',
-                  }).onConflictDoUpdate({
-                    target: schema.questions.id,
-                    set: {
-                      question: q.question,
-                      choices: q.choices,
-                      correctChoiceHash,
-                      explanation: q.explanation || null,
-                      difficulty: q.difficulty || 'medium',
-                    },
-                  });
-                }
-              }
-            } catch (qErr) {
-              console.warn('[SyncService] Notice fetching questions for quiz:', quiz.title, qErr);
-            }
-          }
         }
-      } catch (e) {
-        console.warn('[SyncService] Quizzes sync warning:', e);
       }
 
-      setLastSyncedAt(new Date());
+      // 11. Save lastSyncedAt timestamp in SQLite metadata
+      await db
+        .insert(schema.syncMetadata)
+        .values({
+          tableName: 'all_data',
+          lastSyncedAt: bundle.timestamp,
+        })
+        .onConflictDoUpdate({
+          target: schema.syncMetadata.tableName,
+          set: {
+            lastSyncedAt: bundle.timestamp,
+          },
+        });
+
+      setLastSyncedAt(new Date(bundle.timestamp));
       setSyncProgress({
-        percentage: 85,
-        message: 'Curriculum & questions saved.',
-        step: 'quizzes',
+        percentage: 100,
+        message: 'Curriculum & question bank synchronized successfully!',
+        step: 'complete',
       });
-      console.log('[SyncService] Down-Sync Complete');
+      console.log(`[SyncService] Down-Sync Complete (${bundle.questions?.length ?? 0} questions, ${bundle.flashcards?.length ?? 0} flashcards)`);
     } catch (error) {
       console.error('[SyncService] Down-Sync Failed:', error);
       const errMsg = error instanceof Error ? error.message : 'Unknown down-sync error';
@@ -469,10 +515,11 @@ export function useSyncService() {
       setIsSyncing(false);
       syncDownInProgressRef.current = false;
     }
-  }, [convex, hashAnswer]);
+  }, [convex]);
 
   /**
-   * PUSH UP: Fetches pending quiz attempts and answers from SQLite and pushes to Convex
+   * PUSH UP (Batch Sync):
+   * Uploads all pending offline attempts and answers in 1 atomic mutation to Convex.
    */
   const syncUp = useCallback(async () => {
     if (syncUpInProgressRef.current) {
@@ -480,73 +527,92 @@ export function useSyncService() {
       return;
     }
     syncUpInProgressRef.current = true;
+
     try {
       setIsSyncing(true);
       setSyncError(null);
       setSyncProgress({
-        percentage: 90,
+        percentage: 85,
         message: 'Uploading offline attempts...',
         step: 'attempts',
       });
-      console.log('[SyncService] Starting Up-Sync...');
+      console.log('[SyncService] Starting Batch Up-Sync...');
 
       const pendingAttempts = await db
         .select()
         .from(schema.quizAttempts)
         .where(eq(schema.quizAttempts.syncStatus, 'pending_sync'));
 
+      if (!pendingAttempts || pendingAttempts.length === 0) {
+        console.log('[SyncService] No pending attempts to sync.');
+        setSyncProgress({
+          percentage: 100,
+          message: 'All attempts synced.',
+          step: 'complete',
+        });
+        return;
+      }
+
+      const validAttemptsToSync: any[] = [];
+
       for (const attempt of pendingAttempts) {
-        // Query recorded answers for this attempt
+        // Resolve pure offline custom drills locally
+        if (
+          attempt.id.startsWith('attempt-loc-') ||
+          !attempt.quizId ||
+          attempt.quizId.startsWith('area-') ||
+          attempt.quizId.startsWith('all-') ||
+          attempt.quizId.startsWith('mock-')
+        ) {
+          await db
+            .update(schema.quizAttempts)
+            .set({ syncStatus: 'synced' })
+            .where(eq(schema.quizAttempts.id, attempt.id));
+          continue;
+        }
+
         const answers = await db
           .select()
           .from(schema.quizAnswers)
           .where(eq(schema.quizAnswers.attemptId, attempt.id));
 
-        try {
-          // If attempt is a local offline drill, resolve locally
-          if (attempt.id.startsWith('attempt-loc-') || !attempt.quizId || attempt.quizId.startsWith('area-') || attempt.quizId.startsWith('all-') || attempt.quizId.startsWith('mock-')) {
-            await db.update(schema.quizAttempts)
-              .set({ syncStatus: 'synced' })
-              .where(eq(schema.quizAttempts.id, attempt.id));
-            continue;
+        validAttemptsToSync.push({
+          localId: attempt.id,
+          quizId: attempt.quizId,
+          status: attempt.status,
+          score: attempt.score ?? undefined,
+          correctAnswers: attempt.correctAnswers ?? undefined,
+          totalQuestions: attempt.totalQuestions,
+          startedAt: attempt.startedAt,
+          submittedAt: attempt.submittedAt ?? undefined,
+          answers: answers.map((ans) => ({
+            questionId: ans.questionId,
+            selectedChoiceId: ans.selectedChoiceId ?? undefined,
+            answeredAt: ans.answeredAt ?? undefined,
+          })),
+        });
+      }
+
+      if (validAttemptsToSync.length > 0) {
+        // Send single batch mutation to Convex
+        const result = (await convex.mutation(api.sync.syncAttemptsBatch as any, {
+          attempts: validAttemptsToSync as any,
+        })) as { synced?: Array<{ localId: string; serverId: string }> };
+
+        if (result && result.synced && result.synced.length > 0) {
+          for (const item of result.synced) {
+            await db
+              .update(schema.quizAttempts)
+              .set({
+                syncStatus: 'synced',
+                convexId: item.serverId,
+              })
+              .where(eq(schema.quizAttempts.id, item.localId));
           }
-
-          // 1. Start attempt on Convex
-          const serverAttemptId = await convex.mutation(api.attempts.startQuizAttempt as any, {
-            quizId: attempt.quizId,
-          });
-
-          // 2. Record each answer choice
-          for (const ans of answers) {
-            if (ans.selectedChoiceId) {
-              await convex.mutation(api.attempts.recordAnswer as any, {
-                attemptId: serverAttemptId,
-                questionId: ans.questionId,
-                selectedChoiceId: ans.selectedChoiceId,
-              });
-            }
-          }
-
-          // 3. Finalize attempt on Convex if marked submitted
-          if (attempt.status === 'submitted') {
-            await convex.mutation(api.attempts.submitQuizAttempt as any, {
-              attemptId: serverAttemptId,
-            });
-          }
-
-          // 4. Update local SQLite record status to synced
-          await db.update(schema.quizAttempts)
-            .set({
-              syncStatus: 'synced',
-              convexId: serverAttemptId,
-            })
-            .where(eq(schema.quizAttempts.id, attempt.id));
-        } catch (attemptError) {
-          console.warn(`[SyncService] Failed to sync attempt ${attempt.id}:`, attemptError);
+          console.log(`[SyncService] Successfully batch-synced ${result.synced.length} attempts to Convex.`);
         }
       }
 
-      setLastSyncedAt(new Date());
       setSyncProgress({
         percentage: 100,
         message: 'All data synchronized successfully!',

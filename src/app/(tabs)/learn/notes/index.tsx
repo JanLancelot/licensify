@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/CircularProgressIconBadge';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
-import { useLocalHierarchy } from '@/hooks/useLocalData';
+import { useLessonProgress, useLocalHierarchy } from '@/hooks/useLocalData';
 import { Lesson } from '@/types/curriculum';
 
 export { CircularProgressIconBadge, SUBJECT_PALETTES };
@@ -35,16 +35,12 @@ export default function NotesScreen() {
   const router = useRouter();
 
   const { curriculum } = useLocalHierarchy();
+  const { completedLessonIds, toggleLessonCompleted, isCompleted } = useLessonProgress();
 
   // Track which subjects are expanded (Level 1)
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   // Track which topics are expanded (Level 2)
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
-  
-  // Track completed lessons to calculate live progress
-  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(
-    new Set(['s1-t1-l1', 's1-t1-l2', 's1-t1-l3', 's2-t1-l1', 's3-t1-l1', 's3-t1-l2', 'les-1-1-1', 'les-2-1-1', 'les-3-1-1'])
-  );
 
   // Modal for reading lesson notes
   const [selectedLesson, setSelectedLesson] = useState<{
@@ -80,10 +76,6 @@ export default function NotesScreen() {
       ...prev,
       [topicId]: !prev[topicId],
     }));
-  };
-
-  const markLessonCompleted = (lessonId: string) => {
-    setCompletedLessonIds((prev) => new Set([...prev, lessonId]));
   };
 
   return (
@@ -126,7 +118,7 @@ export default function NotesScreen() {
             const IconComponent = subject.icon;
             const palette = SUBJECT_PALETTES[sIdx % SUBJECT_PALETTES.length];
 
-            // Calculate progress for this subject
+            // Calculate progress for this subject dynamically from SQLite persistent state
             const allLessonIds = subject.topics.flatMap((t) =>
               t.lessons.map((l) => l.id)
             );
@@ -149,11 +141,11 @@ export default function NotesScreen() {
                         ? 'rgba(255, 255, 255, 0.15)'
                         : 'rgba(255, 255, 255, 0.07)'
                       : isSubjectOpen
-                        ? 'rgba(0, 0, 0, 0.09)'
+                        ? 'rgba(0, 0, 0, 0.12)'
                         : 'rgba(0, 0, 0, 0.05)',
                   },
                 ]}>
-                {/* LEVEL 1: SUBJECT CARD ROW */}
+                {/* LEVEL 1: SUBJECT HEADER ROW */}
                 <Pressable
                   onPress={() => toggleSubject(subject.id)}
                   style={({ pressed }) => [
@@ -166,7 +158,7 @@ export default function NotesScreen() {
                         : 'transparent',
                     },
                   ]}>
-                  {/* Circular Icon with Green Progress Outline */}
+                  {/* Clean Circular Icon Badge with Green Progress Ring */}
                   <CircularProgressIconBadge
                     size={46}
                     strokeWidth={2.8}
@@ -181,7 +173,7 @@ export default function NotesScreen() {
                     />
                   </CircularProgressIconBadge>
 
-                  {/* Clean Subject Title (No Subtitle Clutter) */}
+                  {/* Clean Subject Title */}
                   <Text
                     numberOfLines={2}
                     style={[
@@ -195,7 +187,7 @@ export default function NotesScreen() {
                   <View style={styles.chevronWrapper}>
                     <RotatingChevron
                       isOpen={isSubjectOpen}
-                      color={isDark ? '#9CA3AF' : '#4B5563'}
+                      color={isDark ? '#9CA3AF' : '#6B7280'}
                       size={20}
                     />
                   </View>
@@ -227,7 +219,6 @@ export default function NotesScreen() {
                         parentPalette={palette}
                         completedLessonIds={completedLessonIds}
                         setSelectedLesson={(data) => {
-                          markLessonCompleted(data.lesson.id);
                           setSelectedLesson(data);
                         }}
                       />
@@ -240,10 +231,12 @@ export default function NotesScreen() {
         </View>
       </ScrollView>
 
-      {/* LESSON READING MODAL */}
+      {/* LESSON READING & COMPLETION MODAL */}
       <LessonDetailModal
         selectedLesson={selectedLesson}
         onClose={() => setSelectedLesson(null)}
+        isCompleted={selectedLesson ? isCompleted(selectedLesson.lesson.id) : false}
+        onToggleComplete={toggleLessonCompleted}
       />
     </SafeAreaView>
   );

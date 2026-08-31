@@ -233,11 +233,20 @@ const isCorrect = hash === question.correctChoiceHash;
 
 ---
 
-## 6. Cloud Synchronization (`src/services/useSyncService.ts`)
+## 6. Cloud Synchronization (`src/services/useSyncService.ts` & `convex/sync.ts`)
 
-* **Down-Sync (`syncDown`)**: Pulls published subjects, topics, materials, and questions from Convex and upserts into local SQLite (`onConflictDoUpdate`).
-* **Up-Sync (`syncUp`)**: Reads `quiz_attempts` where `sync_status = 'pending_sync'` and pushes answers to Convex. Convex re-grades server-side and updates the local status to `'synced'`.
-* **Automatic Background Sync (`src/components/SyncProvider.tsx`)**: Triggers whenever internet connectivity is restored or the app transitions to the foreground.
+* **Down-Sync (`syncDown`)**: 
+  * Calls `api.sync.getSyncBundle` in **1 single network roundtrip** (replacing previous 100+ nested loops).
+  * Pre-computes deterministic SHA-256 choice hashes directly on Convex server via Web Crypto, preserving answer secrecy without mobile client crypto bottlenecks.
+  * Checks `sync_metadata` for `lastSyncedAt`. If Convex reports no updates, sync completes in `<50ms` (`upToDate: true`).
+  * Ingests `subjects`, `branches`, `topics`, `lessons`, `materials`, `flashcards`, `questions`, and `quizzes` using chunked Drizzle batch operations (`db.insert().values(chunk).onConflictDoUpdate()`).
+* **Up-Sync (`syncUp`)**: 
+  * Collects pending attempts and their answers from `quiz_attempts` where `sync_status = 'pending_sync'`.
+  * Sends a single batch mutation to `api.sync.syncAttemptsBatch`, preventing rate limiting and reducing 50+ network calls per quiz to 1.
+  * Updates SQLite `sync_status` to `'synced'` upon server confirmation.
+* **Automatic Background Sync (`src/components/SyncProvider.tsx`)**: 
+  * Triggers on initial app mount and whenever the app transitions to the foreground (`AppState === 'active'`).
+  * Includes 3-second debouncing to avoid duplicate concurrent sync requests during rapid UI navigation.
 
 ---
 

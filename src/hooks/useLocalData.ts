@@ -750,3 +750,125 @@ export function useLocalStats() {
 
   return { stats, loading, refetch: fetchStats };
 }
+
+/**
+ * Hook to manage persistent lesson completion progress stored in SQLite.
+ */
+export function useLessonProgress() {
+  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+
+  const fetchProgress = useCallback(async () => {
+    try {
+      setLoading(true);
+      const records = await db
+        .select()
+        .from(schema.lessonProgress)
+        .where(eq(schema.lessonProgress.isCompleted, true));
+
+      setCompletedLessonIds(new Set(records.map((r) => r.lessonId)));
+    } catch (error) {
+      console.warn('[useLessonProgress] Error fetching lesson progress:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const toggleLessonCompleted = useCallback(async (lessonId: string) => {
+    try {
+      let isNowCompleted = true;
+      setCompletedLessonIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(lessonId)) {
+          next.delete(lessonId);
+          isNowCompleted = false;
+        } else {
+          next.add(lessonId);
+          isNowCompleted = true;
+        }
+        return next;
+      });
+
+      await db
+        .insert(schema.lessonProgress)
+        .values({
+          id: `lp_${lessonId}`,
+          lessonId,
+          isCompleted: isNowCompleted,
+          completedAt: Date.now(),
+        })
+        .onConflictDoUpdate({
+          target: schema.lessonProgress.lessonId,
+          set: {
+            isCompleted: isNowCompleted,
+            completedAt: Date.now(),
+          },
+        });
+    } catch (error) {
+      console.error('[useLessonProgress] Error toggling lesson progress:', error);
+      fetchProgress();
+    }
+  }, [fetchProgress]);
+
+  const markLessonCompleted = useCallback(async (lessonId: string) => {
+    try {
+      setCompletedLessonIds((prev) => new Set([...prev, lessonId]));
+
+      await db
+        .insert(schema.lessonProgress)
+        .values({
+          id: `lp_${lessonId}`,
+          lessonId,
+          isCompleted: true,
+          completedAt: Date.now(),
+        })
+        .onConflictDoUpdate({
+          target: schema.lessonProgress.lessonId,
+          set: {
+            isCompleted: true,
+            completedAt: Date.now(),
+          },
+        });
+    } catch (error) {
+      console.error('[useLessonProgress] Error marking lesson completed:', error);
+      fetchProgress();
+    }
+  }, [fetchProgress]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const records = await db
+          .select()
+          .from(schema.lessonProgress)
+          .where(eq(schema.lessonProgress.isCompleted, true));
+
+        if (isMounted) {
+          setCompletedLessonIds(new Set(records.map((r) => r.lessonId)));
+        }
+      } catch (error) {
+        console.warn('[useLessonProgress] Initial fetch error:', error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const isCompleted = useCallback((lessonId: string) => completedLessonIds.has(lessonId), [completedLessonIds]);
+
+  return {
+    completedLessonIds,
+    toggleLessonCompleted,
+    markLessonCompleted,
+    isCompleted,
+    loading,
+    refetch: fetchProgress,
+  };
+}
+
+

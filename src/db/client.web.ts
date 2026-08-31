@@ -19,6 +19,7 @@ function loadInitialStore(): TableStore {
     quizzes: [],
     quiz_attempts: [],
     quiz_answers: [],
+    lesson_progress: [],
   };
 
   if (typeof window !== 'undefined' && window.localStorage) {
@@ -60,6 +61,10 @@ function resolveTableName(table: any): string {
   if (table === schema.quizzes) return 'quizzes';
   if (table === schema.quizAttempts) return 'quiz_attempts';
   if (table === schema.quizAnswers) return 'quiz_answers';
+  if (table === schema.lessonProgress) return 'lesson_progress';
+
+
+
 
   const name =
     table?._?.name ||

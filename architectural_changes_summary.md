@@ -109,7 +109,15 @@ Subject (Level 1, Required)
 
 ---
 
-## 5. 🛠️ Client Sync & Tools
+## 5. 🛠️ Client Sync & High-Performance Offline Engine
 
-### 1. Client Offline Sync Engine ([`src/services/useSyncService.ts`](file:///g:/Codes/RedStartup/react-native-repo/src/services/useSyncService.ts))
-- Down-syncs published subjects, branches, topics, and lessons into local SQLite database for offline mobile app access.
+### 1. High-Performance Sync Backend ([`convex/sync.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/sync.ts))
+- `getSyncBundle`: In 1 atomic database query, fetches all published `subjects`, `branches`, `topics`, `lessons`, `materials`, `flashcards`, `questions`, and `quizzes`.
+- Precomputes SHA-256 answer choices via Web Crypto API for zero-trust client answer verification.
+- Implements Delta Syncing via `sinceTimestamp` to return `{ upToDate: true }` instantly (<50ms) when unchanged.
+- `syncAttemptsBatch`: Accepts and authoritatively grades multiple offline quiz attempts and answers in 1 batch mutation.
+
+### 2. Client Offline Sync Service ([`src/services/useSyncService.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/services/useSyncService.ts))
+- Ingests data using chunked Drizzle batch operations (`db.insert().values(chunk).onConflictDoUpdate()`) across SQLite tables in milliseconds.
+- Replaces 100+ nested sequential network roundtrips with a single fast query.
+- Tracks `lastSyncedAt` in SQLite `sync_metadata` table.

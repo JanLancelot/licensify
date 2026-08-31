@@ -25,6 +25,7 @@ import type * as quizzes from "../quizzes.js";
 import type * as rooms from "../rooms.js";
 import type * as seed from "../seed.js";
 import type * as subjects from "../subjects.js";
+import type * as sync from "../sync.js";
 import type * as topics from "../topics.js";
 import type * as users from "../users.js";
 
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   rooms: typeof rooms;
   seed: typeof seed;
   subjects: typeof subjects;
+  sync: typeof sync;
   topics: typeof topics;
   users: typeof users;
 }>;
