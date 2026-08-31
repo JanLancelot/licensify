@@ -2,12 +2,13 @@ import { useQuery } from 'convex/react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
   BookOpen,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Flame,
-  TrendingUp,
   User,
 } from 'lucide-react-native';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -38,6 +39,8 @@ export default function HomeScreen() {
   const { stats, refetch } = useLocalStats();
   const { curriculum } = useLocalHierarchy();
 
+  const [showAllLessons, setShowAllLessons] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       refetch?.();
@@ -57,41 +60,50 @@ export default function HomeScreen() {
     topics: [{ title: 'Space Planning & Ergonomics' }],
   };
 
-  // 5 Lessons for the Confidence Rate Section
+  // Up to 10 Recent / Syllabus Lessons for the Confidence Rate Section
   const confidenceLessons: ConfidenceItem[] = useMemo(() => {
     const collected: ConfidenceItem[] = [];
-    const defaultPercents = [85, 30, 65, 90, 95];
-    let lCount = 1;
+    const defaultPercents = [50, 70, 60, 93, 100, 45, 82, 68, 77, 88];
+    let idx = 0;
 
     for (const sub of curriculum) {
       for (const topic of sub.topics) {
         for (const les of topic.lessons) {
           collected.push({
             id: les.id,
-            lessonName: `Lesson ${lCount}`,
-            topicName: les.title,
-            confidencePercent: defaultPercents[(lCount - 1) % defaultPercents.length],
+            lessonName: les.title,
+            topicName: topic.title,
+            confidencePercent: defaultPercents[idx % defaultPercents.length],
           });
-          lCount++;
-          if (collected.length >= 5) break;
+          idx++;
+          if (collected.length >= 10) break;
         }
-        if (collected.length >= 5) break;
+        if (collected.length >= 10) break;
       }
-      if (collected.length >= 5) break;
+      if (collected.length >= 10) break;
     }
 
-    if (collected.length < 5) {
+    if (collected.length < 10) {
       return [
-        { id: 'l1', lessonName: 'Lesson 1', topicName: 'History of Architecture', confidencePercent: 85 },
-        { id: 'l2', lessonName: 'Lesson 2', topicName: 'Theory of Design & Planning', confidencePercent: 30 },
-        { id: 'l3', lessonName: 'Lesson 3', topicName: 'Building Utilities & Systems', confidencePercent: 65 },
-        { id: 'l4', lessonName: 'Lesson 4', topicName: 'Space Planning & Ergonomics', confidencePercent: 90 },
-        { id: 'l5', lessonName: 'Lesson 5', topicName: 'RA 9266 & Practice Laws', confidencePercent: 95 },
+        { id: 'l1', lessonName: 'History of Architecture', topicName: 'History of Architecture', confidencePercent: 50 },
+        { id: 'l2', lessonName: 'Theory of Design', topicName: 'Theory of Design & Planning', confidencePercent: 70 },
+        { id: 'l3', lessonName: 'Building Utilities', topicName: 'Building Utilities & Systems', confidencePercent: 60 },
+        { id: 'l4', lessonName: 'Space Planning', topicName: 'Space Planning & Ergonomics', confidencePercent: 93 },
+        { id: 'l5', lessonName: 'RA 9266 Architecture Act', topicName: 'RA 9266 & Practice Laws', confidencePercent: 100 },
+        { id: 'l6', lessonName: 'NBCP Rule 7 & 8', topicName: 'National Building Code', confidencePercent: 45 },
+        { id: 'l7', lessonName: 'Structural Concepts', topicName: 'Structural Systems', confidencePercent: 82 },
+        { id: 'l8', lessonName: 'Plumbing & Sanitary', topicName: 'Sanitary Engineering', confidencePercent: 68 },
+        { id: 'l9', lessonName: 'Electrical Systems', topicName: 'Electrical Engineering', confidencePercent: 77 },
+        { id: 'l10', lessonName: 'Site Planning & Ecology', topicName: 'Site Planning & Urban Design', confidencePercent: 88 },
       ];
     }
 
-    return collected.slice(0, 5);
+    return collected.slice(0, 10);
   }, [curriculum]);
+
+  const displayedLessons = useMemo(() => {
+    return showAllLessons ? confidenceLessons : confidenceLessons.slice(0, 5);
+  }, [confidenceLessons, showAllLessons]);
 
   const greetingTime = useMemo(() => {
     const hour = new Date().getHours();
@@ -240,28 +252,18 @@ export default function HomeScreen() {
         </View>
 
         {/* ================================================================= */}
-        {/* 2. CONFIDENCE RATE SECTION (2 Columns: Lessons & Horizontal Bars) */}
+        {/* 2. CONFIDENCE RATE SECTION                                        */}
         {/* ================================================================= */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionTitleWithIcon}>
-              <TrendingUp size={18} color={colors.accent} strokeWidth={2.4} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Confidence Rate
-              </Text>
-            </View>
-            <Text
-              style={[
-                styles.sectionSubtitleBadge,
-                { color: colors.textSecondary },
-              ]}>
-              Topic Mastery
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Confidence Rate
             </Text>
           </View>
 
           <View
             style={[
-              styles.confidenceCard,
+              styles.confidenceChartCard,
               {
                 backgroundColor: isDark ? colors.backgroundElement : '#FFFFFF',
                 borderColor: isDark
@@ -269,92 +271,94 @@ export default function HomeScreen() {
                   : 'rgba(0, 0, 0, 0.06)',
               },
             ]}>
-            {confidenceLessons.map((item, idx) => {
-              const isLast = idx === confidenceLessons.length - 1;
+            <View style={styles.confidenceChartWrapper}>
+              {/* Rows Area with Bounded Vertical Axis Line */}
+              <View style={styles.chartContentArea}>
+                {/* Continuous Vertical Axis Line strictly bounded to the rows */}
+                <View
+                  style={[
+                    styles.chartVerticalAxis,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255, 255, 255, 0.35)'
+                        : '#111827',
+                    },
+                  ]}
+                />
 
-              return (
-                <View key={item.id}>
-                  <View style={styles.confidenceRow}>
-                    {/* Left Column: Lesson Name & Subtitle */}
-                    <View style={styles.confidenceLeftCol}>
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          styles.confidenceLessonLabel,
-                          { color: colors.text },
-                        ]}>
-                        {item.lessonName}
-                      </Text>
-                      {item.topicName && (
-                        <Text
-                          numberOfLines={1}
-                          style={[
-                            styles.confidenceTopicLabel,
-                            { color: colors.textSecondary },
-                          ]}>
-                          {item.topicName}
-                        </Text>
-                      )}
-                    </View>
+                {/* Rows */}
+                <View style={styles.chartRowsContainer}>
+                  {displayedLessons.map((item) => {
+                    // Bar width ratio relative to 68% max container width so % fits on right
+                    const barWidthPercent = Math.max(3, Math.min(100, item.confidencePercent)) * 0.68;
 
-                    {/* Vertical Divider Indicator */}
-                    <View
-                      style={[
-                        styles.confidenceDividerLine,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255, 255, 255, 0.08)'
-                            : 'rgba(0, 0, 0, 0.06)',
-                        },
-                      ]}
-                    />
+                    return (
+                      <View key={item.id} style={styles.chartRow}>
+                        {/* Left Column: Actual Lesson Name */}
+                        <View style={styles.chartLeftLabelBox}>
+                          <Text
+                            numberOfLines={1}
+                            style={[
+                              styles.chartLessonText,
+                              { color: colors.text },
+                            ]}>
+                            {item.lessonName}
+                          </Text>
+                        </View>
 
-                    {/* Right Column: Horizontal Bar & Percentage Text */}
-                    <View style={styles.confidenceRightCol}>
-                      <View
-                        style={[
-                          styles.confidenceBarTrack,
-                          {
-                            backgroundColor: isDark
-                              ? 'rgba(255, 255, 255, 0.10)'
-                              : 'rgba(0, 0, 0, 0.06)',
-                          },
-                        ]}>
-                        <View
-                          style={[
-                            styles.confidenceBarFill,
-                            {
-                              width: `${item.confidencePercent}%`,
-                              backgroundColor: colors.accent,
-                            },
-                          ]}
-                        />
+                        {/* Right Area: Horizontal Bar sprouting directly from vertical line + % at the tip */}
+                        <View style={styles.chartRightBarArea}>
+                          <View
+                            style={[
+                              styles.chartHorizontalBar,
+                              {
+                                width: `${barWidthPercent}%`,
+                                backgroundColor: colors.accent,
+                              },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              styles.chartPercentLabel,
+                              { color: colors.accent },
+                            ]}>
+                            {item.confidencePercent}%
+                          </Text>
+                        </View>
                       </View>
-                      <Text
-                        style={[
-                          styles.confidencePercentText,
-                          { color: colors.accent },
-                        ]}>
-                        {item.confidencePercent}%
-                      </Text>
-                    </View>
-                  </View>
-
-                  {!isLast && (
-                    <View
-                      style={[
-                        styles.itemRowSeparator,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255, 255, 255, 0.05)'
-                            : 'rgba(0, 0, 0, 0.04)',
-                        },
-                      ]}
-                    />
-                  )}
+                    );
+                  })}
                 </View>
-              );
-            })}
+              </View>
+
+              {/* Show More / Show Less Toggle Button (Up to 10) - Outside Axis Boundary */}
+              {confidenceLessons.length > 5 && (
+                <Pressable
+                  onPress={() => setShowAllLessons((prev) => !prev)}
+                  style={({ pressed }) => [
+                    styles.toggleLessonsBtn,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255, 255, 255, 0.06)'
+                        : 'rgba(0, 0, 0, 0.03)',
+                      borderColor: isDark
+                        ? 'rgba(255, 255, 255, 0.08)'
+                        : 'rgba(0, 0, 0, 0.06)',
+                      opacity: pressed ? 0.75 : 1,
+                    },
+                  ]}>
+                  <Text
+                    style={[styles.toggleLessonsBtnText, { color: colors.accent }]}>
+                    {showAllLessons ? 'Show Top 5' : 'Show Up to 10 Lessons'}
+                  </Text>
+                  {showAllLessons ? (
+                    <ChevronUp size={14} color={colors.accent} strokeWidth={2.4} />
+                  ) : (
+                    <ChevronDown size={14} color={colors.accent} strokeWidth={2.4} />
+                  )}
+                </Pressable>
+              )}
+            </View>
           </View>
         </View>
 
@@ -593,78 +597,84 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  sectionTitleWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.3,
   },
-  sectionSubtitleBadge: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   seeAllText: {
     fontSize: 13,
     fontWeight: '700',
   },
-  confidenceCard: {
+  confidenceChartCard: {
     borderRadius: 22,
     borderWidth: 1,
+    paddingVertical: 18,
     paddingHorizontal: 16,
-    paddingVertical: 6,
   },
-  confidenceRow: {
+  confidenceChartWrapper: {
+    gap: 4,
+  },
+  chartContentArea: {
+    position: 'relative',
+  },
+  chartVerticalAxis: {
+    position: 'absolute',
+    left: 130,
+    top: 2,
+    bottom: 2,
+    width: 2,
+    borderRadius: 1,
+    zIndex: 1,
+  },
+  chartRowsContainer: {
+    gap: 16,
+  },
+  chartRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
+    height: 26,
   },
-  confidenceLeftCol: {
-    width: 105,
-    gap: 2,
+  chartLeftLabelBox: {
+    width: 130,
+    paddingRight: 10,
+    justifyContent: 'center',
   },
-  confidenceLessonLabel: {
-    fontSize: 13.5,
+  chartLessonText: {
+    fontSize: 12,
     fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  chartRightBarArea: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chartHorizontalBar: {
+    height: 4.5,
+    borderRadius: 2.5,
+  },
+  chartPercentLabel: {
+    fontSize: 12,
+    fontWeight: '800',
     letterSpacing: -0.2,
   },
-  confidenceTopicLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  confidenceDividerLine: {
-    width: 1,
-    height: 24,
-  },
-  confidenceRightCol: {
-    flex: 1,
+  toggleLessonsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  confidenceBarTrack: {
-    flex: 1,
-    height: 7,
+    justifyContent: 'center',
+    marginTop: 14,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
     borderRadius: Radius.full,
-    overflow: 'hidden',
+    borderWidth: 1,
+    alignSelf: 'center',
+    gap: 5,
   },
-  confidenceBarFill: {
-    height: '100%',
-    borderRadius: Radius.full,
-  },
-  confidencePercentText: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    width: 38,
-    textAlign: 'right',
-  },
-  itemRowSeparator: {
-    height: 1,
-    width: '100%',
+  toggleLessonsBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 
   /* ======================================================================= */
