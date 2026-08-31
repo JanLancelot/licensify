@@ -135,7 +135,7 @@ export default function HomeScreen() {
           { paddingBottom: insets.bottom + 100 },
         ]}>
         {/* ================================================================= */}
-        {/* 1. MAIN HERO BLOCK (Profile on Left, Motivation & Streak on Right)*/}
+        {/* 1. MAIN HERO BLOCK (Circular Avatar on Left, Motivation & Centered Fire on Right) */}
         {/* ================================================================= */}
         <View
           style={[
@@ -147,106 +147,65 @@ export default function HomeScreen() {
                 : 'rgba(0, 0, 0, 0.06)',
             },
           ]}>
-          {/* Top Row: Left Avatar & Name | Right Motivation & Fire Streak */}
-          <View style={styles.heroTopRow}>
-            {/* Left: User Profile Avatar & Name */}
-            <Pressable
-              onPress={() => router.push('/(tabs)/profile' as any)}
-              style={({ pressed }) => [
-                styles.profileAvatarBox,
-                { opacity: pressed ? 0.85 : 1 },
-              ]}>
-              <View
-                style={[
-                  styles.avatarCircle,
-                  {
-                    backgroundColor: colors.accentMuted,
-                    borderColor: colors.accentBorder,
-                  },
-                ]}>
-                <User size={28} color={colors.accent} strokeWidth={2.4} />
-              </View>
-              <View style={styles.profileNameWrap}>
-                <Text
-                  style={[
-                    styles.greetingLabel,
-                    { color: colors.textSecondary },
-                  ]}>
-                  Hello,
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.userNameText, { color: colors.text }]}>
-                  {userName}
-                </Text>
-              </View>
-            </Pressable>
+          {/* Left: Large User Profile Circular Avatar */}
+          <Pressable
+            onPress={() => router.push('/(tabs)/profile' as any)}
+            style={({ pressed }) => [
+              styles.heroAvatarBox,
+              {
+                backgroundColor: colors.accentMuted,
+                borderColor: colors.accentBorder,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}>
+            <User size={46} color={colors.accent} strokeWidth={2.3} />
+          </Pressable>
 
-            {/* Right: Keep Up the Good Work & Fire Streak Badge */}
-            <View style={styles.heroRightWrap}>
+          {/* Right Column: Centered Flame, 3 DAYS, and 20% Milestone Progress */}
+          <View style={styles.heroRightColumn}>
+            {/* Flame & 3 DAYS centered along the progress bar */}
+            <View style={styles.heroStreakCenteredBox}>
+              <Flame size={50} color="#F59E0B" fill="#F59E0B" />
               <Text
-                numberOfLines={1}
-                style={[styles.heroMotivationTitle, { color: colors.text }]}>
-                Keep up the good work!
+                style={[
+                  styles.heroStreakText,
+                  { color: isDark ? '#FBBF24' : '#D97706' },
+                ]}>
+                3 DAYS
               </Text>
+            </View>
+
+            {/* Bottom: Progress Bar (20%) & Milestone Voucher Caption */}
+            <View style={styles.heroBottomProgressArea}>
+              {/* Progress Bar Track */}
               <View
                 style={[
-                  styles.streakBadge,
+                  styles.heroProgressTrack,
                   {
                     backgroundColor: isDark
-                      ? 'rgba(245, 158, 11, 0.16)'
-                      : '#FEF3C7',
-                    borderColor: isDark
-                      ? 'rgba(245, 158, 11, 0.3)'
-                      : '#FDE68A',
+                      ? 'rgba(255, 255, 255, 0.10)'
+                      : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>
-                <Flame size={14} color="#F59E0B" fill="#F59E0B" />
-                <Text style={styles.streakBadgeText}>{streakDays} days</Text>
+                <View
+                  style={[
+                    styles.heroProgressFill,
+                    {
+                      width: '20%',
+                      backgroundColor: colors.accent,
+                    },
+                  ]}
+                />
               </View>
-            </View>
-          </View>
 
-          {/* Bottom Row: Milestone Target Caption & Progress Bar */}
-          <View style={styles.heroProgressSection}>
-            <View style={styles.heroProgressInfoRow}>
+              {/* Caption directly under the bar - full text without ellipsis */}
               <Text
-                numberOfLines={1}
                 style={[
-                  styles.milestoneCaption,
+                  styles.heroMilestoneVoucherText,
                   { color: colors.textSecondary },
                 ]}>
-                Complete{' '}
-                <Text style={{ color: colors.accent, fontWeight: '700' }}>
-                  2 lessons
-                </Text>{' '}
-                to get Weekly Badge
+                COMPLETE 10 DAYS TO GET DISCOUNT VOUCHER
               </Text>
-              <Text
-                style={[styles.heroProgressPercent, { color: colors.accent }]}>
-                {progressPercent}%
-              </Text>
-            </View>
-
-            {/* Progress Bar Track */}
-            <View
-              style={[
-                styles.heroProgressTrack,
-                {
-                  backgroundColor: isDark
-                    ? 'rgba(255, 255, 255, 0.10)'
-                    : 'rgba(0, 0, 0, 0.06)',
-                },
-              ]}>
-              <View
-                style={[
-                  styles.heroProgressFill,
-                  {
-                    width: `${progressPercent}%`,
-                    backgroundColor: colors.accent,
-                  },
-                ]}
-              />
             </View>
           </View>
         </View>
@@ -496,87 +455,41 @@ const styles = StyleSheet.create({
   mainHeroCard: {
     borderRadius: 24,
     borderWidth: 1,
-    padding: 18,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
   },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  profileAvatarBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 1.5,
+  heroAvatarBox: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileNameWrap: {
+  heroRightColumn: {
     flex: 1,
-    gap: 1,
-  },
-  greetingLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  userNameText: {
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  heroRightWrap: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  heroMotivationTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4.5,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  streakBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#D97706',
-  },
-  heroProgressSection: {
-    gap: 8,
-    paddingTop: 4,
-  },
-  heroProgressInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 10,
+    justifyContent: 'center',
   },
-  milestoneCaption: {
-    fontSize: 12.5,
-    fontWeight: '500',
-    flex: 1,
+  heroStreakCenteredBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    alignSelf: 'center',
   },
-  heroProgressPercent: {
-    fontSize: 13,
-    fontWeight: '800',
+  heroStreakText: {
+    fontSize: 14.5,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+  },
+  heroBottomProgressArea: {
+    gap: 5,
+    width: '100%',
   },
   heroProgressTrack: {
-    height: 7,
+    height: 6,
     borderRadius: Radius.full,
     overflow: 'hidden',
     width: '100%',
@@ -584,6 +497,12 @@ const styles = StyleSheet.create({
   heroProgressFill: {
     height: '100%',
     borderRadius: Radius.full,
+  },
+  heroMilestoneVoucherText: {
+    fontSize: 8.8,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
 
   /* ======================================================================= */
