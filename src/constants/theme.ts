@@ -11,31 +11,24 @@ export type AccentThemeKey =
   | 'indigo'
   | 'violet';
 
+export interface AccentThemeColors {
+  accent: string;
+  accentLight: string;
+  accentMuted: string;
+  accentBorder: string;
+  accentGradient: [string, string];
+  tabActive: string;
+  tabCenterBg: string;
+  tabCenterBorder: string;
+}
+
 export interface AccentThemeOption {
   key: AccentThemeKey;
   name: string;
   swatch: string;
   roygbivLetter: 'R' | 'O' | 'Y' | 'G' | 'B' | 'I' | 'V';
-  light: {
-    accent: string;
-    accentLight: string;
-    accentMuted: string;
-    accentBorder: string;
-    accentGradient: [string, string];
-    tabActive: string;
-    tabCenterBg: string;
-    tabCenterBorder: string;
-  };
-  dark: {
-    accent: string;
-    accentLight: string;
-    accentMuted: string;
-    accentBorder: string;
-    accentGradient: [string, string];
-    tabActive: string;
-    tabCenterBg: string;
-    tabCenterBorder: string;
-  };
+  light: AccentThemeColors;
+  dark: AccentThemeColors;
 }
 
 export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
@@ -233,7 +226,25 @@ export const ACCENT_THEME_LIST: AccentThemeOption[] = [
   ACCENT_THEMES.violet,
 ];
 
-export const BaseColors = {
+export interface BaseThemeColors {
+  text: string;
+  background: string;
+  backgroundElement: string;
+  backgroundSelected: string;
+  textSecondary: string;
+  primary: string;
+  border: string;
+  borderStrong: string;
+  tabBarBackground: string;
+  tabBarBorder: string;
+  tabInactive: string;
+  tabCenterIcon: string;
+}
+
+export type ThemePalette = BaseThemeColors & AccentThemeColors;
+export type ThemeColor = keyof ThemePalette;
+
+export const BaseColors: { light: BaseThemeColors; dark: BaseThemeColors } = {
   light: {
     text: '#111827',
     background: '#FBFBFC',
@@ -262,7 +273,7 @@ export const BaseColors = {
     tabInactive: '#6B7280',
     tabCenterIcon: '#121316',
   },
-} as const;
+};
 
 export function getThemePalette(mode: 'light' | 'dark', accentKey: AccentThemeKey = 'terracotta'): ThemePalette {
   const base = BaseColors[mode];
@@ -279,9 +290,6 @@ export const Colors = {
   light: getThemePalette('light', 'terracotta'),
   dark: getThemePalette('dark', 'terracotta'),
 };
-
-export type ThemePalette = typeof BaseColors.light & typeof ACCENT_THEMES.terracotta.light;
-export type ThemeColor = keyof ThemePalette;
 
 export const Fonts = Platform.select({
   ios: {
