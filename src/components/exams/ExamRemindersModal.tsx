@@ -11,7 +11,6 @@ import {
 import {
   Award,
   Calculator,
-  CheckCircle2,
   Clock,
   Flag,
   HelpCircle,

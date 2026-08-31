@@ -41,7 +41,7 @@ import {
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ACCENT_THEME_LIST, AccentThemeKey } from '@/constants/theme';
+import { ACCENT_THEME_LIST } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
 import { api } from '../../../convex/_generated/api';
 import { useSyncService } from '@/services/useSyncService';

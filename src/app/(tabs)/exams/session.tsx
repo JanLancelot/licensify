@@ -14,9 +14,7 @@ import {
   Hand,
   HelpCircle,
   RotateCcw,
-  ShieldAlert,
   ShieldCheck,
-  Sparkles,
   Square,
   Timer,
   X,
@@ -77,12 +75,17 @@ const ExamTimerBadge = memo(function ExamTimerBadge({
   isDark,
 }: ExamTimerBadgeProps) {
   const [secondsRemaining, setSecondsRemaining] = useState(initialSeconds);
-  const onTimeUpRef = useRef(onTimeUp);
-  onTimeUpRef.current = onTimeUp;
+  const [prevInitial, setPrevInitial] = useState(initialSeconds);
 
-  useEffect(() => {
+  if (initialSeconds !== prevInitial) {
+    setPrevInitial(initialSeconds);
     setSecondsRemaining(initialSeconds);
-  }, [initialSeconds]);
+  }
+
+  const onTimeUpRef = useRef(onTimeUp);
+  useEffect(() => {
+    onTimeUpRef.current = onTimeUp;
+  }, [onTimeUp]);
 
   useEffect(() => {
     if (isSubmitted || isPaused) return;
@@ -486,7 +489,7 @@ export default function ExamSessionScreen() {
   const customTimerSeconds = params.timer ? parseInt(params.timer, 10) : 10800; // 3 hrs default
   const targetQuestionCount = params.count ? parseInt(params.count, 10) : 100;
 
-  const { quiz, questions: dbQuestions, loading: dbLoading } = useLocalQuizWithQuestions(examId);
+  const { questions: dbQuestions, loading: dbLoading } = useLocalQuizWithQuestions(examId);
   const submitLocalAttempt = useSubmitLocalAttempt();
 
   const [questions, setQuestions] = useState<ExamSessionQuestion[]>([]);
@@ -501,8 +504,8 @@ export default function ExamSessionScreen() {
   const [isAnswerSheetVisible, setIsAnswerSheetVisible] = useState(false);
   const [isSubmitConfirmVisible, setIsSubmitConfirmVisible] = useState(false);
   const [isReviewQuestionsVisible, setIsReviewQuestionsVisible] = useState(false);
-  const slideAnim = useRef(new Animated.Value(-260)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(-260));
+  const [fadeAnim] = useState(() => new Animated.Value(0));
 
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
@@ -1968,7 +1971,7 @@ export default function ExamSessionScreen() {
                 <Square size={17} color={colors.textSecondary} strokeWidth={2} />
               )}
               <Text style={[styles.spotlightCheckboxLabel, { color: colors.textSecondary }]}>
-                Don't show this walkthrough next time
+                {"Don't show this walkthrough next time"}
               </Text>
             </Pressable>
 

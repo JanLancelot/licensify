@@ -1,16 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
-  BookOpen,
   Clock,
-  Compass,
-  Landmark,
-  Layers,
-  PenTool,
-  Play,
   Plus,
-  Trophy,
   X,
-  Zap,
 } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import {

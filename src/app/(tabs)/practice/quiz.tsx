@@ -9,7 +9,7 @@ import {
   Trophy,
   XCircle,
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -135,33 +135,18 @@ export default function PracticeQuizScreen() {
   }, [dbQuestions, customTitle]);
 
   // Reset timer on question change
-  useEffect(() => {
+  const [prevCurrentIdx, setPrevCurrentIdx] = useState(currentIdx);
+  const [prevTimerLimit, setPrevTimerLimit] = useState(timerLimit);
+
+  if (currentIdx !== prevCurrentIdx || timerLimit !== prevTimerLimit) {
+    setPrevCurrentIdx(currentIdx);
+    setPrevTimerLimit(timerLimit);
     if (timerLimit > 0) {
       setTimeLeft(timerLimit);
     }
-  }, [currentIdx, timerLimit]);
+  }
 
-  // Live Timer Countdown Interval
-  useEffect(() => {
-    if (timerLimit <= 0 || isAnswerSubmitted || isQuizFinished || questions.length === 0) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          handleTimeOut();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timerLimit, isAnswerSubmitted, isQuizFinished, currentIdx, questions.length, selectedOption]);
-
-  const handleTimeOut = async () => {
+  const handleTimeOut = useCallback(async () => {
     if (isAnswerSubmitted || !questions[currentIdx]) return;
 
     const currQ = questions[currentIdx];
@@ -193,7 +178,32 @@ export default function PracticeQuizScreen() {
         correctChoiceHash: currQ.correctChoiceHash,
       },
     ]);
-  };
+  }, [isAnswerSubmitted, questions, currentIdx, selectedOption]);
+
+  const handleTimeOutRef = useRef(handleTimeOut);
+  useEffect(() => {
+    handleTimeOutRef.current = handleTimeOut;
+  }, [handleTimeOut]);
+
+  // Live Timer Countdown Interval
+  useEffect(() => {
+    if (timerLimit <= 0 || isAnswerSubmitted || isQuizFinished || questions.length === 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleTimeOutRef.current();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timerLimit, isAnswerSubmitted, isQuizFinished, questions.length]);
 
   const restartQuiz = () => {
     setCurrentIdx(0);

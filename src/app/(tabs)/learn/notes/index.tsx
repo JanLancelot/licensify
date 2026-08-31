@@ -15,7 +15,6 @@ import Animated, {
   LinearTransition,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
 
 import { LessonDetailModal } from '@/components/notes/LessonDetailModal';
 import { NoteTopicItem } from '@/components/notes/NoteTopicItem';

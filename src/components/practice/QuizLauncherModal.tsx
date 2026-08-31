@@ -59,14 +59,15 @@ export function QuizLauncherModal({
 
   const [selectedTimer, setSelectedTimer] = useState<number>(initialTimerSeconds);
   const [selectedCount, setSelectedCount] = useState<number>(initialQuestionCount);
+  const [prevVisible, setPrevVisible] = useState(visible);
 
-  // Sync initial values when modal opens
-  React.useEffect(() => {
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
     if (visible) {
       setSelectedTimer(initialTimerSeconds);
       setSelectedCount(initialQuestionCount);
     }
-  }, [visible, initialTimerSeconds, initialQuestionCount]);
+  }
 
   const handleStart = () => {
     onStartQuiz({

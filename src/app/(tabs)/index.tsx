@@ -6,9 +6,10 @@ import {
   ChevronRight,
   ChevronUp,
   Flame,
+  Landmark,
   User,
 } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -36,7 +37,7 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const userProfile = useQuery(api.users.getCurrentUserProfile);
-  const { stats, refetch } = useLocalStats();
+  const { refetch } = useLocalStats();
   const { curriculum } = useLocalHierarchy();
 
   const [showAllLessons, setShowAllLessons] = useState(false);
@@ -50,15 +51,41 @@ export default function HomeScreen() {
   const userName =
     userProfile?.firstName ||
     userProfile?.username ||
-    'Kouji';
+    'User';
 
-  const progressPercent = stats?.progressPercentage || 75;
-  const streakDays = stats?.streakDays || 3;
-
-  const continueSubject = curriculum[0] || {
-    title: 'Architectural Design & Planning',
-    topics: [{ title: 'Space Planning & Ergonomics' }],
-  };
+  // Active Continue Learning subjects/lessons matching user design specification
+  const continueItems = useMemo(() => {
+    if (curriculum && curriculum.length >= 2) {
+      return [
+        {
+          id: curriculum[0].id,
+          title: curriculum[0].title.toUpperCase(),
+          percent: 32,
+          icon: BookOpen,
+        },
+        {
+          id: curriculum[1].id,
+          title: curriculum[1].title.toUpperCase(),
+          percent: 61,
+          icon: Landmark,
+        },
+      ];
+    }
+    return [
+      {
+        id: 'c1',
+        title: 'HISTORY OF ARCHITECTURE',
+        percent: 32,
+        icon: BookOpen,
+      },
+      {
+        id: 'c2',
+        title: 'STRUCTURAL DESIGN',
+        percent: 61,
+        icon: Landmark,
+      },
+    ];
+  }, [curriculum]);
 
   // Up to 10 Recent / Syllabus Lessons for the Confidence Rate Section
   const confidenceLessons: ConfidenceItem[] = useMemo(() => {
@@ -72,7 +99,6 @@ export default function HomeScreen() {
           collected.push({
             id: les.id,
             lessonName: les.title,
-            topicName: topic.title,
             confidencePercent: defaultPercents[idx % defaultPercents.length],
           });
           idx++;
@@ -85,16 +111,16 @@ export default function HomeScreen() {
 
     if (collected.length < 10) {
       return [
-        { id: 'l1', lessonName: 'History of Architecture', topicName: 'History of Architecture', confidencePercent: 50 },
-        { id: 'l2', lessonName: 'Theory of Design', topicName: 'Theory of Design & Planning', confidencePercent: 70 },
-        { id: 'l3', lessonName: 'Building Utilities', topicName: 'Building Utilities & Systems', confidencePercent: 60 },
-        { id: 'l4', lessonName: 'Space Planning', topicName: 'Space Planning & Ergonomics', confidencePercent: 93 },
-        { id: 'l5', lessonName: 'RA 9266 Architecture Act', topicName: 'RA 9266 & Practice Laws', confidencePercent: 100 },
-        { id: 'l6', lessonName: 'NBCP Rule 7 & 8', topicName: 'National Building Code', confidencePercent: 45 },
-        { id: 'l7', lessonName: 'Structural Concepts', topicName: 'Structural Systems', confidencePercent: 82 },
-        { id: 'l8', lessonName: 'Plumbing & Sanitary', topicName: 'Sanitary Engineering', confidencePercent: 68 },
-        { id: 'l9', lessonName: 'Electrical Systems', topicName: 'Electrical Engineering', confidencePercent: 77 },
-        { id: 'l10', lessonName: 'Site Planning & Ecology', topicName: 'Site Planning & Urban Design', confidencePercent: 88 },
+        { id: 'l1', lessonName: 'History of Architecture', confidencePercent: 50 },
+        { id: 'l2', lessonName: 'Theory of Design', confidencePercent: 70 },
+        { id: 'l3', lessonName: 'Building Utilities', confidencePercent: 60 },
+        { id: 'l4', lessonName: 'Space Planning', confidencePercent: 93 },
+        { id: 'l5', lessonName: 'RA 9266 Architecture Act', confidencePercent: 100 },
+        { id: 'l6', lessonName: 'NBCP Rule 7 & 8', confidencePercent: 45 },
+        { id: 'l7', lessonName: 'Structural Concepts', confidencePercent: 82 },
+        { id: 'l8', lessonName: 'Plumbing & Sanitary', confidencePercent: 68 },
+        { id: 'l9', lessonName: 'Electrical Systems', confidencePercent: 77 },
+        { id: 'l10', lessonName: 'Site Planning & Ecology', confidencePercent: 88 },
       ];
     }
 
@@ -256,7 +282,6 @@ export default function HomeScreen() {
                         {/* Left Column: Actual Lesson Name */}
                         <View style={styles.chartLeftLabelBox}>
                           <Text
-                            numberOfLines={1}
                             style={[
                               styles.chartLessonText,
                               { color: colors.text },
@@ -322,104 +347,132 @@ export default function HomeScreen() {
         </View>
 
         {/* ================================================================= */}
-        {/* 3. CONTINUE LEARNING SECTION (Circular Icon on Left)              */}
+        {/* 3. CONTINUE LEARNING SECTION                                      */}
         {/* ================================================================= */}
         <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Continue Learning
-            </Text>
-            <Pressable
-              onPress={() => router.push('/(tabs)/learn' as any)}
-              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
-              <Text style={[styles.seeAllText, { color: colors.accent }]}>
-                See all
-              </Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            onPress={() => router.push('/(tabs)/learn' as any)}
-            style={({ pressed }) => [
-              styles.continueLearningCard,
-              {
-                backgroundColor: isDark ? colors.backgroundElement : '#FFFFFF',
-                borderColor: isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(0, 0, 0, 0.06)',
-                opacity: pressed ? 0.92 : 1,
-                transform: [{ scale: pressed ? 0.99 : 1 }],
-              },
-            ]}>
-            {/* Left: Perfectly Circular Icon with Active Theme */}
+          {/* Section Header Row with Vertical Accent Bar */}
+          <View style={styles.continueSectionHeader}>
             <View
               style={[
-                styles.circularIconWrap,
-                {
-                  backgroundColor: colors.accentMuted,
-                  borderColor: colors.accentBorder,
-                },
-              ]}>
-              <BookOpen size={24} color={colors.accent} strokeWidth={2.3} />
-            </View>
+                styles.continueHeaderAccentBar,
+                { backgroundColor: colors.accent },
+              ]}
+            />
+            <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
+              CONTINUE LEARNING
+            </Text>
+          </View>
 
-            {/* Middle: Course Title, Subtitle, & Progress Bar */}
-            <View style={styles.continueCardContent}>
-              <View style={styles.continueCardHeaderRow}>
-                <Text
-                  style={[styles.continueSubjectTitle, { color: colors.text }]}
-                  numberOfLines={1}>
-                  {continueSubject.title}
-                </Text>
-                <Text
-                  style={[
-                    styles.continuePercentBadge,
-                    { color: colors.accent },
-                  ]}>
-                  {progressPercent}%
-                </Text>
-              </View>
+          {/* List of Continue Learning Cards */}
+          <View style={styles.continueCardsList}>
+            {continueItems.map((item) => {
+              const IconComp = item.icon;
 
-              <Text
-                style={[
-                  styles.continueTopicSubtitle,
-                  { color: colors.textSecondary },
-                ]}
-                numberOfLines={1}>
-                {continueSubject.topics[0]?.title || 'Core Syllabus Modules'}
-              </Text>
-
-              {/* Progress Track */}
-              <View
-                style={[
-                  styles.continueProgressTrack,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.10)'
-                      : 'rgba(0, 0, 0, 0.06)',
-                  },
-                ]}>
-                <View
-                  style={[
-                    styles.continueProgressFill,
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => router.push('/(tabs)/learn' as any)}
+                  style={({ pressed }) => [
+                    styles.continueLearningCard,
                     {
-                      width: `${progressPercent}%`,
-                      backgroundColor: colors.accent,
+                      backgroundColor: isDark
+                        ? colors.backgroundElement
+                        : '#FFFFFF',
+                      borderColor: isDark
+                        ? 'rgba(255, 255, 255, 0.08)'
+                        : 'rgba(0, 0, 0, 0.06)',
+                      opacity: pressed ? 0.92 : 1,
+                      transform: [{ scale: pressed ? 0.99 : 1 }],
                     },
-                  ]}
-                />
-              </View>
-            </View>
+                  ]}>
+                  {/* Left: Soft Tinted Circular Icon Container */}
+                  <View
+                    style={[
+                      styles.circularIconWrap,
+                      {
+                        backgroundColor: colors.accentMuted,
+                        borderColor: colors.accentBorder,
+                      },
+                    ]}>
+                    <IconComp
+                      size={22}
+                      color={colors.accent}
+                      strokeWidth={2.2}
+                    />
+                  </View>
 
-            {/* Right: Quick Action Arrow */}
-            <View style={styles.chevronWrapper}>
-              <ChevronRight
-                size={18}
-                color={colors.textSecondary}
-                strokeWidth={2.4}
-              />
-            </View>
-          </Pressable>
+                  {/* Middle: Title & % on header row, Progress track below */}
+                  <View style={styles.continueCardContent}>
+                    <View style={styles.continueCardHeaderRow}>
+                      <Text
+                        style={[
+                          styles.continueSubjectTitle,
+                          { color: colors.text },
+                        ]}>
+                        {item.title}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.continuePercentBadge,
+                          { color: colors.accent },
+                        ]}>
+                        {item.percent}%
+                      </Text>
+                    </View>
+
+                    {/* Progress Track */}
+                    <View
+                      style={[
+                        styles.continueProgressTrack,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255, 255, 255, 0.10)'
+                            : 'rgba(239, 241, 245, 1)',
+                        },
+                      ]}>
+                      <View
+                        style={[
+                          styles.continueProgressFill,
+                          {
+                            width: `${item.percent}%`,
+                            backgroundColor: colors.accent,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Right Divider & Circular Chevron Action Button */}
+                  <View
+                    style={[
+                      styles.continueRightDivider,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.08)'
+                          : 'rgba(0, 0, 0, 0.06)',
+                      },
+                    ]}
+                  />
+
+                  <View
+                    style={[
+                      styles.chevronCircleWrap,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.06)'
+                          : '#F8FAFC',
+                      },
+                    ]}>
+                    <ChevronRight
+                      size={18}
+                      color={colors.text}
+                      strokeWidth={2.4}
+                    />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -552,7 +605,8 @@ const styles = StyleSheet.create({
   chartRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 26,
+    minHeight: 28,
+    paddingVertical: 2,
   },
   chartLeftLabelBox: {
     width: 130,
@@ -563,6 +617,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: -0.1,
+    lineHeight: 15,
   },
   chartRightBarArea: {
     flex: 1,
@@ -599,25 +654,45 @@ const styles = StyleSheet.create({
   /* ======================================================================= */
   /* 3. Continue Learning Section                                            */
   /* ======================================================================= */
+  continueSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  continueHeaderAccentBar: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+  },
+  continueSectionTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  continueCardsList: {
+    gap: 12,
+  },
   continueLearningCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderRadius: 22,
     borderWidth: 1,
     gap: 14,
   },
   circularIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   continueCardContent: {
     flex: 1,
-    gap: 4,
+    gap: 8,
   },
   continueCardHeaderRow: {
     flexDirection: 'row',
@@ -626,33 +701,35 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   continueSubjectTitle: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 13.5,
+    fontWeight: '900',
+    letterSpacing: 0.3,
     flex: 1,
   },
   continuePercentBadge: {
-    fontSize: 12.5,
-    fontWeight: '800',
-  },
-  continueTopicSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: '900',
   },
   continueProgressTrack: {
-    height: 5,
-    borderRadius: Radius.full,
+    height: 7,
+    borderRadius: 3.5,
     overflow: 'hidden',
     width: '100%',
   },
   continueProgressFill: {
     height: '100%',
-    borderRadius: Radius.full,
+    borderRadius: 3.5,
   },
-  chevronWrapper: {
+  continueRightDivider: {
+    width: 1,
+    height: 32,
+    marginHorizontal: 2,
+  },
+  chevronCircleWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingLeft: 2,
   },
 });

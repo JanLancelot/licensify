@@ -5,7 +5,7 @@ import Animated, {
   FadeOutUp,
   LinearTransition,
 } from 'react-native-reanimated';
-import { Check, FileText, Minus, Plus } from 'lucide-react-native';
+import { Check, FileText, Minus } from 'lucide-react-native';
 
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
@@ -133,7 +133,7 @@ export function PresetTopicItem({
           onPress={() => toggleTopicSelection(topic)}
           hitSlop={8}
           style={({ pressed }) => [
-            styles.topicSelectBtn,
+            styles.topicSelectionBtn,
             {
               backgroundColor: isAllTopicSelected
                 ? colors.accent
@@ -156,9 +156,7 @@ export function PresetTopicItem({
             <Check size={14} color="#FFFFFF" strokeWidth={3} />
           ) : isSomeTopicSelected ? (
             <Minus size={13} color={colors.textSecondary} strokeWidth={3} />
-          ) : (
-            <View style={styles.emptyCheckboxHole} />
-          )}
+          ) : null}
         </Pressable>
       </View>
 
@@ -167,7 +165,14 @@ export function PresetTopicItem({
         <Animated.View
           entering={FadeInDown.duration(200)}
           exiting={FadeOutUp.duration(150)}
-          style={styles.lessonsContainer}>
+          style={[
+            styles.lessonsWrapper,
+            {
+              borderTopColor: isDark
+                ? 'rgba(255, 255, 255, 0.08)'
+                : 'rgba(0, 0, 0, 0.06)',
+            },
+          ]}>
           {topic.lessons.map((lesson, lIdx) => {
             const isLessonSelected = selectedLessonIds.has(lesson.id);
 
@@ -176,7 +181,7 @@ export function PresetTopicItem({
                 key={lesson.id}
                 onPress={() => toggleLessonSelection(lesson.id)}
                 style={({ pressed }) => [
-                  styles.lessonItemRow,
+                  styles.lessonRow,
                   {
                     backgroundColor: isLessonSelected
                       ? colors.accentMuted

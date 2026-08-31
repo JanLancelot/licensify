@@ -181,8 +181,10 @@ export function ModularExamBuilderModal({
   const [isNameEditorVisible, setIsNameEditorVisible] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
 
-  // Reset when opening
-  React.useEffect(() => {
+  const [prevVisible, setPrevVisible] = useState(visible);
+
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
     if (visible) {
       setCustomTitle('');
       setSelectedIconId('Landmark');
@@ -192,7 +194,7 @@ export function ModularExamBuilderModal({
       setExpandedSubjects({});
       setExpandedTopics({});
     }
-  }, [visible]);
+  }
 
   const toggleSubject = (subjectId: string) => {
     setExpandedSubjects((prev) => ({
