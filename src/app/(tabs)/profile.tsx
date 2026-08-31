@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import {
   Award,
   Bell,
+  Check,
   CheckCircle2,
   ChevronRight,
   Cloud,
@@ -13,6 +14,7 @@ import {
   LogOut,
   Mail,
   Moon,
+  Palette,
   Smartphone,
   Star,
   Sun,
@@ -39,6 +41,7 @@ import {
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ACCENT_THEME_LIST, AccentThemeKey } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
 import { api } from '../../../convex/_generated/api';
 import { useSyncService } from '@/services/useSyncService';
@@ -146,7 +149,7 @@ function SettingPastelBadge({
 }
 
 export default function ProfileScreen() {
-  const { colors, themeMode, setThemeMode, isDark } = useAppTheme();
+  const { colors, themeMode, setThemeMode, accentTheme, setAccentTheme, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { signOut } = useAuthActions();
@@ -455,6 +458,65 @@ export default function ProfileScreen() {
                   </Pressable>
                 );
               })}
+            </View>
+
+            <View style={[styles.itemDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]} />
+
+            {/* ROYGBIV Accent Theme Color Variations */}
+            <View style={styles.accentPickerContainer}>
+              <View style={styles.accentPickerHeaderRow}>
+                <Palette size={16} color={colors.accent} strokeWidth={2.3} />
+                <Text style={[styles.accentPickerTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                  Accent Color Theme
+                </Text>
+              </View>
+
+              {/* Horizontal Scroll Swatches */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.accentSwatchesRow}>
+                {ACCENT_THEME_LIST.map((themeOption) => {
+                  const isSelected = accentTheme === themeOption.key;
+                  const swatchColor = isDark ? themeOption.dark.accent : themeOption.light.accent;
+
+                  return (
+                    <Pressable
+                      key={themeOption.key}
+                      onPress={() => setAccentTheme(themeOption.key)}
+                      style={({ pressed }) => [
+                        styles.swatchItemBtn,
+                        {
+                          backgroundColor: isSelected
+                            ? isDark
+                              ? 'rgba(255,255,255,0.08)'
+                              : '#F8FAFC'
+                            : 'transparent',
+                          borderColor: isSelected
+                            ? swatchColor
+                            : isDark
+                              ? 'rgba(255,255,255,0.06)'
+                              : 'rgba(0,0,0,0.04)',
+                          transform: [{ scale: pressed ? 0.92 : 1 }],
+                        },
+                      ]}>
+                      {/* Minimalist Solid Swatch Circle with Selection Checkmark */}
+                      <View
+                        style={[
+                          styles.swatchCircle,
+                          {
+                            backgroundColor: swatchColor,
+                            shadowColor: swatchColor,
+                          },
+                        ]}>
+                        {isSelected && (
+                          <Check size={18} color="#FFFFFF" strokeWidth={3.2} />
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
 
             <View style={[styles.itemDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]} />
@@ -1068,6 +1130,47 @@ const styles = StyleSheet.create({
   },
   themeOptionBtnText: {
     fontSize: 12,
+  },
+  accentPickerContainer: {
+    paddingVertical: 10,
+    gap: 8,
+  },
+  accentPickerHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  accentPickerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  accentSwatchesRow: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  swatchItemBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 3,
+    borderRadius: 22,
+    borderWidth: 2,
+  },
+  swatchCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  swatchLetter: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
   },
   itemDivider: {
     height: 1,
