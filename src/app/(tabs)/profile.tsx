@@ -278,8 +278,8 @@ export default function ProfileScreen() {
             style={[
               styles.avatarWrapper,
               {
-                backgroundColor: isDark ? 'rgba(224, 122, 95, 0.15)' : '#FCECE6',
-                borderColor: isDark ? 'rgba(224, 122, 95, 0.3)' : '#F6D2C4',
+                backgroundColor: colors.accentMuted,
+                borderColor: colors.accentBorder,
               },
             ]}>
             <User size={40} color={colors.accent} strokeWidth={2.3} />

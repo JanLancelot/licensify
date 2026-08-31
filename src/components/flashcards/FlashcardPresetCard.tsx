@@ -38,9 +38,7 @@ export function FlashcardPresetCard({
             style={[
               styles.presetPill,
               {
-                backgroundColor: isDark
-                  ? 'rgba(224, 122, 95, 0.2)'
-                  : '#F8EAE4',
+                backgroundColor: colors.accentMuted,
               },
             ]}>
             <Text style={[styles.presetPillText, { color: colors.accent }]}>
@@ -84,7 +82,7 @@ export function FlashcardPresetCard({
               style={({ pressed }) => [
                 styles.iconBtn,
                 {
-                  backgroundColor: isDark ? 'rgba(224, 122, 95, 0.2)' : '#F8EAE4',
+                  backgroundColor: colors.accentMuted,
                   opacity: pressed ? 0.6 : 1,
                 },
               ]}>

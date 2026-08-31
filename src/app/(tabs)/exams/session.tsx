@@ -148,8 +148,8 @@ const ExamTimerBadge = memo(function ExamTimerBadge({
               ? 'rgba(239, 68, 68, 0.22)'
               : '#FEE2E2'
             : isDark
-              ? 'rgba(224, 122, 95, 0.18)'
-              : '#F8EAE4',
+              ? 'rgba(255, 255, 255, 0.08)'
+              : '#F3F4F6',
         },
       ]}>
       <Timer
@@ -241,8 +241,8 @@ const ExamQuestionCard = memo(function ExamQuestionCard({
               {
                 backgroundColor: isFlagged
                   ? isDark
-                    ? 'rgba(224, 122, 95, 0.22)'
-                    : '#F8EAE4'
+                    ? 'rgba(255, 255, 255, 0.12)'
+                    : '#F3F4F6'
                   : 'transparent',
               },
             ]}>
@@ -1862,9 +1862,9 @@ export default function ExamSessionScreen() {
               targetHighlightStyle,
               {
                 borderColor: tutorialStep === 1 ? '#D97706' : colors.accent,
-                backgroundColor: isDark
-                  ? tutorialStep === 1 ? 'rgba(217, 119, 6, 0.14)' : 'rgba(224, 122, 95, 0.12)'
-                  : tutorialStep === 1 ? 'rgba(217, 119, 6, 0.08)' : 'rgba(224, 122, 95, 0.08)',
+                backgroundColor: tutorialStep === 1
+                  ? isDark ? 'rgba(217, 119, 6, 0.14)' : 'rgba(217, 119, 6, 0.08)'
+                  : colors.accentMuted,
               },
             ]}
           />
@@ -1901,9 +1901,9 @@ export default function ExamSessionScreen() {
                       style={[
                         styles.spotlightIconWrapper,
                         {
-                          backgroundColor: isDark
-                            ? tutorialStep === 1 ? 'rgba(217, 119, 6, 0.2)' : 'rgba(224, 122, 95, 0.2)'
-                            : tutorialStep === 1 ? '#FEF3C7' : '#F8EAE4',
+                          backgroundColor: tutorialStep === 1
+                            ? isDark ? 'rgba(217, 119, 6, 0.2)' : '#FEF3C7'
+                            : colors.accentMuted,
                         },
                       ]}>
                       <CurrentIcon size={18} color={iconColor} strokeWidth={2.4} />

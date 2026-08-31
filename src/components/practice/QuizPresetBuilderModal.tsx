@@ -283,7 +283,7 @@ export function QuizPresetBuilderModal({
                     const isSelected = selectedIconId === item.id;
                     const IconComp = item.icon;
                     const [startC, endC] = item.gradient;
-                    const gradId = `quiz_sel_icon_${item.id}`;
+                    const gradId = `icon_grad_${item.id}`;
 
                     return (
                       <Pressable
@@ -294,9 +294,7 @@ export function QuizPresetBuilderModal({
                           {
                             borderColor: isSelected ? colors.accent : 'transparent',
                             backgroundColor: isSelected
-                              ? isDark
-                                ? 'rgba(224, 122, 95, 0.25)'
-                                : '#F8EAE4'
+                              ? colors.accentMuted
                               : isDark
                                 ? '#23262F'
                                 : '#F9FAFB',
@@ -348,7 +346,7 @@ export function QuizPresetBuilderModal({
                   style={[
                     styles.counterBadge,
                     {
-                      backgroundColor: isDark ? 'rgba(224, 122, 95, 0.18)' : '#F8EAE4',
+                      backgroundColor: colors.accentMuted,
                     },
                   ]}>
                   <Text style={[styles.counterBadgeText, { color: colors.accent }]}>
@@ -385,9 +383,7 @@ export function QuizPresetBuilderModal({
                         styles.subjectCard,
                         {
                           backgroundColor: hasSubjectSelected
-                            ? isDark
-                              ? 'rgba(224, 122, 95, 0.08)'
-                              : '#FAF0EB'
+                            ? colors.accentMuted
                             : isDark
                               ? '#1C1F26'
                               : '#FFFFFF',

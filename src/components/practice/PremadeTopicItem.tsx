@@ -47,9 +47,7 @@ export function PremadeTopicItem({
     ? isDark
       ? parentPalette.darkBg
       : parentPalette.bg
-    : isDark
-      ? 'rgba(224, 122, 95, 0.22)'
-      : '#FCE7F3';
+    : colors.accentMuted;
 
   const badgeIconColor = parentPalette
     ? isDark
@@ -142,7 +140,7 @@ export function PremadeTopicItem({
           style={({ pressed }) => [
             styles.topicPlayBtn,
             {
-              backgroundColor: isDark ? 'rgba(224, 122, 95, 0.18)' : '#F8EAE4',
+              backgroundColor: colors.accentMuted,
               opacity: pressed ? 0.7 : 1,
             },
           ]}>

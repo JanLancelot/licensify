@@ -20,6 +20,8 @@ export interface AccentThemeOption {
     accent: string;
     accentLight: string;
     accentMuted: string;
+    accentBorder: string;
+    accentGradient: [string, string];
     tabActive: string;
     tabCenterBg: string;
     tabCenterBorder: string;
@@ -28,6 +30,8 @@ export interface AccentThemeOption {
     accent: string;
     accentLight: string;
     accentMuted: string;
+    accentBorder: string;
+    accentGradient: [string, string];
     tabActive: string;
     tabCenterBg: string;
     tabCenterBorder: string;
@@ -44,6 +48,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#E11D48',
       accentLight: '#F43F5E',
       accentMuted: 'rgba(225, 29, 72, 0.12)',
+      accentBorder: 'rgba(225, 29, 72, 0.25)',
+      accentGradient: ['#F43F5E', '#E11D48'],
       tabActive: '#E11D48',
       tabCenterBg: '#E11D48',
       tabCenterBorder: '#BE123C',
@@ -52,6 +58,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#FB7185',
       accentLight: '#FDA4AF',
       accentMuted: 'rgba(251, 113, 133, 0.18)',
+      accentBorder: 'rgba(251, 113, 133, 0.30)',
+      accentGradient: ['#FDA4AF', '#FB7185'],
       tabActive: '#FB7185',
       tabCenterBg: '#FB7185',
       tabCenterBorder: '#E11D48',
@@ -66,6 +74,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#C85A32',
       accentLight: '#E07A5F',
       accentMuted: 'rgba(200, 90, 50, 0.10)',
+      accentBorder: 'rgba(200, 90, 50, 0.25)',
+      accentGradient: ['#E58368', '#C85A32'],
       tabActive: '#C85A32',
       tabCenterBg: '#C85A32',
       tabCenterBorder: '#A9431E',
@@ -74,6 +84,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#E07A5F',
       accentLight: '#F4A261',
       accentMuted: 'rgba(224, 122, 95, 0.15)',
+      accentBorder: 'rgba(224, 122, 95, 0.30)',
+      accentGradient: ['#F4A261', '#E07A5F'],
       tabActive: '#E07A5F',
       tabCenterBg: '#E07A5F',
       tabCenterBorder: '#C85A32',
@@ -88,6 +100,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#D97706',
       accentLight: '#F59E0B',
       accentMuted: 'rgba(217, 119, 6, 0.12)',
+      accentBorder: 'rgba(217, 119, 6, 0.25)',
+      accentGradient: ['#F59E0B', '#D97706'],
       tabActive: '#D97706',
       tabCenterBg: '#D97706',
       tabCenterBorder: '#B45309',
@@ -96,6 +110,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#FBBF24',
       accentLight: '#FCD34D',
       accentMuted: 'rgba(251, 191, 36, 0.18)',
+      accentBorder: 'rgba(251, 191, 36, 0.30)',
+      accentGradient: ['#FCD34D', '#FBBF24'],
       tabActive: '#FBBF24',
       tabCenterBg: '#FBBF24',
       tabCenterBorder: '#D97706',
@@ -110,6 +126,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#059669',
       accentLight: '#10B981',
       accentMuted: 'rgba(5, 150, 105, 0.12)',
+      accentBorder: 'rgba(5, 150, 105, 0.25)',
+      accentGradient: ['#10B981', '#059669'],
       tabActive: '#059669',
       tabCenterBg: '#059669',
       tabCenterBorder: '#047857',
@@ -118,6 +136,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#34D399',
       accentLight: '#6EE7B7',
       accentMuted: 'rgba(52, 211, 153, 0.18)',
+      accentBorder: 'rgba(52, 211, 153, 0.30)',
+      accentGradient: ['#6EE7B7', '#34D399'],
       tabActive: '#34D399',
       tabCenterBg: '#34D399',
       tabCenterBorder: '#059669',
@@ -132,6 +152,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#2563EB',
       accentLight: '#3B82F6',
       accentMuted: 'rgba(37, 99, 235, 0.12)',
+      accentBorder: 'rgba(37, 99, 235, 0.25)',
+      accentGradient: ['#3B82F6', '#2563EB'],
       tabActive: '#2563EB',
       tabCenterBg: '#2563EB',
       tabCenterBorder: '#1D4ED8',
@@ -140,6 +162,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#60A5FA',
       accentLight: '#93C5FD',
       accentMuted: 'rgba(96, 165, 250, 0.18)',
+      accentBorder: 'rgba(96, 165, 250, 0.30)',
+      accentGradient: ['#93C5FD', '#60A5FA'],
       tabActive: '#60A5FA',
       tabCenterBg: '#60A5FA',
       tabCenterBorder: '#2563EB',
@@ -154,6 +178,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#4F46E5',
       accentLight: '#6366F1',
       accentMuted: 'rgba(79, 70, 229, 0.12)',
+      accentBorder: 'rgba(79, 70, 229, 0.25)',
+      accentGradient: ['#6366F1', '#4F46E5'],
       tabActive: '#4F46E5',
       tabCenterBg: '#4F46E5',
       tabCenterBorder: '#4338CA',
@@ -162,6 +188,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#818CF8',
       accentLight: '#A5B4FC',
       accentMuted: 'rgba(129, 140, 248, 0.18)',
+      accentBorder: 'rgba(129, 140, 248, 0.30)',
+      accentGradient: ['#A5B4FC', '#818CF8'],
       tabActive: '#818CF8',
       tabCenterBg: '#818CF8',
       tabCenterBorder: '#4F46E5',
@@ -176,6 +204,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#7C3AED',
       accentLight: '#8B5CF6',
       accentMuted: 'rgba(124, 58, 237, 0.12)',
+      accentBorder: 'rgba(124, 58, 237, 0.25)',
+      accentGradient: ['#8B5CF6', '#7C3AED'],
       tabActive: '#7C3AED',
       tabCenterBg: '#7C3AED',
       tabCenterBorder: '#6D28D9',
@@ -184,6 +214,8 @@ export const ACCENT_THEMES: Record<AccentThemeKey, AccentThemeOption> = {
       accent: '#A78BFA',
       accentLight: '#C4B5FD',
       accentMuted: 'rgba(167, 139, 250, 0.18)',
+      accentBorder: 'rgba(167, 139, 250, 0.30)',
+      accentGradient: ['#C4B5FD', '#A78BFA'],
       tabActive: '#A78BFA',
       tabCenterBg: '#A78BFA',
       tabCenterBorder: '#7C3AED',

@@ -142,9 +142,7 @@ export function ExamRemindersModal({
                   style={[
                     styles.metricIconCircle,
                     {
-                      backgroundColor: isDark
-                        ? 'rgba(224, 122, 95, 0.18)'
-                        : '#F8EAE4',
+                      backgroundColor: colors.accentMuted,
                     },
                   ]}>
                   <Clock size={15} color={colors.accent} strokeWidth={2.4} />

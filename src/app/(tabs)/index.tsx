@@ -134,7 +134,7 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.progressHeroMotivation,
-                { color: isDark ? '#E07A5F' : '#A23F1C' },
+                { color: colors.accent },
               ]}>
               {"You're doing great! Keep up the consistency."}
             </Text>
@@ -146,7 +146,7 @@ export default function HomeScreen() {
                 {
                   backgroundColor: isDark
                     ? 'rgba(255, 255, 255, 0.12)'
-                    : '#EAD5CC',
+                    : colors.accentMuted,
                 },
               ]}>
               <View
@@ -161,7 +161,7 @@ export default function HomeScreen() {
           {/* Right Column: Gradient Award Icon */}
           <View style={styles.progressHeroRight}>
             <GradientIconBox
-              colors={['#E58368', '#C85A32']}
+              colors={colors.accentGradient}
               size={68}
               borderRadius={34}>
               <Award size={34} color="#FFFFFF" strokeWidth={2.2} />
@@ -179,13 +179,13 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 styles.bentoTile,
                 {
-                  backgroundColor: isDark ? '#261C19' : '#FDF4F0',
+                  backgroundColor: isDark ? '#1C1F26' : '#F8FAFC',
                   opacity: pressed ? 0.88 : 1,
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 },
               ]}>
               <GradientIconBox
-                colors={['#E58368', '#C85A32']}
+                colors={colors.accentGradient}
                 size={50}
                 borderRadius={15}>
                 <BookOpen size={26} color="#FFFFFF" strokeWidth={2.2} />
@@ -328,7 +328,7 @@ export default function HomeScreen() {
             ]}>
             {/* Left Gradient Squircle Icon */}
             <GradientIconBox
-              colors={['#E58368', '#C85A32']}
+              colors={colors.accentGradient}
               size={50}
               borderRadius={15}>
               <Building2 size={26} color="#FFFFFF" strokeWidth={2.2} />

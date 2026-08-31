@@ -119,7 +119,7 @@ export default function ExamDetailsScreen() {
           title: quiz?.title || 'Area 1: History, Theory & Laws',
           subtitle: quiz?.description || 'History of Architecture, Theory of Design & RA 9266',
           icon: Landmark,
-          gradient: ['#E58368', '#C85A32'] as [string, string],
+          gradient: colors.accentGradient,
           duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '1.5 Hours',
           items: totalItems,
           passing: `${quiz?.passingScore || 70}% Passing GWA`,

@@ -369,7 +369,7 @@ export default function FlashcardsHubScreen() {
                   style={({ pressed }) => [
                     styles.cardCornerAddBtn,
                     {
-                      backgroundColor: isDark ? 'rgba(224, 122, 95, 0.2)' : '#F8EAE4',
+                      backgroundColor: colors.accentMuted,
                       opacity: pressed ? 0.7 : 1,
                     },
                   ]}>

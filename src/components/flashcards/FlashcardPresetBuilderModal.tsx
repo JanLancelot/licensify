@@ -613,9 +613,7 @@ export function FlashcardPresetBuilderModal({
                       {
                         borderColor: isSelected ? colors.accent : 'transparent',
                         backgroundColor: isSelected
-                          ? isDark
-                            ? 'rgba(224, 122, 95, 0.22)'
-                            : '#F8EAE4'
+                          ? colors.accentMuted
                           : isDark
                             ? '#23262F'
                             : '#F6F0ED',

@@ -53,9 +53,7 @@ export function FlashcardStudyView({
           style={[
             styles.studyCounterBadge,
             {
-              backgroundColor: isDark
-                ? 'rgba(224, 122, 95, 0.18)'
-                : '#F8EAE4',
+              backgroundColor: colors.accentMuted,
             },
           ]}>
           <Text style={[styles.studyCounter, { color: colors.accent }]}>

@@ -376,7 +376,7 @@ export default function PracticeScreen() {
                       style={({ pressed }) => [
                         styles.quickSubjectPlayBtn,
                         {
-                          backgroundColor: isDark ? 'rgba(224, 122, 95, 0.18)' : '#F8EAE4',
+                          backgroundColor: colors.accentMuted,
                           opacity: pressed ? 0.7 : 1,
                         },
                       ]}>
@@ -459,7 +459,7 @@ export default function PracticeScreen() {
                 style={({ pressed }) => [
                   styles.quickSubjectPlayBtn,
                   {
-                    backgroundColor: isDark ? 'rgba(224, 122, 95, 0.18)' : '#F8EAE4',
+                    backgroundColor: colors.accentMuted,
                     opacity: pressed ? 0.7 : 1,
                   },
                 ]}>

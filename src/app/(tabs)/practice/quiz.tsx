@@ -344,9 +344,7 @@ export default function PracticeQuizScreen() {
                     ? isDark
                       ? 'rgba(239, 68, 68, 0.2)'
                       : '#FEE2E2'
-                    : isDark
-                      ? 'rgba(224, 122, 95, 0.18)'
-                      : '#F8EAE4',
+                    : colors.accentMuted,
               },
             ]}>
             <Timer
@@ -411,8 +409,8 @@ export default function PracticeQuizScreen() {
               <Svg width={64} height={64} style={StyleSheet.absoluteFill}>
                 <Defs>
                   <LinearGradient id="award_grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <Stop offset="0%" stopColor="#E58368" />
-                    <Stop offset="100%" stopColor="#C85A32" />
+                    <Stop offset="0%" stopColor={colors.accentLight} />
+                    <Stop offset="100%" stopColor={colors.accent} />
                   </LinearGradient>
                 </Defs>
                 <Rect width={64} height={64} rx={22} fill="url(#award_grad)" />
@@ -550,7 +548,7 @@ export default function PracticeQuizScreen() {
                     pillTextColor = '#FFFFFF';
                   }
                 } else if (isSelected) {
-                  optBg = isDark ? 'rgba(224, 122, 95, 0.22)' : '#F8EAE4';
+                  optBg = colors.accentMuted;
                   optBorder = colors.accent;
                   pillBg = colors.accent;
                   pillTextColor = '#FFFFFF';

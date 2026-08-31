@@ -142,9 +142,7 @@ export function NoteTopicItem({
     ? isDark
       ? parentPalette.darkBg
       : parentPalette.bg
-    : isDark
-      ? 'rgba(224, 122, 95, 0.22)'
-      : '#FCE7F3';
+    : colors.accentMuted;
 
   const badgeIconColor = parentPalette
     ? isDark
