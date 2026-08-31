@@ -10,11 +10,12 @@ export type ThemedTextProps = TextProps & {
 
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const textStyleColor = themeColor ? theme[themeColor] : theme.text;
 
   return (
     <Text
       style={[
-        { color: theme[themeColor ?? 'text'] },
+        { color: textStyleColor },
         type === 'default' && styles.default,
         type === 'title' && styles.title,
         type === 'small' && styles.small,

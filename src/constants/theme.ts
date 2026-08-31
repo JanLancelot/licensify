@@ -242,7 +242,9 @@ export interface BaseThemeColors {
 }
 
 export type ThemePalette = BaseThemeColors & AccentThemeColors;
-export type ThemeColor = keyof ThemePalette;
+export type ThemeColor = {
+  [K in keyof ThemePalette]: ThemePalette[K] extends string ? K : never;
+}[keyof ThemePalette];
 
 export const BaseColors: { light: BaseThemeColors; dark: BaseThemeColors } = {
   light: {
