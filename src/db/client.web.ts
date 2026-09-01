@@ -78,37 +78,44 @@ function matchesCondition(item: any, condition: any): boolean {
   if (!condition) return true;
 
   try {
-    // Check Drizzle BinaryOperator / Equality format
-    const leftCol =
-      condition?.left?.name ||
-      condition?.left?.key ||
+    const col =
       condition?.column?.name ||
-      condition?.column?.key;
+      condition?.column?.key ||
+      condition?.left?.name ||
+      condition?.left?.key;
 
-    const rightVal =
+    // 1. Check for inArray condition
+    if (condition?.values && Array.isArray(condition.values)) {
+      if (col) {
+        const itemVal = item[col] !== undefined ? item[col] : item[toSnakeCase(col)];
+        if (itemVal !== undefined) {
+          const rawValues = condition.values.map((v: any) =>
+            v !== null && typeof v === 'object' && 'value' in v ? v.value : v
+          );
+          return rawValues.includes(itemVal);
+        }
+      }
+    }
+
+    // 2. Check for Equality / BinaryOperator (eq)
+    const rawRight =
       condition?.right !== undefined
         ? condition?.right?.value !== undefined
           ? condition?.right?.value
           : condition?.right
-        : condition?.value;
+        : condition?.value !== undefined
+          ? condition?.value?.value !== undefined
+            ? condition?.value?.value
+            : condition?.value
+          : undefined;
 
-    if (leftCol && rightVal !== undefined) {
-      // Check camelCase and snake_case properties
-      const itemVal = item[leftCol] !== undefined ? item[leftCol] : item[toSnakeCase(leftCol)];
+    if (col && rawRight !== undefined) {
+      const itemVal = item[col] !== undefined ? item[col] : item[toSnakeCase(col)];
       if (itemVal !== undefined) {
-        return itemVal === rightVal;
-      }
-    }
-
-    // Check for inArray condition
-    if (condition?.values && Array.isArray(condition.values)) {
-      const col = condition?.column?.name || condition?.column?.key;
-      if (col && item[col] !== undefined) {
-        return condition.values.includes(item[col]);
+        return itemVal === rawRight;
       }
     }
   } catch {
-    // If AST parsing fails, retain item
     return true;
   }
 

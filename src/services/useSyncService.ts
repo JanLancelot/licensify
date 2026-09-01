@@ -1,10 +1,11 @@
 import { useConvex } from 'convex/react';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import * as crypto from 'expo-crypto';
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { api } from '../../convex/_generated/api';
 import { db } from '../db/client';
 import * as schema from '../db/schema';
+import { notifyLessonProgressChanged } from '../utils/syncEvents';
 
 export interface SyncProgress {
   percentage: number;
@@ -100,6 +101,13 @@ export interface SyncQuizItem {
   passingScore?: number;
 }
 
+export interface SyncLessonProgressItem {
+  id: string;
+  lessonId: string;
+  isCompleted: boolean;
+  completedAt: number;
+}
+
 export interface SyncBundleResponse {
   upToDate: boolean;
   timestamp: number;
@@ -111,6 +119,7 @@ export interface SyncBundleResponse {
   flashcards: SyncFlashcardItem[];
   questions: SyncQuestionItem[];
   quizzes: SyncQuizItem[];
+  lessonProgress?: SyncLessonProgressItem[];
 }
 
 const CHUNK_SIZE = 50;
@@ -481,6 +490,33 @@ export function useSyncService() {
         }
       }
 
+      // 10.5 Batch insert Lesson Progress
+      if (bundle.lessonProgress && bundle.lessonProgress.length > 0) {
+        for (let i = 0; i < bundle.lessonProgress.length; i += CHUNK_SIZE) {
+          const chunk = bundle.lessonProgress.slice(i, i + CHUNK_SIZE).map((lp: SyncLessonProgressItem) => ({
+            id: `lp_${lp.lessonId}`,
+            convexId: lp.id,
+            lessonId: lp.lessonId,
+            isCompleted: lp.isCompleted,
+            completedAt: lp.completedAt,
+            syncStatus: 'synced',
+          }));
+          await db
+            .insert(schema.lessonProgress)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.lessonProgress.lessonId,
+              set: {
+                isCompleted: sql`excluded.is_completed`,
+                completedAt: sql`excluded.completed_at`,
+                convexId: sql`excluded.convex_id`,
+                syncStatus: 'synced',
+              },
+            });
+        }
+        notifyLessonProgressChanged();
+      }
+
       // 11. Save lastSyncedAt timestamp in SQLite metadata
       await db
         .insert(schema.syncMetadata)
@@ -531,11 +567,6 @@ export function useSyncService() {
     try {
       setIsSyncing(true);
       setSyncError(null);
-      setSyncProgress({
-        percentage: 85,
-        message: 'Uploading offline attempts...',
-        step: 'attempts',
-      });
       console.log('[SyncService] Starting Batch Up-Sync...');
 
       const pendingAttempts = await db
@@ -543,18 +574,31 @@ export function useSyncService() {
         .from(schema.quizAttempts)
         .where(eq(schema.quizAttempts.syncStatus, 'pending_sync'));
 
-      if (!pendingAttempts || pendingAttempts.length === 0) {
-        console.log('[SyncService] No pending attempts to sync.');
+      const pendingProgress = await db
+        .select()
+        .from(schema.lessonProgress)
+        .where(eq(schema.lessonProgress.syncStatus, 'pending_sync'));
+
+      if ((!pendingAttempts || pendingAttempts.length === 0) && (!pendingProgress || pendingProgress.length === 0)) {
+        console.log('[SyncService] No pending data to sync.');
         setSyncProgress({
           percentage: 100,
-          message: 'All attempts synced.',
+          message: 'All data up to date.',
           step: 'complete',
         });
         return;
       }
 
-      const validAttemptsToSync: any[] = [];
+      setSyncProgress({
+        percentage: 85,
+        message: 'Uploading offline attempts...',
+        step: 'attempts',
+      });
 
+      const validAttemptsToSync: any[] = [];
+      const validPendingAttempts: typeof pendingAttempts = [];
+
+      const localOnlyIds: string[] = [];
       for (const attempt of pendingAttempts) {
         // Resolve pure offline custom drills locally
         if (
@@ -564,53 +608,122 @@ export function useSyncService() {
           attempt.quizId.startsWith('all-') ||
           attempt.quizId.startsWith('mock-')
         ) {
+          localOnlyIds.push(attempt.id);
+        } else {
+          validPendingAttempts.push(attempt);
+        }
+      }
+
+      if (localOnlyIds.length > 0) {
+        // Single batch update for all local offline attempts
+        for (let i = 0; i < localOnlyIds.length; i += CHUNK_SIZE) {
+          const chunk = localOnlyIds.slice(i, i + CHUNK_SIZE);
           await db
             .update(schema.quizAttempts)
             .set({ syncStatus: 'synced' })
-            .where(eq(schema.quizAttempts.id, attempt.id));
-          continue;
+            .where(inArray(schema.quizAttempts.id, chunk));
         }
-
-        const answers = await db
-          .select()
-          .from(schema.quizAnswers)
-          .where(eq(schema.quizAnswers.attemptId, attempt.id));
-
-        validAttemptsToSync.push({
-          localId: attempt.id,
-          quizId: attempt.quizId,
-          status: attempt.status,
-          score: attempt.score ?? undefined,
-          correctAnswers: attempt.correctAnswers ?? undefined,
-          totalQuestions: attempt.totalQuestions,
-          startedAt: attempt.startedAt,
-          submittedAt: attempt.submittedAt ?? undefined,
-          answers: answers.map((ans) => ({
-            questionId: ans.questionId,
-            selectedChoiceId: ans.selectedChoiceId ?? undefined,
-            answeredAt: ans.answeredAt ?? undefined,
-          })),
-        });
       }
 
-      if (validAttemptsToSync.length > 0) {
-        // Send single batch mutation to Convex
-        const result = (await convex.mutation(api.sync.syncAttemptsBatch as any, {
-          attempts: validAttemptsToSync as any,
-        })) as { synced?: Array<{ localId: string; serverId: string }> };
+      if (validPendingAttempts.length > 0) {
+        // Fetch all answers in batch to eliminate N+1 sqlite queries
+        const allPendingAnswers = await db
+          .select()
+          .from(schema.quizAnswers);
 
-        if (result && result.synced && result.synced.length > 0) {
-          for (const item of result.synced) {
-            await db
-              .update(schema.quizAttempts)
-              .set({
-                syncStatus: 'synced',
-                convexId: item.serverId,
-              })
-              .where(eq(schema.quizAttempts.id, item.localId));
-          }
-          console.log(`[SyncService] Successfully batch-synced ${result.synced.length} attempts to Convex.`);
+        const answersByAttempt = new Map<string, Array<typeof allPendingAnswers[0]>>();
+        for (const ans of allPendingAnswers) {
+          const list = answersByAttempt.get(ans.attemptId) || [];
+          list.push(ans);
+          answersByAttempt.set(ans.attemptId, list);
         }
+
+        for (const attempt of validPendingAttempts) {
+          const answers = answersByAttempt.get(attempt.id) || [];
+
+          validAttemptsToSync.push({
+            localId: attempt.id,
+            quizId: attempt.quizId,
+            status: attempt.status,
+            score: attempt.score ?? undefined,
+            correctAnswers: attempt.correctAnswers ?? undefined,
+            totalQuestions: attempt.totalQuestions,
+            startedAt: attempt.startedAt,
+            submittedAt: attempt.submittedAt ?? undefined,
+            answers: answers.map((ans) => ({
+              questionId: ans.questionId,
+              selectedChoiceId: ans.selectedChoiceId ?? undefined,
+              answeredAt: ans.answeredAt ?? undefined,
+            })),
+          });
+        }
+
+        if (validAttemptsToSync.length > 0) {
+          // Chunk attempts into batches of 30 for high throughput without hitting Convex limits
+          const CHUNK_SIZE = 30;
+          let totalSynced = 0;
+
+          for (let i = 0; i < validAttemptsToSync.length; i += CHUNK_SIZE) {
+            const attemptChunk = validAttemptsToSync.slice(i, i + CHUNK_SIZE);
+            const result = (await convex.mutation(api.sync.syncAttemptsBatch as any, {
+              attempts: attemptChunk as any,
+            })) as { synced?: Array<{ localId: string; serverId: string }> };
+
+            if (result && result.synced && result.synced.length > 0) {
+              for (const item of result.synced) {
+                await db
+                  .update(schema.quizAttempts)
+                  .set({
+                    syncStatus: 'synced',
+                    convexId: item.serverId,
+                  })
+                  .where(eq(schema.quizAttempts.id, item.localId));
+              }
+              totalSynced += result.synced.length;
+            }
+          }
+
+          console.log(`[SyncService] Successfully batch-synced ${totalSynced} attempts to Convex.`);
+        }
+      }
+
+      // Sync Lesson Progress
+      if (pendingProgress && pendingProgress.length > 0) {
+        setSyncProgress({
+          percentage: 95,
+          message: 'Uploading lesson progress...',
+          step: 'attempts',
+        });
+
+        const progressToSync = pendingProgress.map(p => ({
+          lessonId: p.lessonId,
+          isCompleted: p.isCompleted,
+          completedAt: p.completedAt,
+        }));
+
+        const CHUNK_SIZE = 50;
+        let totalProgressSynced = 0;
+
+        for (let i = 0; i < progressToSync.length; i += CHUNK_SIZE) {
+          const chunk = progressToSync.slice(i, i + CHUNK_SIZE);
+          const result = (await convex.mutation(api.sync.syncLessonProgressBatch as any, {
+            progress: chunk,
+          })) as { synced?: Array<{ lessonId: string; serverId: string }> };
+
+          if (result && result.synced && result.synced.length > 0) {
+            for (const item of result.synced) {
+              await db
+                .update(schema.lessonProgress)
+                .set({
+                  syncStatus: 'synced',
+                  convexId: item.serverId,
+                })
+                .where(eq(schema.lessonProgress.lessonId, item.lessonId));
+            }
+            totalProgressSynced += result.synced.length;
+          }
+        }
+        console.log(`[SyncService] Successfully synced ${totalProgressSynced} lesson progress items.`);
       }
 
       setSyncProgress({

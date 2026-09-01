@@ -39,6 +39,8 @@ export default defineSchema({
     isActive: v.boolean(),
 
     fcmToken: v.optional(v.string()),
+    themeMode: v.optional(v.string()),
+    accentTheme: v.optional(v.string()),
     lastActiveAt: v.optional(v.number()),
 
     createdAt: v.number(),
@@ -238,7 +240,7 @@ export default defineSchema({
 
   quizAttempts: defineTable({
     userId: v.id("users"),
-    quizId: v.id("quizzes"),
+    quizId: v.string(),
 
     status: v.union(
       v.literal("in_progress"),
@@ -269,7 +271,21 @@ export default defineSchema({
     .index("by_question", ["questionId"]),
 
   // ---------------------------------------------------------------------------
-  // 4. COLLABORATION
+  // 4. PROGRESS
+  // ---------------------------------------------------------------------------
+  lessonProgress: defineTable({
+    userId: v.id("users"),
+    lessonId: v.string(),
+    isCompleted: v.boolean(),
+    completedAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_lesson", ["lessonId"])
+    .index("by_user_and_lesson", ["userId", "lessonId"]),
+
+  // ---------------------------------------------------------------------------
+  // 5. COLLABORATION
   // ---------------------------------------------------------------------------
   studyRooms: defineTable({
     name: v.string(),

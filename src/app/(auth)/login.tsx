@@ -18,6 +18,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
 import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react-native';
+import { formatAuthError } from '@/utils/errorUtils';
 
 import { useAppTheme } from '@/context/theme-context';
 import { Radius } from '@/constants/theme';
@@ -49,7 +50,7 @@ export default function LoginScreen() {
       await signIn('password', { email, password, flow: 'signIn' });
       // Router will automatically redirect to (tabs) due to _layout guard
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+      setError(formatAuthError(err));
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +85,7 @@ export default function LoginScreen() {
         setError('Google sign in did not return a redirect URL.');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google.');
+      setError(formatAuthError(err));
     } finally {
       setIsLoading(false);
     }

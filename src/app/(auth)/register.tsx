@@ -1,6 +1,7 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Link, router } from 'expo-router';
 import { AlertCircle, Lock, Mail, User, UserPlus, KeyRound, Eye, EyeOff } from 'lucide-react-native';
+import { formatAuthError } from '@/utils/errorUtils';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -60,7 +61,7 @@ export default function RegisterScreen() {
       // Move to verification step
       setStep(2);
     } catch (err: any) {
-      setError(err.message || 'Failed to create account.');
+      setError(formatAuthError(err));
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +79,7 @@ export default function RegisterScreen() {
       // Router will automatically redirect to (tabs) due to auth state change, or we can force it:
       router.replace('/(tabs)');
     } catch (err: any) {
-      setError(err.message || 'Invalid verification code.');
+      setError(formatAuthError(err));
     } finally {
       setIsLoading(false);
     }

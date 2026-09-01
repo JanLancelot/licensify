@@ -868,7 +868,7 @@ export default function ProfileScreen() {
 
       {/* CLOUD BACKUP PROGRESS MODAL */}
       <Modal visible={isSyncModalVisible} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
+        <View style={styles.syncModalBackdrop}>
           <View
             style={[
               styles.syncModalBox,
@@ -1314,6 +1314,12 @@ const styles = StyleSheet.create({
   loadingTitle: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  syncModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   syncModalBox: {
     width: '88%',
