@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { db } from '../db/client';
 import * as schema from '../db/schema';
 import { useSyncService } from '../services/useSyncService';
+import { subscribeLessonProgressChanged } from '../utils/syncEvents';
 import { SubjectNote, Topic, Lesson, FlashcardItem } from '@/types/curriculum';
 import { BookOpen, Compass, Landmark } from 'lucide-react-native';
 
@@ -796,12 +797,14 @@ export function useLessonProgress() {
           lessonId,
           isCompleted: isNowCompleted,
           completedAt: Date.now(),
+          syncStatus: 'pending_sync',
         })
         .onConflictDoUpdate({
           target: schema.lessonProgress.lessonId,
           set: {
             isCompleted: isNowCompleted,
             completedAt: Date.now(),
+            syncStatus: 'pending_sync',
           },
         });
     } catch (error) {
@@ -821,12 +824,14 @@ export function useLessonProgress() {
           lessonId,
           isCompleted: true,
           completedAt: Date.now(),
+          syncStatus: 'pending_sync',
         })
         .onConflictDoUpdate({
           target: schema.lessonProgress.lessonId,
           set: {
             isCompleted: true,
             completedAt: Date.now(),
+            syncStatus: 'pending_sync',
           },
         });
     } catch (error) {
@@ -836,28 +841,18 @@ export function useLessonProgress() {
   }, [fetchProgress]);
 
   useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      try {
-        const records = await db
-          .select()
-          .from(schema.lessonProgress)
-          .where(eq(schema.lessonProgress.isCompleted, true));
+    const handleProgressChange = () => {
+      queueMicrotask(() => {
+        fetchProgress();
+      });
+    };
 
-        if (isMounted) {
-          setCompletedLessonIds(new Set(records.map((r) => r.lessonId)));
-        }
-      } catch (error) {
-        console.warn('[useLessonProgress] Initial fetch error:', error);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    load();
+    handleProgressChange();
+    const unsubscribe = subscribeLessonProgressChanged(handleProgressChange);
     return () => {
-      isMounted = false;
+      unsubscribe();
     };
-  }, []);
+  }, [fetchProgress]);
 
   const isCompleted = useCallback((lessonId: string) => completedLessonIds.has(lessonId), [completedLessonIds]);
 

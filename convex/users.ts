@@ -105,6 +105,29 @@ export const updateProfile = mutation({
 });
 
 /**
+ * Mutation for users to update their theme settings.
+ */
+export const updateThemeSettings = mutation({
+  args: {
+    themeMode: v.optional(v.string()),
+    accentTheme: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return { success: false };
+
+    const now = Date.now();
+    await ctx.db.patch(user._id, {
+      ...(args.themeMode !== undefined && { themeMode: args.themeMode }),
+      ...(args.accentTheme !== undefined && { accentTheme: args.accentTheme }),
+      updatedAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
  * Admin-only mutation to update a user's RBAC role.
  */
 export const updateRole = mutation({

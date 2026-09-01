@@ -152,9 +152,11 @@ export const quizAnswers = sqliteTable('quiz_answers', {
 
 export const lessonProgress = sqliteTable('lesson_progress', {
   id: text('id').primaryKey(), // local ID e.g. `lp_${lessonId}`
+  convexId: text('convex_id').unique(),
   lessonId: text('lesson_id').notNull().unique(),
   isCompleted: integer('is_completed', { mode: 'boolean' }).notNull().default(true),
   completedAt: integer('completed_at').notNull(),
+  syncStatus: text('sync_status').notNull().default('pending_sync'), // 'pending_sync', 'synced'
 });
 
 // ---------------------------------------------------------------------------

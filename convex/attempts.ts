@@ -175,7 +175,7 @@ export const getAttemptWithAnswers = query({
       throw new Error("Unauthorized to view this attempt");
     }
 
-    const quiz = await ctx.db.get(attempt.quizId);
+    const quiz = (await ctx.db.get(attempt.quizId as any)) as any;
     const answers = await ctx.db
       .query("quizAnswers")
       .withIndex("by_attempt", (q) => q.eq("attemptId", args.attemptId))
@@ -204,7 +204,7 @@ export const getUserQuizHistory = query({
 
     return await Promise.all(
       attempts.map(async (att) => {
-        const quiz = await ctx.db.get(att.quizId);
+        const quiz = (await ctx.db.get(att.quizId as any)) as any;
         return {
           ...att,
           quizTitle: quiz?.title ?? "Practice Quiz",

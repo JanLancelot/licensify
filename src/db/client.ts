@@ -158,11 +158,21 @@ function initDatabase() {
 
     CREATE TABLE IF NOT EXISTS lesson_progress (
       id TEXT PRIMARY KEY,
+      convex_id TEXT UNIQUE,
       lesson_id TEXT UNIQUE NOT NULL,
       is_completed INTEGER NOT NULL DEFAULT 1,
-      completed_at INTEGER NOT NULL
+      completed_at INTEGER NOT NULL,
+      sync_status TEXT NOT NULL DEFAULT 'pending_sync'
     );
   `);
+
+  // Migration fallbacks for existing local SQLite databases
+  try {
+    expoDb.execSync(`ALTER TABLE lesson_progress ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'pending_sync';`);
+  } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE lesson_progress ADD COLUMN convex_id TEXT;`);
+  } catch {}
 
   return drizzle(expoDb, { schema });
 }

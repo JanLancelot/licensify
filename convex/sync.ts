@@ -9,8 +9,12 @@ async function hashAnswer(questionId: string, choiceId: string): Promise<string>
   const encoder = new TextEncoder();
   const data = encoder.encode(`${questionId}:${choiceId}`);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  const bytes = new Uint8Array(hashBuffer);
+  let hex = "";
+  for (let i = 0; i < bytes.length; i++) {
+    hex += (bytes[i] < 16 ? "0" : "") + bytes[i].toString(16);
+  }
+  return hex;
 }
 
 /**
@@ -23,6 +27,7 @@ export const getSyncBundle = query({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    const user = await getCurrentUser(ctx);
 
     // 1. Fetch all published entities across tables concurrently
     const [
@@ -34,6 +39,7 @@ export const getSyncBundle = query({
       rawFlashcards,
       rawQuestions,
       rawQuizzes,
+      rawLessonProgress,
     ] = await Promise.all([
       ctx.db.query("subjects").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
       ctx.db.query("branches").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
@@ -43,6 +49,9 @@ export const getSyncBundle = query({
       ctx.db.query("flashcards").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
       ctx.db.query("questions").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
       ctx.db.query("quizzes").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
+      user
+        ? ctx.db.query("lessonProgress").withIndex("by_user", (q) => q.eq("userId", user._id)).collect()
+        : Promise.resolve([]),
     ]);
 
     // 2. Check for Delta Sync: If sinceTimestamp is provided and nothing was modified, return early
@@ -59,7 +68,8 @@ export const getSyncBundle = query({
         rawMaterials.some(isEntityUpdated) ||
         rawFlashcards.some(isEntityUpdated) ||
         rawQuestions.some(isEntityUpdated) ||
-        rawQuizzes.some(isEntityUpdated);
+        rawQuizzes.some(isEntityUpdated) ||
+        rawLessonProgress.some((lp: any) => (lp.updatedAt ?? lp._creationTime) > since);
 
       if (!hasUpdates) {
         return {
@@ -73,6 +83,7 @@ export const getSyncBundle = query({
           flashcards: [],
           questions: [],
           quizzes: [],
+          lessonProgress: [],
         };
       }
     }
@@ -174,6 +185,13 @@ export const getSyncBundle = query({
       passingScore: qz.passingScore,
     }));
 
+    const lessonProgress = rawLessonProgress.map((lp) => ({
+      id: lp._id,
+      lessonId: lp.lessonId,
+      isCompleted: lp.isCompleted,
+      completedAt: lp.completedAt,
+    }));
+
     return {
       upToDate: false,
       timestamp: now,
@@ -185,6 +203,7 @@ export const getSyncBundle = query({
       flashcards,
       questions,
       quizzes,
+      lessonProgress,
     };
   },
 });
@@ -198,7 +217,7 @@ export const syncAttemptsBatch = mutation({
     attempts: v.array(
       v.object({
         localId: v.string(),
-        quizId: v.id("quizzes"),
+        quizId: v.string(),
         status: v.union(v.literal("in_progress"), v.literal("submitted"), v.literal("expired")),
         score: v.optional(v.number()),
         correctAnswers: v.optional(v.number()),
@@ -221,10 +240,30 @@ export const syncAttemptsBatch = mutation({
       return { synced: [] };
     }
 
+    // Safety guard against exceeding Convex write limit (16k writes)
+    const attemptsToProcess = args.attempts.slice(0, 50);
     const synced: Array<{ localId: string; serverId: string }> = [];
 
-    for (const attempt of args.attempts) {
-      // 1. Insert Attempt
+    // 1. Pre-fetch all referenced questions across all attempts in parallel to avoid slow sequential DB round-trips
+    const questionIdSet = new Set<string>();
+    for (const attempt of attemptsToProcess) {
+      for (const ans of attempt.answers) {
+        if (ans.selectedChoiceId) {
+          questionIdSet.add(ans.questionId);
+        }
+      }
+    }
+
+    const questionDocs = await Promise.all(
+      Array.from(questionIdSet).map(async (qId) => {
+        const doc = await ctx.db.get(qId as import("./_generated/dataModel").Id<"questions">);
+        return [qId, doc] as const;
+      })
+    );
+    const questionMap = new Map(questionDocs);
+
+    for (const attempt of attemptsToProcess) {
+      // 2. Insert Attempt
       const attemptId = await ctx.db.insert("quizAttempts", {
         userId: user._id,
         quizId: attempt.quizId,
@@ -236,12 +275,12 @@ export const syncAttemptsBatch = mutation({
         submittedAt: attempt.submittedAt,
       });
 
-      // 2. Insert and grade answers
+      // 3. Insert and grade answers with instant in-memory lookup
       let calculatedCorrect = 0;
       for (const ans of attempt.answers) {
         let isCorrect: boolean | undefined = undefined;
         if (ans.selectedChoiceId) {
-          const qDoc = await ctx.db.get(ans.questionId);
+          const qDoc = questionMap.get(ans.questionId);
           if (qDoc) {
             isCorrect = qDoc.correctChoiceId === ans.selectedChoiceId;
             if (isCorrect) calculatedCorrect++;
@@ -257,7 +296,7 @@ export const syncAttemptsBatch = mutation({
         });
       }
 
-      // 3. Finalize score on server if submitted
+      // 4. Finalize score on server if submitted
       if (attempt.status === "submitted") {
         const total = attempt.totalQuestions > 0 ? attempt.totalQuestions : 1;
         const finalScore = Math.round((calculatedCorrect / total) * 100);
@@ -270,6 +309,64 @@ export const syncAttemptsBatch = mutation({
       synced.push({
         localId: attempt.localId,
         serverId: attemptId,
+      });
+    }
+
+    return { synced };
+  },
+});
+
+/**
+ * Batch up-sync mutation for lesson progress.
+ */
+export const syncLessonProgressBatch = mutation({
+  args: {
+    progress: v.array(
+      v.object({
+        lessonId: v.string(),
+        isCompleted: v.boolean(),
+        completedAt: v.number(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return { synced: [] };
+    }
+
+    const synced = [];
+
+    for (const p of args.progress) {
+      // Find existing progress record
+      const existing = await ctx.db
+        .query("lessonProgress")
+        .withIndex("by_user_and_lesson", (q) =>
+          q.eq("userId", user._id).eq("lessonId", p.lessonId)
+        )
+        .first();
+
+      let serverId;
+      if (existing) {
+        serverId = existing._id;
+        await ctx.db.patch(existing._id, {
+          isCompleted: p.isCompleted,
+          completedAt: p.completedAt,
+          updatedAt: Date.now(),
+        });
+      } else {
+        serverId = await ctx.db.insert("lessonProgress", {
+          userId: user._id,
+          lessonId: p.lessonId,
+          isCompleted: p.isCompleted,
+          completedAt: p.completedAt,
+          updatedAt: Date.now(),
+        });
+      }
+
+      synced.push({
+        lessonId: p.lessonId,
+        serverId,
       });
     }
 

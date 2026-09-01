@@ -1,6 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform, useColorScheme as useDeviceColorScheme } from 'react-native';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import {
   AccentThemeKey,
   ACCENT_THEMES,
@@ -34,6 +36,26 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const deviceColorScheme = useDeviceColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [accentTheme, setAccentThemeState] = useState<AccentThemeKey>('terracotta');
+
+  // Convex Cloud integration
+  const userProfile = useQuery(api.users.getCurrentUserProfile);
+  const updateThemeMutation = useMutation(api.users.updateThemeSettings);
+
+  // Apply remote cloud theme preferences when user logs in or profile syncs
+  useEffect(() => {
+    if (!userProfile) return;
+    const mode = userProfile.themeMode;
+    const accent = userProfile.accentTheme;
+
+    queueMicrotask(() => {
+      if (mode && (mode === 'system' || mode === 'light' || mode === 'dark')) {
+        setThemeModeState((prev) => (prev !== mode ? (mode as ThemeMode) : prev));
+      }
+      if (accent && ACCENT_THEMES[accent as AccentThemeKey]) {
+        setAccentThemeState((prev) => (prev !== accent ? (accent as AccentThemeKey) : prev));
+      }
+    });
+  }, [userProfile]);
 
   // Load persisted theme and accent preferences on start
   useEffect(() => {
@@ -83,6 +105,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         SecureStore.setItemAsync('app_theme_mode', mode);
       }
     } catch {}
+
+    // Async sync to Convex Cloud (safe check)
+    try {
+      updateThemeMutation({ themeMode: mode }).catch(() => {});
+    } catch {}
   };
 
   const setAccentTheme = (themeKey: AccentThemeKey) => {
@@ -95,6 +122,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       } else {
         SecureStore.setItemAsync('app_accent_theme', themeKey);
       }
+    } catch {}
+
+    // Async sync to Convex Cloud (safe check)
+    try {
+      updateThemeMutation({ accentTheme: themeKey }).catch(() => {});
     } catch {}
   };
 

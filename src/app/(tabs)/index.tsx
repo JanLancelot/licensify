@@ -127,7 +127,7 @@ export default function HomeScreen() {
     }
 
     return collected.slice(0, 10);
-  }, [curriculum]);
+  }, [curriculum, completedLessonIds]);
 
   const displayedLessons = useMemo(() => {
     return showAllLessons ? confidenceLessons : confidenceLessons.slice(0, 5);
