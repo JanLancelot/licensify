@@ -47,12 +47,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const mode = userProfile.themeMode;
     const accent = userProfile.accentTheme;
 
-    if (mode && (mode === 'system' || mode === 'light' || mode === 'dark')) {
-      setThemeModeState((prev) => (prev !== mode ? (mode as ThemeMode) : prev));
-    }
-    if (accent && ACCENT_THEMES[accent as AccentThemeKey]) {
-      setAccentThemeState((prev) => (prev !== accent ? (accent as AccentThemeKey) : prev));
-    }
+    queueMicrotask(() => {
+      if (mode && (mode === 'system' || mode === 'light' || mode === 'dark')) {
+        setThemeModeState((prev) => (prev !== mode ? (mode as ThemeMode) : prev));
+      }
+      if (accent && ACCENT_THEMES[accent as AccentThemeKey]) {
+        setAccentThemeState((prev) => (prev !== accent ? (accent as AccentThemeKey) : prev));
+      }
+    });
   }, [userProfile]);
 
   // Load persisted theme and accent preferences on start
