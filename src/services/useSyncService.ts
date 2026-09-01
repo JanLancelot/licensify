@@ -631,7 +631,7 @@ export function useSyncService() {
           .select()
           .from(schema.quizAnswers);
 
-        const answersByAttempt = new Map<string, Array<typeof allPendingAnswers[0]>>();
+        const answersByAttempt = new Map<string, (typeof allPendingAnswers[0])[]>();
         for (const ans of allPendingAnswers) {
           const list = answersByAttempt.get(ans.attemptId) || [];
           list.push(ans);
@@ -667,7 +667,7 @@ export function useSyncService() {
             const attemptChunk = validAttemptsToSync.slice(i, i + CHUNK_SIZE);
             const result = (await convex.mutation(api.sync.syncAttemptsBatch as any, {
               attempts: attemptChunk as any,
-            })) as { synced?: Array<{ localId: string; serverId: string }> };
+            })) as { synced?: { localId: string; serverId: string }[] };
 
             if (result && result.synced && result.synced.length > 0) {
               for (const item of result.synced) {
@@ -708,7 +708,7 @@ export function useSyncService() {
           const chunk = progressToSync.slice(i, i + CHUNK_SIZE);
           const result = (await convex.mutation(api.sync.syncLessonProgressBatch as any, {
             progress: chunk,
-          })) as { synced?: Array<{ lessonId: string; serverId: string }> };
+          })) as { synced?: { lessonId: string; serverId: string }[] };
 
           if (result && result.synced && result.synced.length > 0) {
             for (const item of result.synced) {

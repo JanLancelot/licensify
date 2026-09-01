@@ -841,8 +841,14 @@ export function useLessonProgress() {
   }, [fetchProgress]);
 
   useEffect(() => {
-    fetchProgress();
-    const unsubscribe = subscribeLessonProgressChanged(fetchProgress);
+    const handleProgressChange = () => {
+      queueMicrotask(() => {
+        fetchProgress();
+      });
+    };
+
+    handleProgressChange();
+    const unsubscribe = subscribeLessonProgressChanged(handleProgressChange);
     return () => {
       unsubscribe();
     };

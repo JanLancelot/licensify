@@ -43,15 +43,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Apply remote cloud theme preferences when user logs in or profile syncs
   useEffect(() => {
-    if (userProfile) {
-      if (userProfile.themeMode && (userProfile.themeMode === 'system' || userProfile.themeMode === 'light' || userProfile.themeMode === 'dark')) {
-        setThemeModeState(userProfile.themeMode as ThemeMode);
-      }
-      if (userProfile.accentTheme && ACCENT_THEMES[userProfile.accentTheme as AccentThemeKey]) {
-        setAccentThemeState(userProfile.accentTheme as AccentThemeKey);
-      }
+    if (!userProfile) return;
+    const mode = userProfile.themeMode;
+    const accent = userProfile.accentTheme;
+
+    if (mode && (mode === 'system' || mode === 'light' || mode === 'dark')) {
+      setThemeModeState((prev) => (prev !== mode ? (mode as ThemeMode) : prev));
     }
-  }, [userProfile?.themeMode, userProfile?.accentTheme]);
+    if (accent && ACCENT_THEMES[accent as AccentThemeKey]) {
+      setAccentThemeState((prev) => (prev !== accent ? (accent as AccentThemeKey) : prev));
+    }
+  }, [userProfile]);
 
   // Load persisted theme and accent preferences on start
   useEffect(() => {
