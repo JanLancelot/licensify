@@ -1,15 +1,19 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation, useQuery } from 'convex/react';
+import { Image as ExpoImage } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import {
   Award,
   Bell,
+  Camera,
   Check,
   CheckCircle2,
   ChevronRight,
   Cloud,
   Flame,
   HelpCircle,
+  Image as ImageIcon,
   Info,
   LogOut,
   Mail,
@@ -18,13 +22,14 @@ import {
   Smartphone,
   Star,
   Sun,
+  Trash2,
   Trophy,
   User,
   Volume2,
   X,
   Zap,
 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -43,79 +48,19 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ACCENT_THEME_LIST } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
+import { db } from '@/db/client';
+import * as schema from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { api } from '../../../convex/_generated/api';
+import { LocalAchievementItem, useLocalAchievements } from '@/hooks/useLocalData';
 import { useSyncService } from '@/services/useSyncService';
 
-// Preset Achievements for the Horizontal Box Carousel
-interface AchievementItem {
-  id: string;
-  title: string;
-  category: string;
+interface FormattedAchievementDisplay extends LocalAchievementItem {
   icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
   bg: string;
   darkBg: string;
   iconColor: string;
-  isUnlocked: boolean;
-  progressText: string;
 }
-
-const ACHIEVEMENTS: AchievementItem[] = [
-  {
-    id: 'ach_1',
-    title: 'Code Master',
-    category: 'Rule 7 & 8',
-    icon: Trophy,
-    bg: '#FEF3C7',
-    darkBg: 'rgba(245, 158, 11, 0.2)',
-    iconColor: '#D97706',
-    isUnlocked: true,
-    progressText: 'Unlocked',
-  },
-  {
-    id: 'ach_2',
-    title: 'Rapid Recall',
-    category: 'Flashcard Drills',
-    icon: Zap,
-    bg: '#EDE9FE',
-    darkBg: 'rgba(139, 92, 246, 0.2)',
-    iconColor: '#7C3AED',
-    isUnlocked: true,
-    progressText: 'Unlocked',
-  },
-  {
-    id: 'ach_3',
-    title: '14-Day Streak',
-    category: 'Consistency',
-    icon: Flame,
-    bg: '#FFEDD5',
-    darkBg: 'rgba(249, 115, 22, 0.2)',
-    iconColor: '#EA580C',
-    isUnlocked: true,
-    progressText: 'Unlocked',
-  },
-  {
-    id: 'ach_4',
-    title: 'Area 1 Specialist',
-    category: 'Mock Exam',
-    icon: Star,
-    bg: '#E0F2FE',
-    darkBg: 'rgba(14, 165, 233, 0.2)',
-    iconColor: '#0284C7',
-    isUnlocked: false,
-    progressText: '2/3 Done',
-  },
-  {
-    id: 'ach_5',
-    title: 'Perfectionist',
-    category: '100% Score',
-    icon: Award,
-    bg: '#FCE7F3',
-    darkBg: 'rgba(236, 72, 153, 0.2)',
-    iconColor: '#DB2777',
-    isUnlocked: false,
-    progressText: '1/5 Done',
-  },
-];
 
 /* Circular Pastel Icon Badge */
 function SettingPastelBadge({
@@ -179,10 +124,221 @@ export default function ProfileScreen() {
   // Sign out state
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // Settings switches
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [dailyReminder, setDailyReminder] = useState(true);
+  // Settings switches & Preferences - default to userProfile if present
+  const [localSoundEnabled, setLocalSoundEnabled] = useState<boolean | null>(null);
+  const [localDailyReminder, setLocalDailyReminder] = useState<boolean | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const soundEnabled = localSoundEnabled !== null ? localSoundEnabled : (userProfile?.soundEnabled ?? true);
+  const dailyReminder = localDailyReminder !== null ? localDailyReminder : (userProfile?.dailyReminder ?? true);
+
+  const currentUserId = userProfile?._id;
+  const { achievements: localAchievements } = useLocalAchievements(currentUserId);
+
+  const handleToggleSound = async (val: boolean) => {
+    setLocalSoundEnabled(val);
+    try {
+      await updateProfileMutation({ soundEnabled: val });
+    } catch (err) {
+      console.warn('Failed to update sound preference:', err);
+    }
+  };
+
+  const handleToggleReminder = async (val: boolean) => {
+    setLocalDailyReminder(val);
+    try {
+      await updateProfileMutation({ dailyReminder: val });
+    } catch (err) {
+      console.warn('Failed to update reminder preference:', err);
+    }
+  };
+
+  // Photo Picker & Upload states
+  const generateUploadUrlMutation = useMutation(api.users.generateProfileUploadUrl);
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const [isPhotoPickerVisible, setIsPhotoPickerVisible] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const displayAvatarUri = localAvatarUri || (userProfile as any)?.profileImageUrl || null;
+
+  const handlePickFromLibrary = async () => {
+    setIsPhotoPickerVisible(false);
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Permission to access your photos is required to choose a profile picture.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadProfilePhoto(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error('Error selecting image from library:', err);
+      Alert.alert('Error', 'Failed to pick image from library.');
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    setIsPhotoPickerVisible(false);
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Permission to access your camera is required to take a profile picture.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadProfilePhoto(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error('Error taking photo:', err);
+      Alert.alert('Error', 'Failed to capture photo.');
+    }
+  };
+
+  const uploadProfilePhoto = async (uri: string) => {
+    setLocalAvatarUri(uri);
+    setIsUploadingPhoto(true);
+    try {
+      const uploadUrl = await generateUploadUrlMutation();
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': blob.type || 'image/jpeg' },
+        body: blob,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`Upload failed with status ${uploadRes.status}`);
+      }
+
+      const { storageId } = await uploadRes.json();
+      await updateProfileMutation({ profileImageId: storageId });
+
+      try {
+        if (currentUserId) {
+          await db
+            .update(schema.users)
+            .set({ profileImageId: storageId, profileImageUrl: uri })
+            .where(eq(schema.users.userId, currentUserId));
+        }
+      } catch (dbErr) {
+        console.warn('Could not cache avatar locally in SQLite:', dbErr);
+      }
+
+      Alert.alert('Success', 'Profile photo updated successfully!');
+    } catch (err) {
+      console.error('Failed to upload profile photo:', err);
+      Alert.alert('Upload Failed', 'Could not upload your profile photo. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setIsPhotoPickerVisible(false);
+    const confirmRemove = async () => {
+      setIsUploadingPhoto(true);
+      setLocalAvatarUri(null);
+      try {
+        await updateProfileMutation({ profileImageId: null });
+        if (currentUserId) {
+          try {
+            await db
+              .update(schema.users)
+              .set({ profileImageId: null, profileImageUrl: null })
+              .where(eq(schema.users.userId, currentUserId));
+          } catch {}
+        }
+        Alert.alert('Success', 'Profile photo removed.');
+      } catch (err) {
+        console.error('Failed to remove profile photo:', err);
+        Alert.alert('Error', 'Failed to remove profile photo.');
+      } finally {
+        setIsUploadingPhoto(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Remove your profile photo?')) {
+        confirmRemove();
+      }
+    } else {
+      Alert.alert(
+        'Remove Photo',
+        'Are you sure you want to remove your profile photo?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: confirmRemove },
+        ]
+      );
+    }
+  };
+
+  const displayedAchievements = useMemo<FormattedAchievementDisplay[]>(() => {
+    return localAchievements.map((ach) => {
+      let Icon = Trophy;
+      let bg = ach.bg || '#FEF3C7';
+      let darkBg = ach.darkBg || 'rgba(245, 158, 11, 0.2)';
+      let iconColor = ach.iconColor || '#D97706';
+
+      const iconLower = (ach.iconName || '').toLowerCase();
+      const catLower = (ach.category || '').toLowerCase();
+      const titleLower = (ach.title || '').toLowerCase();
+
+      if (iconLower.includes('zap') || catLower.includes('flashcard')) {
+        Icon = Zap;
+        bg = '#EDE9FE';
+        darkBg = 'rgba(139, 92, 246, 0.2)';
+        iconColor = '#7C3AED';
+      } else if (iconLower.includes('flame') || catLower.includes('streak') || titleLower.includes('flame')) {
+        Icon = Flame;
+        bg = '#FFEDD5';
+        darkBg = 'rgba(249, 115, 22, 0.2)';
+        iconColor = '#EA580C';
+      } else if (iconLower.includes('star') || catLower.includes('exam') || titleLower.includes('specialist')) {
+        Icon = Star;
+        bg = '#E0F2FE';
+        darkBg = 'rgba(14, 165, 233, 0.2)';
+        iconColor = '#0284C7';
+      } else if (iconLower.includes('award') || catLower.includes('score') || titleLower.includes('champion')) {
+        Icon = Award;
+        bg = '#FCE7F3';
+        darkBg = 'rgba(236, 72, 153, 0.2)';
+        iconColor = '#DB2777';
+      }
+
+      return {
+        ...ach,
+        icon: Icon,
+        bg,
+        darkBg,
+        iconColor,
+      };
+    });
+  }, [localAchievements]);
 
   const themeOptions: { mode: ThemeMode; label: string; icon: typeof Sun }[] = [
     { mode: 'system', label: 'System', icon: Smartphone },
@@ -273,17 +429,39 @@ export default function ProfileScreen() {
         ]}>
         {/* 2. CLEAN PROFILE HEADER SECTION (No Purple Box) */}
         <View style={styles.profileHeaderSection}>
-          {/* Centered Circular Avatar Icon */}
-          <View
-            style={[
+          {/* Centered Circular Avatar Icon with Camera Badge */}
+          <Pressable
+            onPress={() => setIsPhotoPickerVisible(true)}
+            disabled={isUploadingPhoto}
+            style={({ pressed }) => [
               styles.avatarWrapper,
               {
                 backgroundColor: colors.accentMuted,
                 borderColor: colors.accentBorder,
+                opacity: pressed ? 0.85 : 1,
               },
             ]}>
-            <User size={40} color={colors.accent} strokeWidth={2.3} />
-          </View>
+            {displayAvatarUri ? (
+              <ExpoImage
+                source={{ uri: displayAvatarUri }}
+                style={styles.avatarImage}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <User size={40} color={colors.accent} strokeWidth={2.3} />
+            )}
+
+            {isUploadingPhoto && (
+              <View style={styles.avatarUploadingOverlay}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              </View>
+            )}
+
+            <View style={[styles.cameraBadge, { backgroundColor: colors.accent }]}>
+              <Camera size={13} color="#FFFFFF" strokeWidth={2.4} />
+            </View>
+          </Pressable>
 
           {/* Profile Name */}
           <Text style={[styles.profileName, { color: colors.text }]}>
@@ -340,7 +518,24 @@ export default function ProfileScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.achievementsScroll}>
-            {ACHIEVEMENTS.map((item) => {
+            {displayedAchievements.length === 0 ? (
+              <View
+                style={[
+                  styles.achievementBoxCard,
+                  {
+                    width: 200,
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                    justifyContent: 'center',
+                    padding: 14,
+                  },
+                ]}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12.5, textAlign: 'center' }}>
+                  No achievements recorded yet. Tap Cloud Backup to sync.
+                </Text>
+              </View>
+            ) : (
+              displayedAchievements.map((item: FormattedAchievementDisplay) => {
               const IconComp = item.icon;
 
               return (
@@ -402,7 +597,7 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               );
-            })}
+            }))}
           </ScrollView>
         </View>
 
@@ -535,7 +730,7 @@ export default function ProfileScreen() {
               </Text>
               <Switch
                 value={soundEnabled}
-                onValueChange={setSoundEnabled}
+                onValueChange={handleToggleSound}
                 trackColor={{ false: isDark ? '#374151' : '#D1D5DB', true: colors.accent }}
                 thumbColor="#FFFFFF"
               />
@@ -557,7 +752,7 @@ export default function ProfileScreen() {
               </Text>
               <Switch
                 value={dailyReminder}
-                onValueChange={setDailyReminder}
+                onValueChange={handleToggleReminder}
                 trackColor={{ false: isDark ? '#374151' : '#D1D5DB', true: colors.accent }}
                 thumbColor="#FFFFFF"
               />
@@ -700,6 +895,51 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.modalForm}>
+              {/* Avatar Preview & Quick Change */}
+              <View style={styles.editAvatarSection}>
+                <Pressable
+                  onPress={() => setIsPhotoPickerVisible(true)}
+                  disabled={isUploadingPhoto}
+                  style={({ pressed }) => [
+                    styles.editAvatarWrapper,
+                    {
+                      backgroundColor: colors.accentMuted,
+                      borderColor: colors.accentBorder,
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}>
+                  {displayAvatarUri ? (
+                    <ExpoImage
+                      source={{ uri: displayAvatarUri }}
+                      style={styles.avatarImage}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  ) : (
+                    <User size={36} color={colors.accent} strokeWidth={2.3} />
+                  )}
+
+                  {isUploadingPhoto && (
+                    <View style={styles.avatarUploadingOverlay}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    </View>
+                  )}
+
+                  <View style={[styles.editCameraBadge, { backgroundColor: colors.accent }]}>
+                    <Camera size={12} color="#FFFFFF" strokeWidth={2.4} />
+                  </View>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setIsPhotoPickerVisible(true)}
+                  disabled={isUploadingPhoto}
+                  hitSlop={8}>
+                  <Text style={[styles.changePhotoText, { color: colors.accent }]}>
+                    {displayAvatarUri ? 'Change Photo' : 'Upload Photo'}
+                  </Text>
+                </Pressable>
+              </View>
+
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Full Name</Text>
                 <TextInput
@@ -754,6 +994,121 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      {/* PHOTO PICKER ACTION SHEET MODAL */}
+      <Modal visible={isPhotoPickerVisible} transparent animationType="fade">
+        <Pressable
+          style={styles.actionSheetBackdrop}
+          onPress={() => setIsPhotoPickerVisible(false)}>
+          <View
+            style={[
+              styles.actionSheetBox,
+              { backgroundColor: isDark ? '#1C1F26' : '#FFFFFF' },
+            ]}
+            onStartShouldSetResponder={() => true}>
+            <View style={styles.actionSheetHeader}>
+              <Text style={[styles.actionSheetTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                Profile Photo
+              </Text>
+              <Text style={[styles.actionSheetSubtitle, { color: colors.textSecondary }]}>
+                Choose how you would like to update your avatar
+              </Text>
+            </View>
+
+            <View style={styles.actionSheetOptions}>
+              {/* Take Photo */}
+              <Pressable
+                onPress={handleTakePhoto}
+                style={({ pressed }) => [
+                  styles.actionSheetRow,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6',
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}>
+                <View style={[styles.actionOptionIconCircle, { backgroundColor: isDark ? 'rgba(2, 132, 199, 0.2)' : '#E0F2FE' }]}>
+                  <Camera size={20} color="#0284C7" strokeWidth={2.2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.actionOptionTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Take Photo
+                  </Text>
+                  <Text style={[styles.actionOptionDesc, { color: colors.textSecondary }]}>
+                    Use your device camera
+                  </Text>
+                </View>
+              </Pressable>
+
+              {/* Choose from Library */}
+              <Pressable
+                onPress={handlePickFromLibrary}
+                style={({ pressed }) => [
+                  styles.actionSheetRow,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6',
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}>
+                <View style={[styles.actionOptionIconCircle, { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE' }]}>
+                  <ImageIcon size={20} color="#7C3AED" strokeWidth={2.2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.actionOptionTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Choose from Gallery
+                  </Text>
+                  <Text style={[styles.actionOptionDesc, { color: colors.textSecondary }]}>
+                    Select an image from photo library
+                  </Text>
+                </View>
+              </Pressable>
+
+              {/* Remove Photo */}
+              {displayAvatarUri && (
+                <Pressable
+                  onPress={handleRemovePhoto}
+                  style={({ pressed }) => [
+                    styles.actionSheetRow,
+                    {
+                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
+                      borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}>
+                  <View style={[styles.actionOptionIconCircle, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2' }]}>
+                    <Trash2 size={20} color="#EF4444" strokeWidth={2.2} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.actionOptionTitle, { color: '#EF4444' }]}>
+                      Remove Current Photo
+                    </Text>
+                    <Text style={[styles.actionOptionDesc, { color: colors.textSecondary }]}>
+                      Reset to default avatar icon
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+            </View>
+
+            {/* Cancel Button */}
+            <Pressable
+              onPress={() => setIsPhotoPickerVisible(false)}
+              style={({ pressed }) => [
+                styles.actionSheetCancelBtn,
+                {
+                  backgroundColor: isDark ? '#23262F' : '#F3F4F6',
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E5E7EB',
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}>
+              <Text style={[styles.actionSheetCancelText, { color: colors.text }]}>
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
       {/* SEE ALL ACHIEVEMENTS MODAL */}
       <Modal visible={isSeeAllAchievementsVisible} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
@@ -776,18 +1131,25 @@ export default function ProfileScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
               <View style={styles.seeAllList}>
-                {ACHIEVEMENTS.map((item) => {
-                  const IconComp = item.icon;
-                  return (
-                    <View
-                      key={item.id}
-                      style={[
-                        styles.seeAllItemRow,
-                        {
-                          backgroundColor: isDark ? '#23262F' : '#F9FAFB',
-                          borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                        },
-                      ]}>
+                {displayedAchievements.length === 0 ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>
+                      No achievements synced yet. Use Cloud Backup to sync.
+                    </Text>
+                  </View>
+                ) : (
+                  displayedAchievements.map((item: FormattedAchievementDisplay) => {
+                    const IconComp = item.icon;
+                    return (
+                      <View
+                        key={item.id}
+                        style={[
+                          styles.seeAllItemRow,
+                          {
+                            backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                          },
+                        ]}>
                       <View
                         style={[
                           styles.achieveIconCircle,
@@ -840,7 +1202,7 @@ export default function ProfileScreen() {
                       </View>
                     </View>
                   );
-                })}
+                }))}
               </View>
             </ScrollView>
           </View>
@@ -988,13 +1350,146 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   avatarWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+    position: 'relative',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 42,
+  },
+  avatarUploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 42,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    zIndex: 3,
+  },
+  editAvatarSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  editAvatarWrapper: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  editCameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    elevation: 2,
+  },
+  changePhotoText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  actionSheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  actionSheetBox: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    gap: 16,
+  },
+  actionSheetHeader: {
+    gap: 4,
+    paddingBottom: 4,
+  },
+  actionSheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  actionSheetSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  actionSheetOptions: {
+    gap: 10,
+  },
+  actionSheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 14,
+  },
+  actionOptionIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionOptionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  actionOptionDesc: {
+    fontSize: 12.5,
+    fontWeight: '500',
+  },
+  actionSheetCancelBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  actionSheetCancelText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
   profileName: {
     fontSize: 20,

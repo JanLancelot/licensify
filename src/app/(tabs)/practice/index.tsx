@@ -26,7 +26,7 @@ import {
   QuizLauncherModal,
 } from '@/components/practice/QuizLauncherModal';
 import { useAppTheme } from '@/context/theme-context';
-import { useLocalHierarchy } from '@/hooks/useLocalData';
+import { useLocalHierarchy, useLocalQuizzes } from '@/hooks/useLocalData';
 import { useQuizPresets } from '@/services/quizPresetStore';
 import { FlashcardPreset, QuizPreset } from '@/types/curriculum';
 
@@ -73,6 +73,10 @@ export default function PracticeScreen() {
   const router = useRouter();
 
   const { curriculum, refetch: refetchCurriculum } = useLocalHierarchy();
+  const { quizzes: specializedQuizzes, refetch: refetchSpecialized } = useLocalQuizzes({
+    type: 'practice',
+    specializedType: 'developmental_control',
+  });
   const {
     presets: quizPresets,
     deletePreset,
@@ -84,7 +88,8 @@ export default function PracticeScreen() {
   useFocusEffect(
     useCallback(() => {
       refetchCurriculum?.();
-    }, [refetchCurriculum])
+      refetchSpecialized?.();
+    }, [refetchCurriculum, refetchSpecialized])
   );
 
   // Flashcards Selection Modal State
@@ -149,12 +154,13 @@ export default function PracticeScreen() {
   };
 
   // Launch modal for specialized computation set
-  const handleSelectSpecializedSet = () => {
+  const handleSelectSpecializedSet = (quiz?: (typeof specializedQuizzes)[0]) => {
     setActiveQuizTarget({
-      quizTitle: 'Developmental control computation set',
-      quizSubtitle: 'NBCP Rule 7 & 8 • Floor Area, Height Limit & Setbacks',
-      specializedType: 'developmental_control',
-      initialTimerSeconds: 30,
+      quizTitle: quiz?.title || 'Developmental control computation set',
+      quizSubtitle: quiz?.description || 'NBCP Rule 7 & 8 • Floor Area, Height Limit & Setbacks',
+      specializedType: quiz?.specializedType || 'developmental_control',
+      subjectId: quiz?.subjectId || undefined,
+      initialTimerSeconds: quiz?.timeLimitSeconds ? Math.round(quiz.timeLimitSeconds / 60) : 30,
       initialQuestionCount: 10,
     });
   };
@@ -399,73 +405,97 @@ export default function PracticeScreen() {
             </Text>
           </View>
 
-          {/* Single-Line Block Matching Premade Quiz Sets Design */}
-          <View
-            style={[
-              styles.subjectCardBox,
-              {
-                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                borderColor: isDark
-                  ? 'rgba(255, 255, 255, 0.07)'
-                  : 'rgba(0, 0, 0, 0.05)',
-              },
-            ]}>
-            <Pressable
-              onPress={handleSelectSpecializedSet}
-              style={({ pressed }) => [
-                styles.subjectHeader,
-                {
-                  backgroundColor: pressed
-                    ? isDark
-                      ? 'rgba(255, 255, 255, 0.04)'
-                      : 'rgba(0, 0, 0, 0.02)'
-                    : 'transparent',
-                },
-              ]}>
-              {/* Circular Pastel Icon Box */}
+          {/* Dynamic List Matching Premade Quiz Sets Design */}
+          <View style={styles.listContainer}>
+            {specializedQuizzes && specializedQuizzes.length > 0 ? (
+              specializedQuizzes.map((quiz) => (
+                <View
+                  key={quiz.id}
+                  style={[
+                    styles.subjectCardBox,
+                    {
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                      borderColor: isDark
+                        ? 'rgba(255, 255, 255, 0.07)'
+                        : 'rgba(0, 0, 0, 0.05)',
+                    },
+                  ]}>
+                  <Pressable
+                    onPress={() => handleSelectSpecializedSet(quiz)}
+                    style={({ pressed }) => [
+                      styles.subjectHeader,
+                      {
+                        backgroundColor: pressed
+                          ? isDark
+                            ? 'rgba(255, 255, 255, 0.04)'
+                            : 'rgba(0, 0, 0, 0.02)'
+                          : 'transparent',
+                      },
+                    ]}>
+                    {/* Circular Pastel Icon Box */}
+                    <View
+                      style={[
+                        styles.subjectIconBox,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(14, 165, 233, 0.22)'
+                            : '#E0F2FE',
+                        },
+                      ]}>
+                      <Calculator
+                        size={20}
+                        color={isDark ? '#7DD3FC' : '#0284C7'}
+                        strokeWidth={2.2}
+                      />
+                    </View>
+
+                    {/* Title */}
+                    <Text
+                      numberOfLines={2}
+                      style={[
+                        styles.subjectTitle,
+                        { color: isDark ? '#F9FAFB' : '#111827' },
+                      ]}>
+                      {quiz.title}
+                    </Text>
+
+                    {/* Quick Play Button */}
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleSelectSpecializedSet(quiz);
+                      }}
+                      hitSlop={8}
+                      style={({ pressed }) => [
+                        styles.quickSubjectPlayBtn,
+                        {
+                          backgroundColor: colors.accentMuted,
+                          opacity: pressed ? 0.7 : 1,
+                        },
+                      ]}>
+                      <Play size={12} color={colors.accent} fill={colors.accent} />
+                    </Pressable>
+                  </Pressable>
+                </View>
+              ))
+            ) : (
               <View
                 style={[
-                  styles.subjectIconBox,
+                  styles.subjectCardBox,
                   {
-                    backgroundColor: isDark
-                      ? 'rgba(14, 165, 233, 0.22)'
-                      : '#E0F2FE',
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                    borderColor: isDark
+                      ? 'rgba(255, 255, 255, 0.07)'
+                      : 'rgba(0, 0, 0, 0.05)',
+                    padding: 16,
+                    alignItems: 'center',
                   },
                 ]}>
-                <Calculator
-                  size={20}
-                  color={isDark ? '#7DD3FC' : '#0284C7'}
-                  strokeWidth={2.2}
-                />
+                <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500' }}>
+                  No specialized computation drills found. Sync your data to download drills.
+                </Text>
               </View>
-
-              {/* Title */}
-              <Text
-                numberOfLines={2}
-                style={[
-                  styles.subjectTitle,
-                  { color: isDark ? '#F9FAFB' : '#111827' },
-                ]}>
-                Developmental control computation set
-              </Text>
-
-              {/* Quick Play Button */}
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleSelectSpecializedSet();
-                }}
-                hitSlop={8}
-                style={({ pressed }) => [
-                  styles.quickSubjectPlayBtn,
-                  {
-                    backgroundColor: colors.accentMuted,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}>
-                <Play size={12} color={colors.accent} fill={colors.accent} />
-              </Pressable>
-            </Pressable>
+            )}
           </View>
         </View>
       </ScrollView>

@@ -164,6 +164,60 @@ function initDatabase() {
       completed_at INTEGER NOT NULL,
       sync_status TEXT NOT NULL DEFAULT 'pending_sync'
     );
+
+    CREATE TABLE IF NOT EXISTS user_presets (
+      id TEXT PRIMARY KEY,
+      convex_id TEXT UNIQUE,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      icon_name TEXT,
+      lesson_ids TEXT NOT NULL,
+      subject_names TEXT,
+      question_count INTEGER,
+      time_limit_seconds INTEGER,
+      is_shuffled INTEGER DEFAULT 0,
+      sync_status TEXT NOT NULL DEFAULT 'pending_sync',
+      created_at INTEGER,
+      updated_at INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS achievements (
+      id TEXT PRIMARY KEY,
+      convex_id TEXT UNIQUE,
+      title TEXT NOT NULL,
+      category TEXT NOT NULL,
+      description TEXT NOT NULL,
+      icon_name TEXT NOT NULL,
+      bg TEXT,
+      dark_bg TEXT,
+      icon_color TEXT,
+      criteria_type TEXT NOT NULL,
+      target_value INTEGER NOT NULL,
+      "order" INTEGER NOT NULL DEFAULT 0,
+      is_published INTEGER NOT NULL DEFAULT 1
+    );
+
+    CREATE TABLE IF NOT EXISTS user_achievements (
+      id TEXT PRIMARY KEY,
+      convex_id TEXT UNIQUE,
+      user_id TEXT NOT NULL,
+      achievement_id TEXT NOT NULL,
+      progress INTEGER NOT NULL DEFAULT 0,
+      is_unlocked INTEGER NOT NULL DEFAULT 0,
+      unlocked_at INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'pending_sync'
+    );
+
+    CREATE TABLE IF NOT EXISTS user_streaks (
+      id TEXT PRIMARY KEY,
+      convex_id TEXT UNIQUE,
+      user_id TEXT UNIQUE NOT NULL,
+      current_streak INTEGER NOT NULL DEFAULT 0,
+      longest_streak INTEGER NOT NULL DEFAULT 0,
+      last_active_date TEXT NOT NULL,
+      sync_status TEXT NOT NULL DEFAULT 'pending_sync'
+    );
   `);
 
   // Migration fallbacks for existing local SQLite databases
@@ -172,6 +226,24 @@ function initDatabase() {
   } catch {}
   try {
     expoDb.execSync(`ALTER TABLE lesson_progress ADD COLUMN convex_id TEXT;`);
+  } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE questions ADD COLUMN specialized_type TEXT;`);
+  } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE quizzes ADD COLUMN specialized_type TEXT;`);
+  } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE users ADD COLUMN sound_enabled INTEGER DEFAULT 1;`);
+  } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE users ADD COLUMN daily_reminder INTEGER DEFAULT 1;`);
+  } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE users ADD COLUMN profile_image_id TEXT;`);
+  } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE users ADD COLUMN profile_image_url TEXT;`);
   } catch {}
 
   return drizzle(expoDb, { schema });

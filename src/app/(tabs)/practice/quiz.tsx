@@ -27,8 +27,10 @@ import Svg, {
 } from 'react-native-svg';
 import * as crypto from 'expo-crypto';
 
+import { useQuery } from 'convex/react';
 import { useAppTheme } from '@/context/theme-context';
 import { useLocalQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
+import { api } from '../../../../convex/_generated/api';
 
 interface FormattedQuestion {
   id: string;
@@ -60,11 +62,14 @@ export default function PracticeQuizScreen() {
   const count = parseInt(params.count || '10', 10);
   const timerLimit = parseInt(params.timer || '0', 10); // 0 = untimed
   const customTitle = params.title;
+  const userProfile = useQuery(api.users.getCurrentUserProfile);
+  const currentUserId = userProfile?._id || 'local-student-1';
 
   const { questions: dbQuestions, loading, refetch } = useLocalQuestions({
     subjectId: selectedArea === 'all' ? undefined : selectedArea,
     topicId: params.topicId,
     difficulty: params.difficulty,
+    specializedType: params.specializedType,
     count,
   });
 
@@ -264,7 +269,7 @@ export default function PracticeQuizScreen() {
       // Persist attempt to SQLite and trigger sync
       try {
         const quizId = (!selectedArea || selectedArea === 'all') ? 'all-modular' : selectedArea;
-        await submitLocalAttempt('local-student-1', quizId, recordedAnswers);
+        await submitLocalAttempt(currentUserId, quizId, recordedAnswers);
       } catch (err) {
         console.warn('Failed to record attempt:', err);
       }

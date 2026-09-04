@@ -42,45 +42,46 @@ Licensify uses a **Local-First Data Flow**:
 ## 4. Core Features & Screens
 
 ### 📊 Dashboard (`/app/(tabs)/index.tsx`)
-- **Overall Readiness:** Displays a calculated readiness score and progress bar based on local quiz attempts.
-- **Key Statistics:** Live metrics for Total Study Time, Questions Answered, and Accuracy.
-- **Recommended Subjects:** Dynamically suggests curriculum areas based on the local database.
-- **Recent Activity:** A chronologically sorted feed of the user's latest practice quiz and mock exam attempts.
+- **Live Streak & Milestone:** Flame card bound to real consecutive study days; milestone voucher unlock progress bar.
+- **Confidence Rate:** Dynamically calculates topic confidence from student quiz attempt scores and lesson completion.
+- **Continue Learning:** Pulls active curriculum progress directly from SQLite `lessonProgress`.
 
 ### 📚 Learn / Curriculum (`/app/(tabs)/learn`)
-- **Study Notes:** Organized documentation and syllabus covering ALE Area 1, 2, and 3.
-- **Curriculum Stats:** Live counts of available Subjects, Modules, and Lessons stored in the local DB.
-- **Flashcards:** Spaced repetition decks for rapid memorization of architectural styles, laws, and utility standards.
+- **Study Notes:** 3-tier hierarchy (Subjects, Topics, Lessons) loaded from SQLite with markdown bullet points from `materials`.
+- **Flashcards:** Custom and lesson-linked flashcard decks with persistent user configurations.
 
 ### 🎮 Practice Arena (`/app/(tabs)/practice`)
-- **Configurable Quiz Launcher:** Users can customize their drill by selecting:
-  - Subject Area (All, Area 1, Area 2, Area 3)
-  - Difficulty Level (Easy, Medium, Hard)
-  - Question Count (5, 10, 20)
-- **Practice History:** A historical log of past attempts, showing scores, topics, and timestamps.
+- **Configurable Quiz Launcher:** Custom item count, timer, and syllabus topic filters.
+- **Specialized Drills:** NBCP Rule 7 & 8 Developmental Control drills (`specializedType = 'developmental_control'`).
+
+### 🏛️ Exams Hub (`/app/(tabs)/exams`)
+- **Comprehensive Mock Sets:** 100, 150, and 200-item mock exam simulations with timer countdowns and offline cryptographic answer verification.
 
 ### 👤 Profile & Settings (`/app/(tabs)/profile.tsx`)
-- **Study Streak:** Calculates consecutive days of study activity.
-- **Manual Sync:** A forced trigger to push/pull data from Convex.
-- **Database Debugger:** A developer tool (`/debug-sqlite`) to view local SQLite tables, execute raw queries, and seed mock data.
-- **Settings:** Controls for dark mode, notifications, and analytics resets.
+- **Achievements:** Gamified achievement carousel and modal evaluating live criteria (perfect scores, streak days, drills completed).
+- **Settings Persistence:** Sound and daily reminder switches persisted to Convex profile and local state.
+- **Cloud Backup & Sync:** Manual sync trigger with live status indicators.
 
 ---
 
 ## 5. Database Schema
-The schema is defined in Drizzle (`src/db/schema.ts`) and mirrored in Convex:
+The schema is defined in Drizzle (`src/db/schema.ts`) and mirrored in Convex (`convex/schema.ts`):
 
 - **Curriculum Tables:**
   - `subjects`: Core domains (e.g., History, Building Utilities).
-  - `topics`: Sub-sections of subjects (e.g., Plumbing Systems).
-  - `materials`: Detailed study notes and articles.
+  - `branches`: Sub-branches of subjects.
+  - `topics`: Sub-sections of subjects.
+  - `lessons`: Individual study modules.
+  - `materials`: Detailed study notes and markdown articles.
   - `flashcards`: Front/Back active recall cards.
 - **Assessment Tables:**
-  - `questions`: Individual quiz questions with multiple choices. The correct choice is hashed to prevent exposure in local DB.
-  - `quizzes`: Curated sets of questions (Mock Exams).
-- **User State Tables:**
-  - `quizAttempts`: Logs of user quiz sessions, scores, and time spent. Includes a `syncStatus` flag (`synced` or `pending_sync`).
-  - `quizAnswers`: Specific choices made by the user during an attempt.
+  - `questions`: Individual quiz questions with multiple choices and `specializedType`. Correct choice is SHA-256 hashed locally.
+  - `quizzes`: Curated sets of questions (Mock Exams, Specialized Drills).
+- **User Activity & Gamification Tables:**
+  - `quizAttempts` & `quizAnswers`: Logs of user quiz sessions, scores, and choices.
+  - `userPresets`: Student-configured custom decks and quiz presets (replaces `localStorage`).
+  - `achievements` & `userAchievements`: Badges catalog and unlocked student records.
+  - `userStreaks`: Consecutive study days and longest streak records.
 
 ---
 
@@ -88,46 +89,58 @@ The schema is defined in Drizzle (`src/db/schema.ts`) and mirrored in Convex:
 
 ### Down-Sync (Cloud ➔ Device - High-Performance Bulk & Delta Sync)
 Handled by `syncDown` in `useSyncService.ts` via `api.sync.getSyncBundle`:
-1. **Single-Roundtrip Bundle (`api.sync.getSyncBundle`)**: Convex atomically collects all published `subjects`, `branches`, `topics`, `lessons`, `materials`, `flashcards`, `questions`, and `quizzes` in 1 single query instead of 100+ nested loops.
-2. **Server-Side SHA-256 Hashing**: Answer choice hashes are computed on the Convex backend using the standard Web Crypto API, eliminating client-side mobile bridge crypto overhead and never exposing raw answer IDs over the wire.
-3. **Delta Syncing**: Uses `lastSyncedAt` timestamps from SQLite `sync_metadata`. If no cloud updates have occurred since the last sync, Convex returns `{ upToDate: true }` instantly (<50ms).
-4. **Chunked SQLite Batch Ingestion**: Uses `drizzle-orm` chunked batch inserts (`db.insert().values(chunk).onConflictDoUpdate()`) to write records into SQLite in milliseconds.
+1. **Single-Roundtrip Bundle (`api.sync.getSyncBundle`)**: Convex atomically collects all published `subjects`, `branches`, `topics`, `lessons`, `materials`, `flashcards`, `questions`, `quizzes`, `userPresets`, `achievements`, and `userStreaks`.
+2. **Server-Side SHA-256 Hashing**: Answer choice hashes are computed on the Convex backend using standard Web Crypto API.
+3. **Delta Syncing**: Uses `lastSyncedAt` timestamps from SQLite `sync_metadata`. If no cloud updates have occurred, sync completes in `<50ms` (`upToDate: true`).
+4. **Chunked SQLite Batch Ingestion**: Uses `drizzle-orm` chunked batch inserts (`db.insert().values(chunk).onConflictDoUpdate()`).
 
 ### Up-Sync (Device ➔ Cloud - Single Batch Mutation)
-Handled by `syncUp` in `useSyncService.ts` via `api.sync.syncAttemptsBatch`:
-1. Scans local SQLite for `quiz_attempts` where `sync_status = 'pending_sync'` along with their recorded answers.
-2. Sends all pending attempts in 1 unified batch payload to `api.sync.syncAttemptsBatch`, avoiding rate limits and multiple sequential network calls.
+Handled by `syncUp` in `useSyncService.ts` via `api.sync.syncAttemptsBatch`, `api.sync.syncUserPresets`, and `api.sync.syncUserStreaks`:
+1. Scans local SQLite for pending attempts, custom presets, and streak updates.
+2. Uploads all completed offline practice drills and mock exams without skip filters.
 3. Convex authoritatively grades the attempts, records the server attempts, and returns synced IDs.
 4. Upon success, updates local `sync_status` to `'synced'` in SQLite.
 
 ### Automatic Sync Lifecycle & Debouncing (`src/components/SyncProvider.tsx`)
 - Triggers on initial app mount and whenever the app transitions to the foreground (`AppState === 'active'`).
-- Integrated 3-second debouncing to prevent redundant concurrent sync executions when switching between screens or apps.
+- Integrated 3-second debouncing to prevent redundant concurrent sync executions.
 
 ### Cryptographic Answer Verification
 To allow offline grading without exposing correct answers in the local database, Licensify uses **Zero-Trust Hashing**:
 - The backend stores the `SHA-256` hash of `questionId + correctChoiceId`.
 - When the user selects an answer offline, the app hashes the selection and compares it against the stored hash to calculate the local score.
-- The raw answers are eventually sent to Convex for authoritative server-side grading.
+- The raw answers are sent to Convex during sync for authoritative server-side grading.
 
 ---
 
 ## 7. Development & Testing
 
-### Running the App
-\`\`\`bash
+### Running the Mobile App
+```bash
 # Start the Expo bundler
 npx expo start
-\`\`\`
+```
+
+### Running the Admin Dashboard
+```bash
+cd admin
+npm run dev
+```
 
 ### Managing the Backend (Convex)
-\`\`\`bash
+```bash
 # Run Convex development server
 npx convex dev
 
-# Seed the database with sample ALE curriculum data
-npx convex run seed:seedDatabase
-\`\`\`
+# Seed Curriculum from Excel
+npx convex run seed:seedCurriculumFromExcel
+
+# Seed Mock Assessments, Questions & Achievements
+npx convex run seedAssessments:seedMockAssessmentsAndMaterials
+
+# Clean-up / Purge Seed Data when ready for production
+npx convex run seedAssessments:deleteMockSeedData
+```
 
 ### Testing Offline Mode
 1. Start the app with network connectivity and wait for initial sync.

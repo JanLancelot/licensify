@@ -41,6 +41,8 @@ export default defineSchema({
     fcmToken: v.optional(v.string()),
     themeMode: v.optional(v.string()),
     accentTheme: v.optional(v.string()),
+    soundEnabled: v.optional(v.boolean()),
+    dailyReminder: v.optional(v.boolean()),
     lastActiveAt: v.optional(v.number()),
 
     createdAt: v.number(),
@@ -194,6 +196,7 @@ export default defineSchema({
       v.literal("hard")
     ),
 
+    specializedType: v.optional(v.string()), // e.g. "developmental_control"
     isPublished: v.boolean(),
     createdBy: v.id("users"),
 
@@ -225,6 +228,7 @@ export default defineSchema({
 
     timeLimitSeconds: v.optional(v.number()),
     passingScore: v.optional(v.number()),
+    specializedType: v.optional(v.string()), // e.g. "developmental_control"
 
     isPublished: v.boolean(),
     createdBy: v.id("users"),
@@ -350,4 +354,69 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_and_read", ["userId", "isRead"]),
+
+  // ---------------------------------------------------------------------------
+  // 6. STUDENT PRESETS, GAMIFICATION & ACTIVITY
+  // ---------------------------------------------------------------------------
+  userPresets: defineTable({
+    userId: v.id("users"),
+    type: v.union(
+      v.literal("flashcard"),
+      v.literal("quiz"),
+      v.literal("exam")
+    ),
+    title: v.string(),
+    iconName: v.optional(v.string()),
+    lessonIds: v.array(v.string()),
+    subjectNames: v.optional(v.array(v.string())),
+    questionCount: v.optional(v.number()),
+    timeLimitSeconds: v.optional(v.number()),
+    isShuffled: v.optional(v.boolean()),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_type", ["userId", "type"]),
+
+  achievements: defineTable({
+    title: v.string(),
+    category: v.string(),
+    description: v.string(),
+    iconName: v.string(),
+    bg: v.optional(v.string()),
+    darkBg: v.optional(v.string()),
+    iconColor: v.optional(v.string()),
+    criteriaType: v.string(),
+    targetValue: v.number(),
+    order: v.number(),
+    isPublished: v.boolean(),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_published", ["isPublished"])
+    .index("by_order", ["order"]),
+
+  userAchievements: defineTable({
+    userId: v.id("users"),
+    achievementId: v.id("achievements"),
+    progress: v.number(),
+    isUnlocked: v.boolean(),
+    unlockedAt: v.optional(v.number()),
+
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_achievement", ["userId", "achievementId"]),
+
+  userStreaks: defineTable({
+    userId: v.id("users"),
+    currentStreak: v.number(),
+    longestStreak: v.number(),
+    lastActiveDate: v.string(), // YYYY-MM-DD
+
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]),
 });

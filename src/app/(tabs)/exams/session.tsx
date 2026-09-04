@@ -37,8 +37,10 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useQuery } from 'convex/react';
 import { useAppTheme } from '@/context/theme-context';
 import { useLocalQuizWithQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
+import { api } from '../../../../convex/_generated/api';
 
 export interface ExamSessionQuestion {
   id: string;
@@ -489,6 +491,8 @@ export default function ExamSessionScreen() {
   const customTimerSeconds = params.timer ? parseInt(params.timer, 10) : 10800; // 3 hrs default
   const targetQuestionCount = params.count ? parseInt(params.count, 10) : 100;
 
+  const userProfile = useQuery(api.users.getCurrentUserProfile);
+  const currentUserId = userProfile?._id || 'local-student-1';
   const { questions: dbQuestions, loading: dbLoading } = useLocalQuizWithQuestions(examId);
   const submitLocalAttempt = useSubmitLocalAttempt();
 
@@ -836,7 +840,11 @@ export default function ExamSessionScreen() {
 
       // 1. If DB has questions, format them
       if (dbQuestions && dbQuestions.length > 0) {
-        for (const q of dbQuestions) {
+        const pool = targetQuestionCount > 0 && dbQuestions.length > targetQuestionCount
+          ? dbQuestions.slice(0, targetQuestionCount)
+          : dbQuestions;
+
+        for (const q of pool) {
           let choices: { id: string; text: string }[] = [];
           try {
             choices = typeof q.choices === 'string' ? JSON.parse(q.choices) : q.choices;
@@ -874,123 +882,6 @@ export default function ExamSessionScreen() {
             correctKey: correctK,
             correctChoiceHash: q.correctChoiceHash || undefined,
             explanation: q.explanation || 'Refer to the standard ALE board exam syllabus guidelines.',
-          });
-        }
-      }
-
-      // 2. If questions are fewer than target count, generate realistic questions from curriculum
-      if (formatted.length < targetQuestionCount) {
-        const needed = targetQuestionCount - formatted.length;
-        const masterPool: {
-          topic: string;
-          setId: string;
-          q: string;
-          choices: string[];
-          correctIdx: number;
-          exp: string;
-        }[] = [
-          {
-            topic: 'History of Architecture',
-            setId: 'comprehensive-set-1',
-            q: 'Which architectural order is characterized by acanthus leaf carvings on a bell-shaped capital?',
-            choices: ['Doric Order', 'Ionic Order', 'Corinthian Order', 'Tuscan Order'],
-            correctIdx: 2,
-            exp: 'The Corinthian order is identified by its ornate capital decorated with stylized acanthus leaves and volutes.',
-          },
-          {
-            topic: 'Theory of Architecture',
-            setId: 'comprehensive-set-1',
-            q: 'According to Vitruvian principles, what are the three fundamental qualities of good architecture?',
-            choices: [
-              'Firmitas, Utilitas, Venustas (Strength, Utility, Beauty)',
-              'Form, Proportion, Materiality',
-              'Symmetry, Rhythm, Hierarchy',
-              'Context, Function, Aesthetic',
-            ],
-            correctIdx: 0,
-            exp: 'Marcus Vitruvius Pollio asserted in De Architectura that a structure must exhibit Firmitas, Utilitas, and Venustas.',
-          },
-          {
-            topic: 'Tropical Design',
-            setId: 'comprehensive-set-1',
-            q: 'In Philippine tropical climatic design, what is the primary orientation recommended for long building facades?',
-            choices: ['North-South Axis', 'East-West Axis', 'Northeast-Southwest', 'Northwest-Southeast'],
-            correctIdx: 0,
-            exp: 'Orienting long building facades along the North-South axis minimizes direct solar heat gain on large window exposures.',
-          },
-          {
-            topic: 'Professional Practice',
-            setId: 'comprehensive-set-1',
-            q: 'Under RA 9266 (The Architecture Act of 2004), what is the penalty for illegal practice of architecture by unregistered individuals?',
-            choices: [
-              'Fine of ₱100,000 to ₱5,000,000 and/or imprisonment of 6 months to 6 years',
-              'Fine of ₱20,000 and warning letter',
-              'Fine of ₱50,000 with 1 month community service',
-              'Administrative probation for 1 year',
-            ],
-            correctIdx: 0,
-            exp: 'Section 34 of RA 9266 penalizes illegal practice with a fine of not less than ₱100,000 nor more than ₱5,000,000, or imprisonment from 6 months to 6 years.',
-          },
-          {
-            topic: 'Building Utilities',
-            setId: 'comprehensive-set-2',
-            q: 'In plumbing sanitary drainage systems, what is the minimum slope required for 3-inch and smaller soil horizontal drainage pipes?',
-            choices: ['1% (1/8 in/ft)', '2% (1/4 in/ft)', '3% (3/8 in/ft)', '4% (1/2 in/ft)'],
-            correctIdx: 1,
-            exp: 'The Revised National Plumbing Code specifies a minimum 2% (1/4 inch per foot) slope for 3-inch or smaller horizontal drainage lines.',
-          },
-          {
-            topic: 'Building Technology',
-            setId: 'comprehensive-set-2',
-            q: 'What is the standard diameter of a #10 (metric 32mm) deformed steel reinforcing bar?',
-            choices: ['25 mm', '28 mm', '32 mm', '36 mm'],
-            correctIdx: 2,
-            exp: 'Under ASTM/PNS standards, a #10 bar corresponds to a nominal diameter of 32 mm.',
-          },
-          {
-            topic: 'Site Planning & Urban Design',
-            setId: 'comprehensive-set-3',
-            q: 'Which contour line interval rule states that closer contour lines on a topographical site survey indicate what condition?',
-            choices: ['Flat terrain', 'Steeper slope or grade', 'Depression basin', 'Ridgeline summit'],
-            correctIdx: 1,
-            exp: 'Closely spaced contour lines indicate a steep slope, while widely spaced contours represent gentle or flat topography.',
-          },
-          {
-            topic: 'Architectural Design',
-            setId: 'comprehensive-set-3',
-            q: 'Under NBCP Rule 7 & 8, what does AMBF stand for in development control calculations?',
-            choices: [
-              'Allowable Maximum Building Footprint',
-              'Average Maximum Built Floor',
-              'Approved Minimum Base Foundation',
-              'Actual Median Boundary Form',
-            ],
-            correctIdx: 0,
-            exp: 'AMBF is the Allowable Maximum Building Footprint, which defines the maximum lot area a structure can occupy at ground level.',
-          },
-        ];
-
-        let fallbackPool = masterPool.filter((p) => p.setId === examId);
-        if (fallbackPool.length === 0) {
-          fallbackPool = masterPool;
-        }
-
-        for (let i = 0; i < needed; i++) {
-          const template = fallbackPool[i % fallbackPool.length];
-          const qId = `gen-q-${examId}-${formatted.length + i + 1}`;
-          const choiceIds = ['c-1', 'c-2', 'c-3', 'c-4'];
-
-          formatted.push({
-            id: qId,
-            topic: template.topic,
-            question: template.q,
-            options: template.choices.map((text, cIdx) => ({
-              key: keys[cIdx] || 'A',
-              id: `${qId}-${choiceIds[cIdx]}`,
-              text,
-            })),
-            correctKey: keys[template.correctIdx] || 'A',
-            explanation: template.exp,
           });
         }
       }
@@ -1136,11 +1027,11 @@ export default function ExamSessionScreen() {
     setIsSubmitted(true);
 
     try {
-      await submitLocalAttempt('local-student-1', examId, recorded);
+      await submitLocalAttempt(currentUserId, examId, recorded);
     } catch (err) {
       console.warn('Failed to submit exam attempt locally:', err);
     }
-  }, [isSubmitted, questions, selectedAnswers, examId, submitLocalAttempt]);
+  }, [isSubmitted, questions, selectedAnswers, examId, currentUserId, submitLocalAttempt]);
 
   const handleConfirmExit = () => {
     if (isSubmitted) {
@@ -1170,6 +1061,55 @@ export default function ExamSessionScreen() {
         <Text style={{ color: colors.textSecondary, marginTop: 12, fontWeight: '700' }}>
           Preparing Examination Paper...
         </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!dbLoading && questions.length === 0) {
+    return (
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          {
+            backgroundColor: colors.background,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 28,
+          },
+        ]}>
+        <Text
+          style={{
+            color: isDark ? '#F9FAFB' : '#0F172A',
+            fontSize: 20,
+            fontWeight: '800',
+            textAlign: 'center',
+            marginBottom: 8,
+          }}>
+          No Questions Available
+        </Text>
+        <Text
+          style={{
+            color: colors.textSecondary,
+            fontSize: 14,
+            textAlign: 'center',
+            lineHeight: 20,
+            marginBottom: 24,
+          }}>
+          This examination paper has not been populated with questions in the database yet. Please sync your curriculum data or select another set.
+        </Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [
+            {
+              backgroundColor: colors.accent,
+              paddingHorizontal: 24,
+              paddingVertical: 14,
+              borderRadius: 14,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>Return to Exams</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }

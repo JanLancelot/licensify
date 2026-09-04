@@ -69,12 +69,34 @@ export const getRole = query({
 });
 
 /**
- * Query to fetch current authenticated user profile document.
+ * Query to fetch current authenticated user profile document with resolved avatar URL.
  */
 export const getCurrentUserProfile = query({
   args: {},
   handler: async (ctx) => {
-    return await getCurrentUser(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
+
+    let profileImageUrl: string | null = null;
+    if (user.profileImageId) {
+      profileImageUrl = await ctx.storage.getUrl(user.profileImageId);
+    }
+
+    return {
+      ...user,
+      profileImageUrl,
+    };
+  },
+});
+
+/**
+ * Mutation: Generates short-lived upload URL for uploading a profile image to Convex Storage.
+ */
+export const generateProfileUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireUser(ctx);
+    return await ctx.storage.generateUploadUrl();
   },
 });
 
@@ -86,17 +108,34 @@ export const updateProfile = mutation({
     username: v.optional(v.string()),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
-    profileImageId: v.optional(v.id("_storage")),
+    profileImageId: v.optional(v.union(v.id("_storage"), v.null())),
+    soundEnabled: v.optional(v.boolean()),
+    dailyReminder: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const now = Date.now();
 
+    if (args.profileImageId !== undefined) {
+      // If replacing or removing previous profile image, delete old file from storage
+      if (user.profileImageId && user.profileImageId !== args.profileImageId) {
+        try {
+          await ctx.storage.delete(user.profileImageId);
+        } catch (e) {
+          console.warn("Failed to delete old profile image:", e);
+        }
+      }
+    }
+
     await ctx.db.patch(user._id, {
       ...(args.username !== undefined && { username: args.username }),
       ...(args.firstName !== undefined && { firstName: args.firstName }),
       ...(args.lastName !== undefined && { lastName: args.lastName }),
-      ...(args.profileImageId !== undefined && { profileImageId: args.profileImageId }),
+      ...(args.profileImageId !== undefined && {
+        profileImageId: args.profileImageId === null ? undefined : args.profileImageId,
+      }),
+      ...(args.soundEnabled !== undefined && { soundEnabled: args.soundEnabled }),
+      ...(args.dailyReminder !== undefined && { dailyReminder: args.dailyReminder }),
       updatedAt: now,
     });
 
