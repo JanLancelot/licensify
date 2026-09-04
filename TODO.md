@@ -111,6 +111,12 @@ Migrate stores away from `window.localStorage` (which fails on iOS/Android nativ
   - Built dynamically using markdown key points from database materials linked to lessons.
 
 ### 4.5 Profile & Settings ([`src/app/(tabs)/profile.tsx`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/app/(tabs)/profile.tsx))
+- [x] **Profile Picture Upload & Avatar Management**:
+  - Added camera capture (`launchCameraAsync`) and gallery selection (`launchImageLibraryAsync`) using `expo-image-picker`.
+  - Implemented secure upload to Convex Storage via `generateProfileUploadUrl` mutation.
+  - Added offline avatar caching in SQLite `users` table (`profile_image_id`, `profile_image_url`).
+  - Rendered high-performance cached avatar with `expo-image`, interactive camera badge, and uploading spinner.
+  - Supported avatar removal / reset to default icon with storage cleanup.
 - [x] **Achievements Carousel**:
   - Replaced hardcoded `ACHIEVEMENTS` array with dynamic query from `achievements` + `user_achievements` tables.
 - [x] **Preferences Toggles**:
@@ -143,6 +149,7 @@ Migrate stores away from `window.localStorage` (which fails on iOS/Android nativ
 ## ✅ Phase 6: Verification & Quality Assurance
 
 - [x] Verified full TypeScript compilation: `npx tsc --noEmit` passed with 0 errors across the entire codebase.
+- [x] Verified ESLint compliance: `npx expo lint` passed with 0 errors and 0 warnings.
 - [x] Verified schema alignment between Convex and SQLite Drizzle schemas.
 - [x] Verified all seeded records contain `[Seed]` or `[Mock]` identifiers and confirmed `deleteMockSeedData` mutation is present and functional.
 - [x] Verified stores operate seamlessly offline with SQLite and background sync.
@@ -158,8 +165,16 @@ Here are the immediate actions and upcoming roadmap for the application:
 
 ### 7.1 Immediate Operational Steps
 - [ ] **Commit Changes to Git**:
-  - Run `git add .` and `git commit -m "feat: complete database integration, offline-first SQLite migration, and mock data elimination"`.
-  - Push branch to remote GitHub repository (`git push origin main`).
+  - Check status: `git status`
+  - Stage changes: `git add .`
+  - Commit:
+    ```bash
+    git commit -m "feat: complete database integration, offline-first SQLite migration, and mock data elimination"
+    ```
+  - Push branch to remote:
+    ```bash
+    git push origin feat/updated-database-integration-and-offline-sync
+    ```
 - [ ] **Run Initial Content Seed (If not yet populated)**:
   - Seed Curriculum: `npx convex run seed:seedCurriculumFromExcel`.
   - Seed Mock Assessments & Questions: `npx convex run seedAssessments:seedMockAssessmentsAndMaterials`.

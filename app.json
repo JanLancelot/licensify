@@ -36,7 +36,14 @@
         }
       ],
       "expo-sqlite",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Licensify to access your photos to select a profile picture.",
+          "cameraPermission": "Allow Licensify to access your camera to take a profile picture."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

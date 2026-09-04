@@ -239,6 +239,12 @@ function initDatabase() {
   try {
     expoDb.execSync(`ALTER TABLE users ADD COLUMN daily_reminder INTEGER DEFAULT 1;`);
   } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE users ADD COLUMN profile_image_id TEXT;`);
+  } catch {}
+  try {
+    expoDb.execSync(`ALTER TABLE users ADD COLUMN profile_image_url TEXT;`);
+  } catch {}
 
   return drizzle(expoDb, { schema });
 }

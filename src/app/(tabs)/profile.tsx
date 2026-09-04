@@ -1,15 +1,19 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation, useQuery } from 'convex/react';
+import { Image as ExpoImage } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import {
   Award,
   Bell,
+  Camera,
   Check,
   CheckCircle2,
   ChevronRight,
   Cloud,
   Flame,
   HelpCircle,
+  Image as ImageIcon,
   Info,
   LogOut,
   Mail,
@@ -18,13 +22,14 @@ import {
   Smartphone,
   Star,
   Sun,
+  Trash2,
   Trophy,
   User,
   Volume2,
   X,
   Zap,
 } from 'lucide-react-native';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -43,6 +48,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ACCENT_THEME_LIST } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
+import { db } from '@/db/client';
+import * as schema from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { api } from '../../../convex/_generated/api';
 import { LocalAchievementItem, useLocalAchievements } from '@/hooks/useLocalData';
 import { useSyncService } from '@/services/useSyncService';
@@ -116,27 +124,19 @@ export default function ProfileScreen() {
   // Sign out state
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // Settings switches & Preferences
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [dailyReminder, setDailyReminder] = useState(true);
+  // Settings switches & Preferences - default to userProfile if present
+  const [localSoundEnabled, setLocalSoundEnabled] = useState<boolean | null>(null);
+  const [localDailyReminder, setLocalDailyReminder] = useState<boolean | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const soundEnabled = localSoundEnabled !== null ? localSoundEnabled : (userProfile?.soundEnabled ?? true);
+  const dailyReminder = localDailyReminder !== null ? localDailyReminder : (userProfile?.dailyReminder ?? true);
 
   const currentUserId = userProfile?._id;
   const { achievements: localAchievements } = useLocalAchievements(currentUserId);
 
-  useEffect(() => {
-    if (userProfile) {
-      if (typeof userProfile.soundEnabled === 'boolean') {
-        setSoundEnabled(userProfile.soundEnabled);
-      }
-      if (typeof userProfile.dailyReminder === 'boolean') {
-        setDailyReminder(userProfile.dailyReminder);
-      }
-    }
-  }, [userProfile]);
-
   const handleToggleSound = async (val: boolean) => {
-    setSoundEnabled(val);
+    setLocalSoundEnabled(val);
     try {
       await updateProfileMutation({ soundEnabled: val });
     } catch (err) {
@@ -145,11 +145,155 @@ export default function ProfileScreen() {
   };
 
   const handleToggleReminder = async (val: boolean) => {
-    setDailyReminder(val);
+    setLocalDailyReminder(val);
     try {
       await updateProfileMutation({ dailyReminder: val });
     } catch (err) {
       console.warn('Failed to update reminder preference:', err);
+    }
+  };
+
+  // Photo Picker & Upload states
+  const generateUploadUrlMutation = useMutation(api.users.generateProfileUploadUrl);
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const [isPhotoPickerVisible, setIsPhotoPickerVisible] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const displayAvatarUri = localAvatarUri || (userProfile as any)?.profileImageUrl || null;
+
+  const handlePickFromLibrary = async () => {
+    setIsPhotoPickerVisible(false);
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Permission to access your photos is required to choose a profile picture.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadProfilePhoto(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error('Error selecting image from library:', err);
+      Alert.alert('Error', 'Failed to pick image from library.');
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    setIsPhotoPickerVisible(false);
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Permission to access your camera is required to take a profile picture.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        await uploadProfilePhoto(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error('Error taking photo:', err);
+      Alert.alert('Error', 'Failed to capture photo.');
+    }
+  };
+
+  const uploadProfilePhoto = async (uri: string) => {
+    setLocalAvatarUri(uri);
+    setIsUploadingPhoto(true);
+    try {
+      const uploadUrl = await generateUploadUrlMutation();
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': blob.type || 'image/jpeg' },
+        body: blob,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`Upload failed with status ${uploadRes.status}`);
+      }
+
+      const { storageId } = await uploadRes.json();
+      await updateProfileMutation({ profileImageId: storageId });
+
+      try {
+        if (currentUserId) {
+          await db
+            .update(schema.users)
+            .set({ profileImageId: storageId, profileImageUrl: uri })
+            .where(eq(schema.users.userId, currentUserId));
+        }
+      } catch (dbErr) {
+        console.warn('Could not cache avatar locally in SQLite:', dbErr);
+      }
+
+      Alert.alert('Success', 'Profile photo updated successfully!');
+    } catch (err) {
+      console.error('Failed to upload profile photo:', err);
+      Alert.alert('Upload Failed', 'Could not upload your profile photo. Please try again.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setIsPhotoPickerVisible(false);
+    const confirmRemove = async () => {
+      setIsUploadingPhoto(true);
+      setLocalAvatarUri(null);
+      try {
+        await updateProfileMutation({ profileImageId: null });
+        if (currentUserId) {
+          try {
+            await db
+              .update(schema.users)
+              .set({ profileImageId: null, profileImageUrl: null })
+              .where(eq(schema.users.userId, currentUserId));
+          } catch {}
+        }
+        Alert.alert('Success', 'Profile photo removed.');
+      } catch (err) {
+        console.error('Failed to remove profile photo:', err);
+        Alert.alert('Error', 'Failed to remove profile photo.');
+      } finally {
+        setIsUploadingPhoto(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Remove your profile photo?')) {
+        confirmRemove();
+      }
+    } else {
+      Alert.alert(
+        'Remove Photo',
+        'Are you sure you want to remove your profile photo?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: confirmRemove },
+        ]
+      );
     }
   };
 
@@ -285,17 +429,39 @@ export default function ProfileScreen() {
         ]}>
         {/* 2. CLEAN PROFILE HEADER SECTION (No Purple Box) */}
         <View style={styles.profileHeaderSection}>
-          {/* Centered Circular Avatar Icon */}
-          <View
-            style={[
+          {/* Centered Circular Avatar Icon with Camera Badge */}
+          <Pressable
+            onPress={() => setIsPhotoPickerVisible(true)}
+            disabled={isUploadingPhoto}
+            style={({ pressed }) => [
               styles.avatarWrapper,
               {
                 backgroundColor: colors.accentMuted,
                 borderColor: colors.accentBorder,
+                opacity: pressed ? 0.85 : 1,
               },
             ]}>
-            <User size={40} color={colors.accent} strokeWidth={2.3} />
-          </View>
+            {displayAvatarUri ? (
+              <ExpoImage
+                source={{ uri: displayAvatarUri }}
+                style={styles.avatarImage}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <User size={40} color={colors.accent} strokeWidth={2.3} />
+            )}
+
+            {isUploadingPhoto && (
+              <View style={styles.avatarUploadingOverlay}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              </View>
+            )}
+
+            <View style={[styles.cameraBadge, { backgroundColor: colors.accent }]}>
+              <Camera size={13} color="#FFFFFF" strokeWidth={2.4} />
+            </View>
+          </Pressable>
 
           {/* Profile Name */}
           <Text style={[styles.profileName, { color: colors.text }]}>
@@ -729,6 +895,51 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.modalForm}>
+              {/* Avatar Preview & Quick Change */}
+              <View style={styles.editAvatarSection}>
+                <Pressable
+                  onPress={() => setIsPhotoPickerVisible(true)}
+                  disabled={isUploadingPhoto}
+                  style={({ pressed }) => [
+                    styles.editAvatarWrapper,
+                    {
+                      backgroundColor: colors.accentMuted,
+                      borderColor: colors.accentBorder,
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}>
+                  {displayAvatarUri ? (
+                    <ExpoImage
+                      source={{ uri: displayAvatarUri }}
+                      style={styles.avatarImage}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  ) : (
+                    <User size={36} color={colors.accent} strokeWidth={2.3} />
+                  )}
+
+                  {isUploadingPhoto && (
+                    <View style={styles.avatarUploadingOverlay}>
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    </View>
+                  )}
+
+                  <View style={[styles.editCameraBadge, { backgroundColor: colors.accent }]}>
+                    <Camera size={12} color="#FFFFFF" strokeWidth={2.4} />
+                  </View>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setIsPhotoPickerVisible(true)}
+                  disabled={isUploadingPhoto}
+                  hitSlop={8}>
+                  <Text style={[styles.changePhotoText, { color: colors.accent }]}>
+                    {displayAvatarUri ? 'Change Photo' : 'Upload Photo'}
+                  </Text>
+                </Pressable>
+              </View>
+
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Full Name</Text>
                 <TextInput
@@ -781,6 +992,121 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* PHOTO PICKER ACTION SHEET MODAL */}
+      <Modal visible={isPhotoPickerVisible} transparent animationType="fade">
+        <Pressable
+          style={styles.actionSheetBackdrop}
+          onPress={() => setIsPhotoPickerVisible(false)}>
+          <View
+            style={[
+              styles.actionSheetBox,
+              { backgroundColor: isDark ? '#1C1F26' : '#FFFFFF' },
+            ]}
+            onStartShouldSetResponder={() => true}>
+            <View style={styles.actionSheetHeader}>
+              <Text style={[styles.actionSheetTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                Profile Photo
+              </Text>
+              <Text style={[styles.actionSheetSubtitle, { color: colors.textSecondary }]}>
+                Choose how you would like to update your avatar
+              </Text>
+            </View>
+
+            <View style={styles.actionSheetOptions}>
+              {/* Take Photo */}
+              <Pressable
+                onPress={handleTakePhoto}
+                style={({ pressed }) => [
+                  styles.actionSheetRow,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6',
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}>
+                <View style={[styles.actionOptionIconCircle, { backgroundColor: isDark ? 'rgba(2, 132, 199, 0.2)' : '#E0F2FE' }]}>
+                  <Camera size={20} color="#0284C7" strokeWidth={2.2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.actionOptionTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Take Photo
+                  </Text>
+                  <Text style={[styles.actionOptionDesc, { color: colors.textSecondary }]}>
+                    Use your device camera
+                  </Text>
+                </View>
+              </Pressable>
+
+              {/* Choose from Library */}
+              <Pressable
+                onPress={handlePickFromLibrary}
+                style={({ pressed }) => [
+                  styles.actionSheetRow,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6',
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}>
+                <View style={[styles.actionOptionIconCircle, { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE' }]}>
+                  <ImageIcon size={20} color="#7C3AED" strokeWidth={2.2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.actionOptionTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Choose from Gallery
+                  </Text>
+                  <Text style={[styles.actionOptionDesc, { color: colors.textSecondary }]}>
+                    Select an image from photo library
+                  </Text>
+                </View>
+              </Pressable>
+
+              {/* Remove Photo */}
+              {displayAvatarUri && (
+                <Pressable
+                  onPress={handleRemovePhoto}
+                  style={({ pressed }) => [
+                    styles.actionSheetRow,
+                    {
+                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
+                      borderColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2',
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}>
+                  <View style={[styles.actionOptionIconCircle, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2' }]}>
+                    <Trash2 size={20} color="#EF4444" strokeWidth={2.2} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.actionOptionTitle, { color: '#EF4444' }]}>
+                      Remove Current Photo
+                    </Text>
+                    <Text style={[styles.actionOptionDesc, { color: colors.textSecondary }]}>
+                      Reset to default avatar icon
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+            </View>
+
+            {/* Cancel Button */}
+            <Pressable
+              onPress={() => setIsPhotoPickerVisible(false)}
+              style={({ pressed }) => [
+                styles.actionSheetCancelBtn,
+                {
+                  backgroundColor: isDark ? '#23262F' : '#F3F4F6',
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E5E7EB',
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}>
+              <Text style={[styles.actionSheetCancelText, { color: colors.text }]}>
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+        </Pressable>
       </Modal>
 
       {/* SEE ALL ACHIEVEMENTS MODAL */}
@@ -1024,13 +1350,146 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   avatarWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+    position: 'relative',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 42,
+  },
+  avatarUploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 42,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    zIndex: 3,
+  },
+  editAvatarSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  editAvatarWrapper: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  editCameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    elevation: 2,
+  },
+  changePhotoText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  actionSheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  actionSheetBox: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+    gap: 16,
+  },
+  actionSheetHeader: {
+    gap: 4,
+    paddingBottom: 4,
+  },
+  actionSheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  actionSheetSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  actionSheetOptions: {
+    gap: 10,
+  },
+  actionSheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 14,
+  },
+  actionOptionIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionOptionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  actionOptionDesc: {
+    fontSize: 12.5,
+    fontWeight: '500',
+  },
+  actionSheetCancelBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  actionSheetCancelText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
   profileName: {
     fontSize: 20,

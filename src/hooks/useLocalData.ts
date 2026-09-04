@@ -803,8 +803,50 @@ export function useLocalStats() {
   }, []);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const [allLessons, completedProgress, attempts, streaks] = await Promise.all([
+          db.select().from(schema.lessons).where(eq(schema.lessons.isPublished, true)),
+          db.select().from(schema.lessonProgress).where(eq(schema.lessonProgress.isCompleted, true)),
+          db.select().from(schema.quizAttempts),
+          db.select().from(schema.userStreaks),
+        ]);
+
+        const totalLessons = allLessons.length;
+        const completedCount = completedProgress.length;
+        const progressPercentage = totalLessons > 0 ? Math.min(100, Math.round((completedCount / totalLessons) * 100)) : 0;
+
+        const completedQuizzes = attempts.length;
+        const totalScore = attempts.reduce((acc, curr) => acc + (curr.score || 0), 0);
+        const averageScore = completedQuizzes > 0 ? Math.round(totalScore / completedQuizzes) : 0;
+
+        let streakDays = 0;
+        if (streaks.length > 0 && streaks[0].currentStreak > 0) {
+          streakDays = streaks[0].currentStreak;
+        } else if (attempts.length > 0 || completedProgress.length > 0) {
+          streakDays = 1;
+        }
+
+        if (isMounted) {
+          setStats({
+            progressPercentage,
+            completedQuizzes,
+            averageScore,
+            streakDays,
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to compute stats:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return { stats, loading, refetch: fetchStats };
 }
@@ -824,7 +866,7 @@ export function useLocalAchievements(userId?: string) {
   const fetchAchievements = useCallback(async () => {
     try {
       setLoading(true);
-      const [allAch, userAch, attempts, progress, streaks] = await Promise.all([
+      const [allAch, userAch, attempts, streaks] = await Promise.all([
         db
           .select()
           .from(schema.achievements)
@@ -836,7 +878,6 @@ export function useLocalAchievements(userId?: string) {
         userId
           ? db.select().from(schema.quizAttempts).where(eq(schema.quizAttempts.userId, userId))
           : db.select().from(schema.quizAttempts),
-        db.select().from(schema.lessonProgress).where(eq(schema.lessonProgress.isCompleted, true)),
         userId
           ? db.select().from(schema.userStreaks).where(eq(schema.userStreaks.userId, userId))
           : db.select().from(schema.userStreaks),
@@ -893,11 +934,87 @@ export function useLocalAchievements(userId?: string) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
-    fetchAchievements();
-  }, [fetchAchievements]);
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const [allAch, userAch, attempts, streaks] = await Promise.all([
+          db
+            .select()
+            .from(schema.achievements)
+            .where(eq(schema.achievements.isPublished, true))
+            .orderBy(schema.achievements.order),
+          userId
+            ? db.select().from(schema.userAchievements).where(eq(schema.userAchievements.userId, userId))
+            : db.select().from(schema.userAchievements),
+          userId
+            ? db.select().from(schema.quizAttempts).where(eq(schema.quizAttempts.userId, userId))
+            : db.select().from(schema.quizAttempts),
+          userId
+            ? db.select().from(schema.userStreaks).where(eq(schema.userStreaks.userId, userId))
+            : db.select().from(schema.userStreaks),
+        ]);
+
+        const currentStreak = streaks.length > 0 ? streaks[0].currentStreak : (attempts.length > 0 ? 1 : 0);
+
+        const mapped = allAch.map((ach) => {
+          const uRec = userAch.find(
+            (ua) => ua.achievementId === ach.id || ua.achievementId === ach.convexId
+          );
+          let isUnlocked = uRec?.isUnlocked || false;
+          let currentVal = uRec?.progress || 0;
+
+          if (!isUnlocked) {
+            if (ach.criteriaType === 'streak') {
+              currentVal = currentStreak;
+              if (currentVal >= ach.targetValue) isUnlocked = true;
+            } else if (
+              ach.criteriaType === 'quiz_count' ||
+              ach.criteriaType === 'flashcard_decks'
+            ) {
+              currentVal = attempts.length;
+              if (currentVal >= ach.targetValue) isUnlocked = true;
+            } else if (ach.criteriaType === 'perfect_score') {
+              const hasPerfect = attempts.some((att) => (att.score || 0) >= 100);
+              currentVal = hasPerfect ? 1 : 0;
+              if (hasPerfect) isUnlocked = true;
+            } else if (
+              ach.criteriaType === 'area1_exam' ||
+              ach.criteriaType === 'rule7_8'
+            ) {
+              const passed = attempts.some((att) => (att.score || 0) >= 75);
+              currentVal = passed ? 1 : 0;
+              if (passed) isUnlocked = true;
+            }
+          }
+
+          const progressText = isUnlocked
+            ? 'Unlocked'
+            : `${Math.min(currentVal, ach.targetValue)}/${ach.targetValue} Done`;
+
+          return {
+            ...ach,
+            isUnlocked,
+            progressText,
+          };
+        });
+
+        if (isMounted) {
+          setAchievements(mapped);
+        }
+      } catch (err) {
+        console.warn('[useLocalAchievements] Error:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
 
   return { achievements, loading, refetch: fetchAchievements };
 }
@@ -937,8 +1054,38 @@ export function useUserStreak() {
   }, []);
 
   useEffect(() => {
-    fetchStreak();
-  }, [fetchStreak]);
+    let isMounted = true;
+    const load = async () => {
+      try {
+        const rows = await db.select().from(schema.userStreaks);
+        if (rows.length > 0) {
+          if (isMounted) {
+            setStreak({
+              currentStreak: rows[0].currentStreak,
+              longestStreak: rows[0].longestStreak,
+              lastActiveDate: rows[0].lastActiveDate,
+            });
+          }
+        } else {
+          const attempts = await db.select().from(schema.quizAttempts);
+          if (isMounted) {
+            setStreak({
+              currentStreak: attempts.length > 0 ? 1 : 0,
+              longestStreak: attempts.length > 0 ? 1 : 0,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[useUserStreak] Error:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return { streak, loading, refetch: fetchStreak };
 }

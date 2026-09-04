@@ -14,6 +14,8 @@ export const users = sqliteTable('users', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   soundEnabled: integer('sound_enabled', { mode: 'boolean' }).default(true),
   dailyReminder: integer('daily_reminder', { mode: 'boolean' }).default(true),
+  profileImageId: text('profile_image_id'),
+  profileImageUrl: text('profile_image_url'),
 });
 
 // ---------------------------------------------------------------------------
