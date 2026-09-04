@@ -330,47 +330,70 @@ export const syncAttemptsBatch = mutation({
     const questionMap = new Map(questionDocs);
 
     for (const attempt of attemptsToProcess) {
-      // 2. Insert Attempt
-      const attemptId = await ctx.db.insert("quizAttempts", {
-        userId: user._id,
-        quizId: attempt.quizId,
-        status: attempt.status,
-        score: attempt.score,
-        correctAnswers: attempt.correctAnswers,
-        totalQuestions: attempt.totalQuestions,
-        startedAt: attempt.startedAt,
-        submittedAt: attempt.submittedAt,
-      });
+      // 2. Check for an existing attempt to prevent infinite duplicate loops
+      const existingAttempt = await ctx.db
+        .query("quizAttempts")
+        .withIndex("by_user_and_quiz", (q) =>
+          q.eq("userId", user._id).eq("quizId", attempt.quizId)
+        )
+        .filter((q) => q.eq(q.field("startedAt"), attempt.startedAt))
+        .first();
 
-      // 3. Insert and grade answers with instant in-memory lookup
-      let calculatedCorrect = 0;
-      for (const ans of attempt.answers) {
-        let isCorrect: boolean | undefined = undefined;
-        if (ans.selectedChoiceId) {
-          const qDoc = questionMap.get(ans.questionId);
-          if (qDoc) {
-            isCorrect = qDoc.correctChoiceId === ans.selectedChoiceId;
-            if (isCorrect) calculatedCorrect++;
+      let attemptId;
+
+      if (existingAttempt) {
+        attemptId = existingAttempt._id;
+        if (existingAttempt.status !== attempt.status) {
+          await ctx.db.patch(attemptId, {
+            status: attempt.status,
+            score: attempt.score,
+            correctAnswers: attempt.correctAnswers,
+            submittedAt: attempt.submittedAt,
+          });
+        }
+      } else {
+        // Insert Attempt
+        attemptId = await ctx.db.insert("quizAttempts", {
+          userId: user._id,
+          quizId: attempt.quizId,
+          status: attempt.status,
+          score: attempt.score,
+          correctAnswers: attempt.correctAnswers,
+          totalQuestions: attempt.totalQuestions,
+          startedAt: attempt.startedAt,
+          submittedAt: attempt.submittedAt,
+        });
+
+        // 3. Insert and grade answers with instant in-memory lookup
+        let calculatedCorrect = 0;
+        for (const ans of attempt.answers) {
+          let isCorrect: boolean | undefined = undefined;
+          if (ans.selectedChoiceId) {
+            const qDoc = questionMap.get(ans.questionId);
+            if (qDoc) {
+              isCorrect = qDoc.correctChoiceId === ans.selectedChoiceId;
+              if (isCorrect) calculatedCorrect++;
+            }
           }
+
+          await ctx.db.insert("quizAnswers", {
+            attemptId,
+            questionId: ans.questionId,
+            selectedChoiceId: ans.selectedChoiceId,
+            isCorrect,
+            answeredAt: ans.answeredAt ?? Date.now(),
+          });
         }
 
-        await ctx.db.insert("quizAnswers", {
-          attemptId,
-          questionId: ans.questionId,
-          selectedChoiceId: ans.selectedChoiceId,
-          isCorrect,
-          answeredAt: ans.answeredAt ?? Date.now(),
-        });
-      }
-
-      // 4. Finalize score on server if submitted
-      if (attempt.status === "submitted") {
-        const total = attempt.totalQuestions > 0 ? attempt.totalQuestions : 1;
-        const finalScore = Math.round((calculatedCorrect / total) * 100);
-        await ctx.db.patch(attemptId, {
-          correctAnswers: calculatedCorrect,
-          score: finalScore,
-        });
+        // 4. Finalize score on server if submitted
+        if (attempt.status === "submitted") {
+          const total = attempt.totalQuestions > 0 ? attempt.totalQuestions : 1;
+          const finalScore = Math.round((calculatedCorrect / total) * 100);
+          await ctx.db.patch(attemptId, {
+            correctAnswers: calculatedCorrect,
+            score: finalScore,
+          });
+        }
       }
 
       synced.push({
