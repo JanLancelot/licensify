@@ -304,3 +304,65 @@ export const bulkCreateQuestions = mutation({
   },
 });
 
+/**
+ * Public/Student query: Fetches questions for practice drills based on filters.
+ */
+export const getQuestionsForPractice = query({
+  args: {
+    subjectId: v.optional(v.string()),
+    topicId: v.optional(v.string()),
+    difficulty: v.optional(v.string()),
+    specializedType: v.optional(v.string()),
+    count: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    let questions = await ctx.db
+      .query("questions")
+      .filter((q) => q.neq(q.field("isPublished"), false))
+      .collect();
+
+    if (args.specializedType) {
+      const filtered = questions.filter((q) => q.specializedType === args.specializedType);
+      if (filtered.length > 0) questions = filtered;
+    }
+
+    if (args.subjectId && args.subjectId !== "all") {
+      const filtered = questions.filter((q) => q.subjectId === args.subjectId);
+      if (filtered.length > 0) questions = filtered;
+    }
+
+    if (args.topicId) {
+      const filtered = questions.filter((q) => q.topicId === args.topicId);
+      if (filtered.length > 0) questions = filtered;
+    }
+
+    if (args.difficulty && args.difficulty !== "all") {
+      const filtered = questions.filter(
+        (q) => q.difficulty.toLowerCase() === args.difficulty?.toLowerCase()
+      );
+      if (filtered.length > 0) questions = filtered;
+    }
+
+    // Shuffle and pick target count
+    const shuffled = [...questions].sort(() => 0.5 - Math.random());
+    const targetCount = args.count || 10;
+    const selected = shuffled.slice(0, targetCount);
+
+    return selected.map((q) => ({
+      id: q._id,
+      subjectId: q.subjectId,
+      branchId: q.branchId,
+      topicId: q.topicId,
+      lessonId: q.lessonId,
+      question: q.question,
+      choices: q.choices,
+      correctChoiceId: q.correctChoiceId,
+      correctChoiceHash: q.correctChoiceId,
+      explanation: q.explanation,
+      difficulty: q.difficulty,
+      specializedType: q.specializedType,
+    }));
+  },
+});
+
+

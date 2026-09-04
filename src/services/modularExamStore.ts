@@ -1,7 +1,4 @@
 import { useEffect, useState } from 'react';
-import { eq } from 'drizzle-orm';
-import { db } from '@/db/client';
-import * as schema from '@/db/schema';
 
 export interface ModularExamPreset {
   id: string;
@@ -48,54 +45,8 @@ function loadPresetsFromStorage(): ModularExamPreset[] {
     }
   }
 
-  hydrateFromDatabase();
-
   isLoaded = true;
   return inMemoryModularExams;
-}
-
-async function hydrateFromDatabase() {
-  try {
-    const rows = await db
-      .select()
-      .from(schema.userPresets)
-      .where(eq(schema.userPresets.type, 'exam'));
-
-    if (rows && rows.length > 0) {
-      const parsedFromDb: ModularExamPreset[] = rows.map((r) => {
-        let lessonIds: string[] = [];
-        let subjectNames: string[] = [];
-        try {
-          lessonIds = typeof r.lessonIds === 'string' ? JSON.parse(r.lessonIds) : (r.lessonIds || []);
-        } catch {}
-        try {
-          subjectNames = typeof r.subjectNames === 'string' ? JSON.parse(r.subjectNames) : (r.subjectNames || []);
-        } catch {}
-
-        return {
-          id: r.id,
-          title: r.title,
-          iconName: r.iconName || 'Layers',
-          lessonIds,
-          subjectNames,
-          questionCount: r.questionCount || 25,
-          timeLimitSeconds: r.timeLimitSeconds || 3600,
-          createdAt: r.createdAt || Date.now(),
-        };
-      });
-
-      const mergedMap = new Map<string, ModularExamPreset>();
-      parsedFromDb.forEach((p) => mergedMap.set(p.id, p));
-      inMemoryModularExams.forEach((p) => {
-        if (!mergedMap.has(p.id)) mergedMap.set(p.id, p);
-      });
-
-      inMemoryModularExams = Array.from(mergedMap.values());
-      notifyListeners();
-    }
-  } catch (e) {
-    console.warn('[ModularExamStore] SQLite hydration notice:', e);
-  }
 }
 
 function persistPresets(presets: ModularExamPreset[]) {
@@ -124,46 +75,6 @@ export function saveModularExamPreset(preset: ModularExamPreset): ModularExamPre
     updated = [preset, ...current];
   }
   persistPresets(updated);
-
-  // Persist to SQLite
-  (async () => {
-    try {
-      const now = Date.now();
-      await db
-        .insert(schema.userPresets)
-        .values({
-          id: preset.id,
-          userId: 'local-student-1',
-          type: 'exam',
-          title: preset.title,
-          iconName: preset.iconName || 'Layers',
-          lessonIds: JSON.stringify(preset.lessonIds || []),
-          subjectNames: JSON.stringify(preset.subjectNames || []),
-          questionCount: preset.questionCount || 25,
-          timeLimitSeconds: preset.timeLimitSeconds || 3600,
-          isShuffled: true,
-          syncStatus: 'pending_sync',
-          createdAt: preset.createdAt || now,
-          updatedAt: now,
-        })
-        .onConflictDoUpdate({
-          target: schema.userPresets.id,
-          set: {
-            title: preset.title,
-            iconName: preset.iconName || 'Layers',
-            lessonIds: JSON.stringify(preset.lessonIds || []),
-            subjectNames: JSON.stringify(preset.subjectNames || []),
-            questionCount: preset.questionCount || 25,
-            timeLimitSeconds: preset.timeLimitSeconds || 3600,
-            syncStatus: 'pending_sync',
-            updatedAt: now,
-          },
-        });
-    } catch (e) {
-      console.warn('[ModularExamStore] Failed to insert SQLite preset:', e);
-    }
-  })();
-
   return updated;
 }
 
@@ -171,15 +82,6 @@ export function deleteModularExamPreset(id: string): ModularExamPreset[] {
   const current = loadPresetsFromStorage();
   const updated = current.filter((p) => p.id !== id);
   persistPresets(updated);
-
-  (async () => {
-    try {
-      await db.delete(schema.userPresets).where(eq(schema.userPresets.id, id));
-    } catch (e) {
-      console.warn('[ModularExamStore] Failed to delete SQLite preset:', e);
-    }
-  })();
-
   return updated;
 }
 
@@ -196,7 +98,6 @@ export function useModularExamPresets() {
   const [presets, setPresets] = useState<ModularExamPreset[]>(() => getModularExamPresets());
 
   useEffect(() => {
-    hydrateFromDatabase();
     const unsub = subscribeModularExamPresets((updated) => {
       setPresets(updated);
     });

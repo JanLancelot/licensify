@@ -853,13 +853,19 @@ export default function ExamSessionScreen() {
           }
 
           let correctK: 'A' | 'B' | 'C' | 'D' = 'A';
-          if (q.correctChoiceHash) {
+          const anyQ = q as any;
+          if (anyQ.correctChoiceId) {
+            const idx = choices.findIndex((c) => c.id === anyQ.correctChoiceId);
+            if (idx !== -1) {
+              correctK = keys[idx] || 'A';
+            }
+          } else if (anyQ.correctChoiceHash) {
             for (let i = 0; i < choices.length; i++) {
               const hash = await crypto.digestStringAsync(
                 crypto.CryptoDigestAlgorithm.SHA256,
                 `${q.id}:${choices[i].id}`
               );
-              if (hash === q.correctChoiceHash) {
+              if (hash === anyQ.correctChoiceHash) {
                 correctK = keys[i] || 'A';
                 break;
               }
@@ -880,7 +886,7 @@ export default function ExamSessionScreen() {
               text: c.text,
             })),
             correctKey: correctK,
-            correctChoiceHash: q.correctChoiceHash || undefined,
+            correctChoiceHash: anyQ.correctChoiceHash || anyQ.correctChoiceId || undefined,
             explanation: q.explanation || 'Refer to the standard ALE board exam syllabus guidelines.',
           });
         }

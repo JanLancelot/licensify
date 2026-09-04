@@ -100,13 +100,19 @@ export default function PracticeQuizScreen() {
           }
 
           let correctIdx = 0;
-          if (q.correctChoiceHash) {
+          const anyQ = q as any;
+          if (anyQ.correctChoiceId) {
+            const idx = choices.findIndex((c) => c.id === anyQ.correctChoiceId);
+            if (idx !== -1) {
+              correctIdx = idx;
+            }
+          } else if (anyQ.correctChoiceHash) {
             for (let i = 0; i < choices.length; i++) {
               const hash = await crypto.digestStringAsync(
                 crypto.CryptoDigestAlgorithm.SHA256,
                 `${q.id}:${choices[i].id}`
               );
-              if (hash === q.correctChoiceHash) {
+              if (hash === anyQ.correctChoiceHash) {
                 correctIdx = i;
                 break;
               }
@@ -128,7 +134,7 @@ export default function PracticeQuizScreen() {
             options: choices.map((c) => c.text),
             choiceIds: choices.map((c) => c.id),
             correctIndex: correctIdx,
-            correctChoiceHash: q.correctChoiceHash || undefined,
+            correctChoiceHash: anyQ.correctChoiceHash || anyQ.correctChoiceId || undefined,
             explanation: q.explanation || 'Essential architectural standard and code specification.',
             difficulty: q.difficulty,
           });

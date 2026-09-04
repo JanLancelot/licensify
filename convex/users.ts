@@ -299,4 +299,174 @@ export const toggleUserActive = mutation({
   },
 });
 
+/**
+ * Public/Student query: Computes live user study stats in real time.
+ */
+export const getUserStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+
+    const [allLessons, completedProgress, attempts, streaks] = await Promise.all([
+      ctx.db
+        .query("lessons")
+        .filter((q) => q.neq(q.field("isPublished"), false))
+        .collect(),
+      user
+        ? ctx.db
+            .query("lessonProgress")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .filter((q) => q.eq(q.field("isCompleted"), true))
+            .collect()
+        : Promise.resolve([]),
+      user
+        ? ctx.db
+            .query("quizAttempts")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .collect()
+        : Promise.resolve([]),
+      user
+        ? ctx.db
+            .query("userStreaks")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .collect()
+        : Promise.resolve([]),
+    ]);
+
+    const totalLessons = allLessons.length;
+    const completedCount = completedProgress.length;
+    const progressPercentage =
+      totalLessons > 0 ? Math.min(100, Math.round((completedCount / totalLessons) * 100)) : 0;
+
+    const completedQuizzes = attempts.length;
+    const totalScore = attempts.reduce((acc, curr) => acc + (curr.score || 0), 0);
+    const averageScore = completedQuizzes > 0 ? Math.round(totalScore / completedQuizzes) : 0;
+
+    let streakDays = 0;
+    if (streaks.length > 0 && streaks[0].currentStreak > 0) {
+      streakDays = streaks[0].currentStreak;
+    } else if (attempts.length > 0 || completedProgress.length > 0) {
+      streakDays = 1;
+    }
+
+    return {
+      progressPercentage,
+      completedQuizzes,
+      averageScore,
+      streakDays,
+    };
+  },
+});
+
+/**
+ * Public/Student query: Fetches user study streak online.
+ */
+export const getUserStreakOnline = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return { currentStreak: 0, longestStreak: 0 };
+
+    const streak = await ctx.db
+      .query("userStreaks")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
+
+    return {
+      currentStreak: streak?.currentStreak ?? 0,
+      longestStreak: streak?.longestStreak ?? 0,
+      lastActiveDate: streak?.lastActiveDate,
+    };
+  },
+});
+
+/**
+ * Public/Student query: Fetches live achievements with real-time unlocked state.
+ */
+export const getUserAchievementsOnline = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+
+    const [allAch, userAch, attempts, streaks] = await Promise.all([
+      ctx.db
+        .query("achievements")
+        .filter((q) => q.neq(q.field("isPublished"), false))
+        .collect(),
+      user
+        ? ctx.db
+            .query("userAchievements")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .collect()
+        : Promise.resolve([]),
+      user
+        ? ctx.db
+            .query("quizAttempts")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .collect()
+        : Promise.resolve([]),
+      user
+        ? ctx.db
+            .query("userStreaks")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .collect()
+        : Promise.resolve([]),
+    ]);
+
+    allAch.sort((a, b) => (a.order || 0) - (b.order || 0));
+    const currentStreak = streaks.length > 0 ? streaks[0].currentStreak : (attempts.length > 0 ? 1 : 0);
+
+    return allAch.map((ach) => {
+      const uRec = userAch.find((ua: any) => ua.achievementId === ach._id);
+      let isUnlocked = uRec?.isUnlocked || false;
+      let currentVal = uRec?.progress || 0;
+
+      if (!isUnlocked) {
+        if (ach.criteriaType === "streak") {
+          currentVal = currentStreak;
+          if (currentVal >= ach.targetValue) isUnlocked = true;
+        } else if (
+          ach.criteriaType === "quiz_count" ||
+          ach.criteriaType === "flashcard_decks"
+        ) {
+          currentVal = attempts.length;
+          if (currentVal >= ach.targetValue) isUnlocked = true;
+        } else if (ach.criteriaType === "perfect_score") {
+          const hasPerfect = attempts.some((att) => (att.score || 0) >= 100);
+          currentVal = hasPerfect ? 1 : 0;
+          if (hasPerfect) isUnlocked = true;
+        } else if (
+          ach.criteriaType === "area1_exam" ||
+          ach.criteriaType === "rule7_8"
+        ) {
+          const passed = attempts.some((att) => (att.score || 0) >= 75);
+          currentVal = passed ? 1 : 0;
+          if (passed) isUnlocked = true;
+        }
+      }
+
+      const progressText = isUnlocked
+        ? "Unlocked"
+        : `${Math.min(currentVal, ach.targetValue)}/${ach.targetValue} Done`;
+
+      return {
+        id: ach._id,
+        title: ach.title,
+        category: ach.category,
+        description: ach.description,
+        iconName: ach.iconName,
+        bg: ach.bg,
+        darkBg: ach.darkBg,
+        iconColor: ach.iconColor,
+        criteriaType: ach.criteriaType,
+        targetValue: ach.targetValue,
+        order: ach.order,
+        isUnlocked,
+        progressText,
+      };
+    });
+  },
+});
+
+
 

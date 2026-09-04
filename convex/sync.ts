@@ -577,3 +577,65 @@ export const syncUserStreak = mutation({
     }
   },
 });
+
+/**
+ * Public/Student query: Fetches all completed lesson IDs for the authenticated user.
+ */
+export const getUserLessonProgress = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
+
+    const records = await ctx.db
+      .query("lessonProgress")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("isCompleted"), true))
+      .collect();
+
+    return records.map((r) => r.lessonId);
+  },
+});
+
+/**
+ * Mutation: Toggle or set lesson completion state for authenticated user.
+ */
+export const toggleLessonProgress = mutation({
+  args: {
+    lessonId: v.string(),
+    isCompleted: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) throw new Error("Unauthenticated call to toggleLessonProgress");
+
+    const existing = await ctx.db
+      .query("lessonProgress")
+      .withIndex("by_user_and_lesson", (q) =>
+        q.eq("userId", user._id).eq("lessonId", args.lessonId)
+      )
+      .first();
+
+    const now = Date.now();
+    const newStatus = args.isCompleted !== undefined ? args.isCompleted : !existing?.isCompleted;
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        isCompleted: newStatus,
+        completedAt: now,
+        updatedAt: now,
+      });
+      return { lessonId: args.lessonId, isCompleted: newStatus };
+    } else {
+      await ctx.db.insert("lessonProgress", {
+        userId: user._id,
+        lessonId: args.lessonId,
+        isCompleted: newStatus,
+        completedAt: now,
+        updatedAt: now,
+      });
+      return { lessonId: args.lessonId, isCompleted: newStatus };
+    }
+  },
+});
+

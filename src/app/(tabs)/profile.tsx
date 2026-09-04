@@ -8,9 +8,7 @@ import {
   Bell,
   Camera,
   Check,
-  CheckCircle2,
   ChevronRight,
-  Cloud,
   Flame,
   HelpCircle,
   Image as ImageIcon,
@@ -48,12 +46,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ACCENT_THEME_LIST } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
-import { db } from '@/db/client';
-import * as schema from '@/db/schema';
-import { eq } from 'drizzle-orm';
 import { api } from '../../../convex/_generated/api';
 import { LocalAchievementItem, useLocalAchievements } from '@/hooks/useLocalData';
-import { useSyncService } from '@/services/useSyncService';
 
 interface FormattedAchievementDisplay extends LocalAchievementItem {
   icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
@@ -102,7 +96,6 @@ export default function ProfileScreen() {
   // Convex profile and mutation
   const userProfile = useQuery(api.users.getCurrentUserProfile);
   const updateProfileMutation = useMutation(api.users.updateProfile);
-  const { syncDown, syncUp, syncProgress, lastSyncedAt } = useSyncService();
 
   // User info state
   const [customUserName, setCustomUserName] = useState<string | null>(null);
@@ -117,7 +110,6 @@ export default function ProfileScreen() {
   // Modals state
   const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
   const [isSeeAllAchievementsVisible, setIsSeeAllAchievementsVisible] = useState(false);
-  const [isSyncModalVisible, setIsSyncModalVisible] = useState(false);
   const [editNameInput, setEditNameInput] = useState('');
   const [editEmailInput, setEditEmailInput] = useState('');
 
@@ -127,7 +119,6 @@ export default function ProfileScreen() {
   // Settings switches & Preferences - default to userProfile if present
   const [localSoundEnabled, setLocalSoundEnabled] = useState<boolean | null>(null);
   const [localDailyReminder, setLocalDailyReminder] = useState<boolean | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const soundEnabled = localSoundEnabled !== null ? localSoundEnabled : (userProfile?.soundEnabled ?? true);
   const dailyReminder = localDailyReminder !== null ? localDailyReminder : (userProfile?.dailyReminder ?? true);
@@ -237,17 +228,6 @@ export default function ProfileScreen() {
       const { storageId } = await uploadRes.json();
       await updateProfileMutation({ profileImageId: storageId });
 
-      try {
-        if (currentUserId) {
-          await db
-            .update(schema.users)
-            .set({ profileImageId: storageId, profileImageUrl: uri })
-            .where(eq(schema.users.userId, currentUserId));
-        }
-      } catch (dbErr) {
-        console.warn('Could not cache avatar locally in SQLite:', dbErr);
-      }
-
       Alert.alert('Success', 'Profile photo updated successfully!');
     } catch (err) {
       console.error('Failed to upload profile photo:', err);
@@ -264,14 +244,6 @@ export default function ProfileScreen() {
       setLocalAvatarUri(null);
       try {
         await updateProfileMutation({ profileImageId: null });
-        if (currentUserId) {
-          try {
-            await db
-              .update(schema.users)
-              .set({ profileImageId: null, profileImageUrl: null })
-              .where(eq(schema.users.userId, currentUserId));
-          } catch {}
-        }
         Alert.alert('Success', 'Profile photo removed.');
       } catch (err) {
         console.error('Failed to remove profile photo:', err);
@@ -399,19 +371,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleManualSync = async () => {
-    setIsSyncModalVisible(true);
-    setIsSyncing(true);
-    try {
-      await syncDown();
-      await syncUp();
-    } catch (err) {
-      console.warn('Sync notice:', err);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
@@ -531,7 +490,7 @@ export default function ProfileScreen() {
                   },
                 ]}>
                 <Text style={{ color: colors.textSecondary, fontSize: 12.5, textAlign: 'center' }}>
-                  No achievements recorded yet. Tap Cloud Backup to sync.
+                  No achievements unlocked yet. Complete quizzes and study modules to earn badges!
                 </Text>
               </View>
             ) : (
@@ -774,45 +733,6 @@ export default function ProfileScreen() {
                 borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
               },
             ]}>
-            {/* Cloud Sync */}
-            <Pressable
-              onPress={handleManualSync}
-              disabled={isSyncing}
-              style={({ pressed }) => [
-                styles.navItemRow,
-                { opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <SettingPastelBadge
-                icon={Cloud}
-                bg="#E0F2FE"
-                darkBg="rgba(14, 165, 233, 0.2)"
-                iconColor="#0284C7"
-                isDark={isDark}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.settingItemTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
-                  Cloud Backup
-                </Text>
-                {lastSyncedAt ? (
-                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
-                    Last synced {new Date(lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                ) : null}
-              </View>
-              {isSyncing ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.accent }}>
-                    {syncProgress.percentage}%
-                  </Text>
-                  <ActivityIndicator size="small" color={colors.accent} />
-                </View>
-              ) : (
-                <ChevronRight size={18} color={isDark ? '#9CA3AF' : '#4B5563'} strokeWidth={2.2} />
-              )}
-            </Pressable>
-
-            <View style={[styles.itemDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]} />
-
             {/* Legal Information */}
             <Pressable
               onPress={() => Alert.alert('Legal Information', 'Architecture Licensure Exam Prep Terms & Privacy Policy.')}
@@ -1134,7 +1054,7 @@ export default function ProfileScreen() {
                 {displayedAchievements.length === 0 ? (
                   <View style={{ padding: 20, alignItems: 'center' }}>
                     <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>
-                      No achievements synced yet. Use Cloud Backup to sync.
+                      No achievements unlocked yet. Complete quizzes and study modules to earn badges!
                     </Text>
                   </View>
                 ) : (
@@ -1228,98 +1148,6 @@ export default function ProfileScreen() {
         </Animated.View>
       </Modal>
 
-      {/* CLOUD BACKUP PROGRESS MODAL */}
-      <Modal visible={isSyncModalVisible} transparent animationType="fade">
-        <View style={styles.syncModalBackdrop}>
-          <View
-            style={[
-              styles.syncModalBox,
-              { backgroundColor: isDark ? '#1C1F26' : '#FFFFFF' },
-            ]}>
-            {/* Header Icon */}
-            <View style={styles.syncHeaderIconRow}>
-              <View
-                style={[
-                  styles.syncIconCircle,
-                  {
-                    backgroundColor: syncProgress.step === 'complete'
-                      ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#D1FAE5')
-                      : syncProgress.step === 'error'
-                        ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2')
-                        : (isDark ? 'rgba(2, 132, 199, 0.2)' : '#E0F2FE'),
-                  },
-                ]}>
-                {syncProgress.step === 'complete' ? (
-                  <CheckCircle2 size={32} color="#10B981" strokeWidth={2.4} />
-                ) : syncProgress.step === 'error' ? (
-                  <X size={32} color="#EF4444" strokeWidth={2.4} />
-                ) : (
-                  <Cloud size={32} color={colors.accent} strokeWidth={2.4} />
-                )}
-              </View>
-            </View>
-
-            {/* Title & Percentage */}
-            <Text style={[styles.syncModalTitle, { color: colors.text }]}>
-              {syncProgress.step === 'complete' ? 'Sync Complete' : 'Cloud Backup'}
-            </Text>
-            <Text style={[styles.syncPercentageText, { color: syncProgress.step === 'complete' ? '#10B981' : colors.accent }]}>
-              {syncProgress.percentage}%
-            </Text>
-
-            {/* Smooth Track Bar */}
-            <View
-              style={[
-                styles.syncProgressBarTrack,
-                { backgroundColor: isDark ? '#23262F' : '#F1F5F9' },
-              ]}>
-              <View
-                style={[
-                  styles.syncProgressBarFill,
-                  {
-                    width: `${syncProgress.percentage}%`,
-                    backgroundColor: syncProgress.step === 'complete' ? '#10B981' : colors.accent,
-                  },
-                ]}
-              />
-            </View>
-
-            {/* Live Message */}
-            <Text
-              numberOfLines={2}
-              style={[styles.syncMessageText, { color: colors.textSecondary }]}>
-              {syncProgress.message}
-            </Text>
-
-            {/* Action / Done Button */}
-            <Pressable
-              onPress={() => setIsSyncModalVisible(false)}
-              disabled={isSyncing && syncProgress.step !== 'complete' && syncProgress.step !== 'error'}
-              style={({ pressed }) => [
-                styles.syncDoneBtn,
-                {
-                  backgroundColor: (isSyncing && syncProgress.step !== 'complete' && syncProgress.step !== 'error')
-                    ? (isDark ? '#23262F' : '#E2E8F0')
-                    : (syncProgress.step === 'complete' ? '#10B981' : colors.accent),
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}>
-              {isSyncing && syncProgress.step !== 'complete' && syncProgress.step !== 'error' ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <ActivityIndicator size="small" color={colors.textSecondary} />
-                  <Text style={[styles.syncDoneBtnText, { color: colors.textSecondary }]}>
-                    Syncing...
-                  </Text>
-                </View>
-              ) : (
-                <Text style={styles.syncDoneBtnText}>
-                  {syncProgress.step === 'complete' ? 'Done' : 'Close'}
-                </Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -1808,77 +1636,6 @@ const styles = StyleSheet.create({
   },
   loadingTitle: {
     fontSize: 14,
-    fontWeight: '700',
-  },
-  syncModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  syncModalBox: {
-    width: '88%',
-    maxWidth: 360,
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  syncHeaderIconRow: {
-    marginBottom: 12,
-  },
-  syncIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  syncModalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-    marginBottom: 4,
-  },
-  syncPercentageText: {
-    fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: -0.5,
-    marginBottom: 16,
-  },
-  syncProgressBarTrack: {
-    width: '100%',
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  syncProgressBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  syncMessageText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
-    minHeight: 36,
-  },
-  syncDoneBtn: {
-    width: '100%',
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  syncDoneBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
     fontWeight: '700',
   },
 });

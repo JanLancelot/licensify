@@ -175,7 +175,7 @@ export const getAttemptWithAnswers = query({
       throw new Error("Unauthorized to view this attempt");
     }
 
-    const quiz = (await ctx.db.get(attempt.quizId as any)) as any;
+    const quiz = await getQuizDoc(ctx, attempt.quizId);
     const answers = await ctx.db
       .query("quizAnswers")
       .withIndex("by_attempt", (q) => q.eq("attemptId", args.attemptId))
@@ -183,11 +183,22 @@ export const getAttemptWithAnswers = query({
 
     return {
       ...attempt,
-      quizTitle: quiz?.title ?? "Practice Quiz",
+      quizTitle: quiz?.title ?? (typeof attempt.quizId === "string" ? attempt.quizId : "Practice Quiz"),
       answers,
     };
   },
 });
+
+/**
+ * Safe helper: fetches quiz doc if valid Convex ID, otherwise returns null.
+ */
+async function getQuizDoc(ctx: any, quizId: string) {
+  try {
+    return (await ctx.db.get(quizId as any)) as any;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Query: Fetch history of all quiz attempts for the logged-in student.
@@ -204,13 +215,126 @@ export const getUserQuizHistory = query({
 
     return await Promise.all(
       attempts.map(async (att) => {
-        const quiz = (await ctx.db.get(att.quizId as any)) as any;
+        const quiz = await getQuizDoc(ctx, att.quizId);
         return {
           ...att,
-          quizTitle: quiz?.title ?? "Practice Quiz",
+          quizTitle: quiz?.title ?? (typeof att.quizId === "string" ? att.quizId : "Practice Quiz"),
           quizType: quiz?.type ?? "practice",
         };
       })
     );
   },
 });
+
+/**
+ * Direct Online Attempt Submission:
+ * Receives answers, calculates score on server, records attempt and answers,
+ * and updates user study streak in real time.
+ */
+export const submitAttemptDirect = mutation({
+  args: {
+    quizId: v.string(),
+    answers: v.array(
+      v.object({
+        questionId: v.string(),
+        selectedChoiceId: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const now = Date.now();
+
+    // 1. Fetch questions to grade
+    const questionIds = args.answers.map((a) => a.questionId);
+    const questions = await Promise.all(
+      questionIds.map(async (qId) => {
+        try {
+          return await ctx.db.get(qId as any);
+        } catch {
+          return null;
+        }
+      })
+    );
+    const questionMap = new Map<string, any>();
+    questions.forEach((q) => {
+      if (q) questionMap.set(q._id, q);
+    });
+
+    let correctAnswers = 0;
+    for (const ans of args.answers) {
+      const qDoc = questionMap.get(ans.questionId);
+      if (qDoc && qDoc.correctChoiceId === ans.selectedChoiceId) {
+        correctAnswers++;
+      }
+    }
+
+    const totalQuestions = args.answers.length > 0 ? args.answers.length : 1;
+    const score = Math.round((correctAnswers / totalQuestions) * 100);
+
+    // 2. Insert attempt record
+    const attemptId = await ctx.db.insert("quizAttempts", {
+      userId: user._id,
+      quizId: args.quizId,
+      status: "submitted",
+      score,
+      correctAnswers,
+      totalQuestions: args.answers.length,
+      startedAt: now,
+      submittedAt: now,
+    });
+
+    // 3. Insert individual answer records
+    for (const ans of args.answers) {
+      const qDoc = questionMap.get(ans.questionId);
+      const isCorrect = qDoc ? qDoc.correctChoiceId === ans.selectedChoiceId : false;
+      try {
+        await ctx.db.insert("quizAnswers", {
+          attemptId,
+          questionId: ans.questionId as any,
+          selectedChoiceId: ans.selectedChoiceId,
+          isCorrect,
+          answeredAt: now,
+        });
+      } catch {
+        // ignore malformed questionId reference
+      }
+    }
+
+    // 4. Update or create user streak
+    const todayStr = new Date().toISOString().split("T")[0];
+    const existingStreak = await ctx.db
+      .query("userStreaks")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
+
+    if (existingStreak) {
+      let newStreak = existingStreak.currentStreak;
+      if (existingStreak.lastActiveDate !== todayStr) {
+        newStreak = existingStreak.currentStreak + 1;
+      }
+      await ctx.db.patch(existingStreak._id, {
+        currentStreak: newStreak,
+        longestStreak: Math.max(existingStreak.longestStreak, newStreak),
+        lastActiveDate: todayStr,
+        updatedAt: now,
+      });
+    } else {
+      await ctx.db.insert("userStreaks", {
+        userId: user._id,
+        currentStreak: 1,
+        longestStreak: 1,
+        lastActiveDate: todayStr,
+        updatedAt: now,
+      });
+    }
+
+    return {
+      attemptId,
+      score,
+      correctAnswers,
+      totalQuestions: args.answers.length,
+    };
+  },
+});
+
