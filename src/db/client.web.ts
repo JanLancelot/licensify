@@ -82,6 +82,14 @@ function resolveTableName(table: any): string {
   return name;
 }
 
+function toSnakeCase(str: string) {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+function toCamelCase(str: string) {
+  return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+}
+
 function matchesCondition(item: any, condition: any): boolean {
   if (!condition) return true;
 
@@ -92,16 +100,26 @@ function matchesCondition(item: any, condition: any): boolean {
       condition?.left?.name ||
       condition?.left?.key;
 
+    const getItemVal = (c: string) => {
+      if (item[c] !== undefined) return item[c];
+      const snake = toSnakeCase(c);
+      if (item[snake] !== undefined) return item[snake];
+      const camel = toCamelCase(c);
+      if (item[camel] !== undefined) return item[camel];
+      return undefined;
+    };
+
     // 1. Check for inArray condition
     if (condition?.values && Array.isArray(condition.values)) {
       if (col) {
-        const itemVal = item[col] !== undefined ? item[col] : item[toSnakeCase(col)];
+        const itemVal = getItemVal(col);
         if (itemVal !== undefined) {
           const rawValues = condition.values.map((v: any) =>
             v !== null && typeof v === 'object' && 'value' in v ? v.value : v
           );
           return rawValues.includes(itemVal);
         }
+        return false;
       }
     }
 
@@ -118,20 +136,14 @@ function matchesCondition(item: any, condition: any): boolean {
           : undefined;
 
     if (col && rawRight !== undefined) {
-      const itemVal = item[col] !== undefined ? item[col] : item[toSnakeCase(col)];
-      if (itemVal !== undefined) {
-        return itemVal === rawRight;
-      }
+      const itemVal = getItemVal(col);
+      return itemVal === rawRight;
     }
   } catch {
-    return true;
+    return false;
   }
 
   return true;
-}
-
-function toSnakeCase(str: string) {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
 /**
