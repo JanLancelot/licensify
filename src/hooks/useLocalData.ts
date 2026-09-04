@@ -1,8 +1,7 @@
 import { useMutation, useQuery } from 'convex/react';
 import { useCallback, useMemo } from 'react';
-import { BookOpen, Compass, Landmark } from 'lucide-react-native';
 import { api } from '../../convex/_generated/api';
-import { SubjectNote, Topic, Lesson, FlashcardItem } from '@/types/curriculum';
+import { SubjectNote, FlashcardItem } from '@/types/curriculum';
 
 const AREA_ICONS = [Landmark, Compass, BookOpen];
 
