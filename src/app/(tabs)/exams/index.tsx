@@ -4,7 +4,7 @@ import {
   Plus,
   X,
 } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Platform,
@@ -31,59 +31,22 @@ import {
   PRESET_ICONS,
 } from '@/components/exams/ModularExamBuilderModal';
 import { useAppTheme } from '@/context/theme-context';
-import { useLocalHierarchy } from '@/hooks/useLocalData';
+import { useLocalHierarchy, useLocalQuizzes } from '@/hooks/useLocalData';
 import {
   ModularExamPreset,
   useModularExamPresets,
 } from '@/services/modularExamStore';
 
-/* Comprehensive Mock Simulation Sets Data */
-export const COMPREHENSIVE_MOCK_SETS = [
-  {
-    id: 'comprehensive-set-1',
-    setNumber: '1',
-    title: 'Comprehensive Mock Set 1',
-    itemsCount: 100,
-    itemsLabel: '100 ITEMS',
-    durationLabel: '3 Hours',
-    durationSeconds: 10800,
-    subjects: [
-      'History of Architecture',
-      'Theory of Architecture',
-      'Tropical Design',
-      'Professional Practice',
-    ],
-  },
-  {
-    id: 'comprehensive-set-2',
-    setNumber: '2',
-    title: 'Comprehensive Mock Set 2',
-    itemsCount: 150,
-    itemsLabel: '150 ITEMS',
-    durationLabel: '3 Hours',
-    durationSeconds: 10800,
-    subjects: [
-      'Building Utilities',
-      'Building Technology',
-      'Materials & Specification',
-    ],
-  },
-  {
-    id: 'comprehensive-set-3',
-    setNumber: '3',
-    title: 'Comprehensive Mock Set 3',
-    itemsCount: 200,
-    itemsLabel: '200 ITEMS',
-    durationLabel: '7 Hours',
-    durationSeconds: 25200,
-    subjects: [
-      'Site Planning & Urban Design',
-      'Architectural Design',
-      'NBCP Rule 7 & 8',
-      'Building Laws',
-    ],
-  },
-];
+export interface ComprehensiveMockSetItem {
+  id: string;
+  setNumber: string;
+  title: string;
+  itemsCount: number;
+  itemsLabel: string;
+  durationLabel: string;
+  durationSeconds: number;
+  subjects: string[];
+}
 
 /* Custom Bento Deck Squircle Icon */
 function CustomDeckIcon({
@@ -129,6 +92,7 @@ export default function ExamsSelectionScreen() {
   const router = useRouter();
 
   const { curriculum, refetch: refetchCurriculum } = useLocalHierarchy();
+  const { quizzes: mockExamQuizzes, refetch: refetchMockQuizzes } = useLocalQuizzes({ type: 'mock_exam' });
   const {
     presets: modularPresets,
     savePreset: saveModularPreset,
@@ -142,8 +106,60 @@ export default function ExamsSelectionScreen() {
   useFocusEffect(
     useCallback(() => {
       refetchCurriculum?.();
-    }, [refetchCurriculum])
+      refetchMockQuizzes?.();
+    }, [refetchCurriculum, refetchMockQuizzes])
   );
+
+  const comprehensiveSets = useMemo<ComprehensiveMockSetItem[]>(() => {
+    if (!mockExamQuizzes || mockExamQuizzes.length === 0) {
+      return [];
+    }
+
+    return mockExamQuizzes.map((quiz, idx) => {
+      const matchNumber = quiz.title.match(/(\d+)/);
+      const setNumber = matchNumber ? matchNumber[1] : String(idx + 1);
+      let qCount = 100;
+      if (quiz.questionIds) {
+        try {
+          const parsed = typeof quiz.questionIds === 'string' ? JSON.parse(quiz.questionIds) : quiz.questionIds;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            qCount = parsed.length;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      const durationSec = quiz.timeLimitSeconds || 10800;
+      const durationHours = Math.round(durationSec / 3600);
+      const durationLabel = `${durationHours} Hours`;
+
+      let subjects: string[] = [];
+      if (quiz.description && quiz.description.toLowerCase().includes('covering')) {
+        const afterCovering = quiz.description.slice(quiz.description.toLowerCase().indexOf('covering') + 8);
+        subjects = afterCovering.replace(/\.$/, '').split(/,|and/).map((s) => s.trim()).filter(Boolean);
+      } else if (quiz.description && quiz.description.includes('Subjects:')) {
+        subjects = quiz.description.replace('Subjects:', '').split(',').map((s) => s.trim()).filter(Boolean);
+      }
+      if (subjects.length === 0) {
+        subjects = [
+          'History of Architecture',
+          'Building Utilities',
+          'Architectural Design',
+        ];
+      }
+
+      return {
+        id: quiz.id,
+        setNumber,
+        title: quiz.title,
+        itemsCount: qCount,
+        itemsLabel: `${qCount} ITEMS`,
+        durationLabel,
+        durationSeconds: durationSec,
+        subjects,
+      };
+    });
+  }, [mockExamQuizzes]);
 
   // Handle selecting a custom Modular Test
   const handleSelectModularTest = (test: ModularExamPreset) => {
@@ -180,7 +196,7 @@ export default function ExamsSelectionScreen() {
   };
 
   // Handle selecting a Comprehensive Mock Set
-  const handleSelectComprehensiveSet = (set: (typeof COMPREHENSIVE_MOCK_SETS)[0]) => {
+  const handleSelectComprehensiveSet = (set: ComprehensiveMockSetItem) => {
     setActiveRemindersTarget({
       id: set.id,
       title: `${set.setNumber}: ${set.title}`,
@@ -346,9 +362,26 @@ export default function ExamsSelectionScreen() {
             </Text>
           </View>
 
-          {/* 3 Set Cards Matching Drawing Layout */}
+          {/* Dynamic Set Cards Matching Drawing Layout */}
           <View style={styles.comprehensiveList}>
-            {COMPREHENSIVE_MOCK_SETS.map((set) => {
+            {comprehensiveSets.length === 0 ? (
+              <View
+                style={[
+                  styles.comprehensiveSetCard,
+                  {
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingVertical: 24,
+                  },
+                ]}>
+                <Text style={{ color: colors.textSecondary, fontSize: 13.5, fontWeight: '500' }}>
+                  No comprehensive mock simulations found. Sync your data to load examination papers.
+                </Text>
+              </View>
+            ) : (
+              comprehensiveSets.map((set: ComprehensiveMockSetItem) => {
               return (
                 <Pressable
                   key={set.id}
@@ -423,7 +456,7 @@ export default function ExamsSelectionScreen() {
 
                     {/* Stacked Subjects List with Bullet Points */}
                     <View style={styles.subjectsStack}>
-                      {set.subjects.map((sub, sIdx) => (
+                      {set.subjects.map((sub: string, sIdx: number) => (
                         <View key={sIdx} style={styles.subjectItemRow}>
                           <View
                             style={[
@@ -445,7 +478,7 @@ export default function ExamsSelectionScreen() {
                   </View>
                 </Pressable>
               );
-            })}
+            }))}
           </View>
         </View>
       </ScrollView>

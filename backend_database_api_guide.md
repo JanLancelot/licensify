@@ -54,7 +54,7 @@ export type StudyRoom = Doc<"studyRooms">;
 |---|---|---|---|
 | `api.users.storeUser` | Mutation | `{ username?, firstName?, lastName? }` | Call on login to register identity |
 | `api.users.getCurrentUserProfile` | Query | `{}` | Returns current logged in user doc |
-| `api.users.updateProfile` | Mutation | `{ username?, firstName?, lastName?, profileImageId? }` | Updates profile metadata |
+| `api.users.updateProfile` | Mutation | `{ username?, firstName?, lastName?, profileImageId?, soundEnabled?, dailyReminder? }` | Updates profile metadata & preferences |
 | `api.users.updateRole` | Mutation | `{ targetUserId, newRole: "student" \| "admin" \| "content_manager" }` | Admin-only role elevation |
 
 **Example Usage in Component:**
@@ -151,17 +151,30 @@ console.log(`Score: ${result.score}% (${result.correctAnswers}/${result.totalQue
 
 | Function | Type | Parameters | Description |
 |---|---|---|---|
-| `api.sync.getSyncBundle` | Query | `{ sinceTimestamp?: number }` | Fetches entire published curriculum in 1 single atomic query with precomputed SHA-256 choice hashes (supports Delta sync) |
+| `api.sync.getSyncBundle` | Query | `{ sinceTimestamp?: number }` | Fetches entire published curriculum, presets, achievements, and streaks in 1 single atomic query with precomputed SHA-256 choice hashes (supports Delta sync) |
 | `api.sync.syncAttemptsBatch` | Mutation | `{ attempts: Array<{ localId, quizId, status, score?, correctAnswers?, totalQuestions, startedAt, submittedAt?, answers: Array<{ questionId, selectedChoiceId?, answeredAt? }> }> }` | Batch uploads and authoritatively grades multiple offline quiz attempts in 1 network call |
+| `api.sync.syncUserPresets` | Mutation | `{ presets: Array<{ localId, type, title, iconName?, lessonIds, subjectNames?, questionCount?, timeLimitSeconds?, isShuffled?, createdAt, updatedAt }> }` | Batch synchronizes custom student decks and quiz presets cross-device |
+| `api.sync.syncUserStreaks` | Mutation | `{ currentStreak, longestStreak, lastActiveDate }` | Synchronizes student study streaks and consistency records |
 
 ---
 
-## 4. Seeding Initial ALE Exam Data
+## 4. Seeding & Purging ALE Exam Data
 
-To seed default Architecture Board Exam subjects, topics, flashcards, and questions:
-
+### A. Seed Curriculum Hierarchy
 ```bash
-npx convex run seed:seedDatabase
+npx convex run seed:seedCurriculumFromExcel
+```
+
+### B. Seed Genuine Mock Assessments, Questions & Achievements
+All seeded review questions, drills, flashcards, study notes, and achievements contain `[Seed]` or `[Mock]` in their name:
+```bash
+npx convex run seedAssessments:seedMockAssessmentsAndMaterials
+```
+
+### C. Clean-Up / Purge Seed Data for Production
+To cleanly delete all seeded test records when production review content is ready:
+```bash
+npx convex run seedAssessments:deleteMockSeedData
 ```
 
 ---

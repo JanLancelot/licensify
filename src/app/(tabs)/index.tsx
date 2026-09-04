@@ -21,7 +21,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
-import { useLessonProgress, useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
+import { useLessonProgress, useLocalAttempts, useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
 import { api } from '../../../convex/_generated/api';
 
 interface ConfidenceItem {
@@ -37,9 +37,10 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const userProfile = useQuery(api.users.getCurrentUserProfile);
-  const { refetch } = useLocalStats();
+  const { stats, refetch } = useLocalStats();
   const { curriculum } = useLocalHierarchy();
   const { completedLessonIds, refetch: refetchProgress } = useLessonProgress();
+  const { attempts, refetch: refetchAttempts } = useLocalAttempts();
 
   const [showAllLessons, setShowAllLessons] = useState(false);
 
@@ -47,7 +48,8 @@ export default function HomeScreen() {
     useCallback(() => {
       refetch?.();
       refetchProgress?.();
-    }, [refetch, refetchProgress])
+      refetchAttempts?.();
+    }, [refetch, refetchProgress, refetchAttempts])
   );
 
   const userName =
@@ -55,51 +57,105 @@ export default function HomeScreen() {
     userProfile?.username ||
     'User';
 
+  const streakDays = stats?.streakDays ?? 0;
+  const milestoneTarget = streakDays >= 10 ? (Math.floor(streakDays / 10) + 1) * 10 : 10;
+  const streakProgressPercent = Math.min(100, Math.max(0, Math.round((streakDays / milestoneTarget) * 100)));
+
   // Active Continue Learning subjects/lessons matching real SQLite progress
   const continueItems = useMemo(() => {
-    if (curriculum && curriculum.length > 0) {
-      return curriculum.slice(0, 2).map((sub, sIdx) => {
-        const allLessonIds = sub.topics.flatMap((t) => t.lessons.map((l) => l.id));
-        const total = allLessonIds.length;
-        const done = allLessonIds.filter((id) => completedLessonIds.has(id)).length;
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-        return {
-          id: sub.id,
-          title: sub.title.toUpperCase(),
-          percent: pct,
-          icon: sIdx === 0 ? BookOpen : Landmark,
-        };
-      });
-    }
-    return [
-      {
-        id: 'c1',
-        title: 'HISTORY OF ARCHITECTURE',
-        percent: 0,
-        icon: BookOpen,
-      },
-      {
-        id: 'c2',
-        title: 'STRUCTURAL DESIGN',
-        percent: 0,
-        icon: Landmark,
-      },
-    ];
+    if (!curriculum || curriculum.length === 0) return [];
+
+    // Calculate real progress for each subject
+    const subjectsWithProgress = curriculum.map((sub, sIdx) => {
+      const allLessonIds = sub.topics.flatMap((t) => t.lessons.map((l) => l.id));
+      const total = allLessonIds.length;
+      const done = allLessonIds.filter((id) => completedLessonIds.has(id)).length;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      return {
+        id: sub.id,
+        title: sub.title.toUpperCase(),
+        percent: pct,
+        done,
+        total,
+        icon: sIdx === 0 ? BookOpen : Landmark,
+      };
+    });
+
+    // Prioritize subjects with actual student activity (done > 0)
+    const inProgress = subjectsWithProgress.filter((s) => s.done > 0);
+    const displayed = inProgress.length > 0
+      ? inProgress.slice(0, 2)
+      : subjectsWithProgress.slice(0, 2);
+
+    return displayed;
   }, [curriculum, completedLessonIds]);
 
   // Up to 10 Recent / Syllabus Lessons for the Confidence Rate Section
   const confidenceLessons: ConfidenceItem[] = useMemo(() => {
     const collected: ConfidenceItem[] = [];
 
+    // Map quiz attempts by subject/quiz to derive subject mastery scores
+    const subjectScores = new Map<string, number[]>();
+    const generalPracticeScores: number[] = [];
+
+    for (const att of attempts) {
+      if (typeof att.score === 'number') {
+        if (att.quizId === 'all-modular' || !att.quizId) {
+          generalPracticeScores.push(att.score);
+        } else {
+          const scores = subjectScores.get(att.quizId) || [];
+          scores.push(att.score);
+          subjectScores.set(att.quizId, scores);
+        }
+      }
+    }
+
+    const generalAvgScore = generalPracticeScores.length > 0
+      ? Math.round(generalPracticeScores.reduce((a, b) => a + b, 0) / generalPracticeScores.length)
+      : (stats?.averageScore && stats.averageScore > 0 ? stats.averageScore : null);
+
     for (const sub of curriculum) {
+      // Direct subject match or name match
+      let subScores = subjectScores.get(sub.id) || [];
+      if (subScores.length === 0) {
+        // Also check if any attempt matches by title keyword
+        for (const [key, scores] of subjectScores.entries()) {
+          if (sub.title.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(sub.title.toLowerCase())) {
+            subScores = scores;
+            break;
+          }
+        }
+      }
+
+      const directAvgScore = subScores.length > 0
+        ? Math.round(subScores.reduce((a, b) => a + b, 0) / subScores.length)
+        : null;
+
+      // Use direct subject drill score if available, otherwise use overall practice accuracy
+      const effectiveScore = directAvgScore !== null ? directAvgScore : generalAvgScore;
+
       for (const topic of sub.topics) {
         for (const les of topic.lessons) {
           const isDone = completedLessonIds.has(les.id);
+          
+          let confidencePercent = 0;
+          if (effectiveScore !== null && effectiveScore > 0) {
+            // Tested in practice drills: confidence reflects test accuracy (with 5% bonus if notes studied)
+            confidencePercent = isDone ? Math.min(100, Math.round(effectiveScore * 1.05)) : effectiveScore;
+          } else if (effectiveScore === 0) {
+            confidencePercent = 0;
+          } else if (isDone) {
+            // Notes completed but no quizzes taken yet: 65% baseline
+            confidencePercent = 65;
+          } else {
+            confidencePercent = 0;
+          }
+
           collected.push({
             id: les.id,
             lessonName: les.title,
             topicName: topic.title,
-            confidencePercent: isDone ? 100 : 50,
+            confidencePercent,
           });
           if (collected.length >= 10) break;
         }
@@ -108,26 +164,8 @@ export default function HomeScreen() {
       if (collected.length >= 10) break;
     }
 
-
-
-
-    if (collected.length < 10) {
-      return [
-        { id: 'l1', lessonName: 'History of Architecture', confidencePercent: 50 },
-        { id: 'l2', lessonName: 'Theory of Design', confidencePercent: 70 },
-        { id: 'l3', lessonName: 'Building Utilities', confidencePercent: 60 },
-        { id: 'l4', lessonName: 'Space Planning', confidencePercent: 93 },
-        { id: 'l5', lessonName: 'RA 9266 Architecture Act', confidencePercent: 100 },
-        { id: 'l6', lessonName: 'NBCP Rule 7 & 8', confidencePercent: 45 },
-        { id: 'l7', lessonName: 'Structural Concepts', confidencePercent: 82 },
-        { id: 'l8', lessonName: 'Plumbing & Sanitary', confidencePercent: 68 },
-        { id: 'l9', lessonName: 'Electrical Systems', confidencePercent: 77 },
-        { id: 'l10', lessonName: 'Site Planning & Ecology', confidencePercent: 88 },
-      ];
-    }
-
-    return collected.slice(0, 10);
-  }, [curriculum, completedLessonIds]);
+    return collected;
+  }, [curriculum, completedLessonIds, attempts, stats]);
 
   const displayedLessons = useMemo(() => {
     return showAllLessons ? confidenceLessons : confidenceLessons.slice(0, 5);
@@ -199,11 +237,11 @@ export default function HomeScreen() {
                   styles.heroStreakText,
                   { color: isDark ? '#FBBF24' : '#D97706' },
                 ]}>
-                3 DAYS
+                {streakDays} {streakDays === 1 ? 'DAY' : 'DAYS'}
               </Text>
             </View>
 
-            {/* Bottom: Progress Bar (20%) & Milestone Voucher Caption */}
+            {/* Bottom: Dynamic Streak Progress & Milestone Voucher Caption */}
             <View style={styles.heroBottomProgressArea}>
               {/* Progress Bar Track */}
               <View
@@ -219,20 +257,22 @@ export default function HomeScreen() {
                   style={[
                     styles.heroProgressFill,
                     {
-                      width: '20%',
+                      width: `${streakProgressPercent}%`,
                       backgroundColor: colors.accent,
                     },
                   ]}
                 />
               </View>
 
-              {/* Caption directly under the bar - full text without ellipsis */}
+              {/* Caption directly under the bar */}
               <Text
                 style={[
                   styles.heroMilestoneVoucherText,
                   { color: colors.textSecondary },
                 ]}>
-                COMPLETE 10 DAYS TO GET DISCOUNT VOUCHER
+                {streakDays >= milestoneTarget
+                  ? 'MILESTONE ACHIEVED! DISCOUNT VOUCHER UNLOCKED'
+                  : `COMPLETE ${milestoneTarget} DAYS TO GET DISCOUNT VOUCHER`}
               </Text>
             </View>
           </View>
@@ -275,45 +315,53 @@ export default function HomeScreen() {
 
                 {/* Rows */}
                 <View style={styles.chartRowsContainer}>
-                  {displayedLessons.map((item) => {
-                    // Bar width ratio relative to 68% max container width so % fits on right
-                    const barWidthPercent = Math.max(3, Math.min(100, item.confidencePercent)) * 0.68;
+                  {displayedLessons.length === 0 ? (
+                    <View style={{ paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500' }}>
+                        No curriculum lessons available yet.
+                      </Text>
+                    </View>
+                  ) : (
+                    displayedLessons.map((item) => {
+                      // Bar width ratio relative to 68% max container width so % fits on right
+                      const barWidthPercent = Math.max(3, Math.min(100, item.confidencePercent)) * 0.68;
 
-                    return (
-                      <View key={item.id} style={styles.chartRow}>
-                        {/* Left Column: Actual Lesson Name */}
-                        <View style={styles.chartLeftLabelBox}>
-                          <Text
-                            style={[
-                              styles.chartLessonText,
-                              { color: colors.text },
-                            ]}>
-                            {item.lessonName}
-                          </Text>
-                        </View>
+                      return (
+                        <View key={item.id} style={styles.chartRow}>
+                          {/* Left Column: Actual Lesson Name */}
+                          <View style={styles.chartLeftLabelBox}>
+                            <Text
+                              style={[
+                                styles.chartLessonText,
+                                { color: colors.text },
+                              ]}>
+                              {item.lessonName}
+                            </Text>
+                          </View>
 
-                        {/* Right Area: Horizontal Bar sprouting directly from vertical line + % at the tip */}
-                        <View style={styles.chartRightBarArea}>
-                          <View
-                            style={[
-                              styles.chartHorizontalBar,
-                              {
-                                width: `${barWidthPercent}%`,
-                                backgroundColor: colors.accent,
-                              },
-                            ]}
-                          />
-                          <Text
-                            style={[
-                              styles.chartPercentLabel,
-                              { color: colors.accent },
-                            ]}>
-                            {item.confidencePercent}%
-                          </Text>
+                          {/* Right Area: Horizontal Bar sprouting directly from vertical line + % at the tip */}
+                          <View style={styles.chartRightBarArea}>
+                            <View
+                              style={[
+                                styles.chartHorizontalBar,
+                                {
+                                  width: `${barWidthPercent}%`,
+                                  backgroundColor: colors.accent,
+                                },
+                              ]}
+                            />
+                            <Text
+                              style={[
+                                styles.chartPercentLabel,
+                                { color: colors.accent },
+                              ]}>
+                              {item.confidencePercent}%
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </View>
               </View>
 
@@ -367,7 +415,35 @@ export default function HomeScreen() {
 
           {/* List of Continue Learning Cards */}
           <View style={styles.continueCardsList}>
-            {continueItems.map((item) => {
+            {continueItems.length === 0 ? (
+              <Pressable
+                onPress={() => router.push('/(tabs)/learn' as any)}
+                style={({ pressed }) => [
+                  styles.continueLearningCard,
+                  {
+                    backgroundColor: isDark
+                      ? colors.backgroundElement
+                      : '#FFFFFF',
+                    borderColor: isDark
+                      ? 'rgba(255, 255, 255, 0.08)'
+                      : 'rgba(0, 0, 0, 0.06)',
+                    justifyContent: 'center',
+                    paddingVertical: 18,
+                    opacity: pressed ? 0.9 : 1,
+                  },
+                ]}>
+                <Text
+                  style={{
+                    color: colors.textSecondary,
+                    fontSize: 13.5,
+                    fontWeight: '500',
+                    textAlign: 'center',
+                  }}>
+                  Explore the curriculum to start learning →
+                </Text>
+              </Pressable>
+            ) : (
+              continueItems.map((item) => {
               const IconComp = item.icon;
 
               return (
@@ -473,7 +549,7 @@ export default function HomeScreen() {
                   </View>
                 </Pressable>
               );
-            })}
+            }))}
           </View>
         </View>
       </ScrollView>

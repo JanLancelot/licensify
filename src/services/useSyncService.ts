@@ -84,6 +84,7 @@ export interface SyncQuestionItem {
   correctChoiceHash?: string;
   explanation?: string;
   difficulty: string;
+  specializedType?: string;
   isPublished?: boolean;
 }
 
@@ -99,6 +100,7 @@ export interface SyncQuizItem {
   questionIds: any;
   timeLimitSeconds?: number;
   passingScore?: number;
+  specializedType?: string;
 }
 
 export interface SyncLessonProgressItem {
@@ -106,6 +108,53 @@ export interface SyncLessonProgressItem {
   lessonId: string;
   isCompleted: boolean;
   completedAt: number;
+}
+
+export interface SyncAchievementItem {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  iconName: string;
+  bg?: string;
+  darkBg?: string;
+  iconColor?: string;
+  criteriaType: string;
+  targetValue: number;
+  order?: number;
+  isPublished?: boolean;
+}
+
+export interface SyncUserPresetItem {
+  id: string;
+  userId: string;
+  type: 'flashcard' | 'quiz' | 'exam';
+  title: string;
+  iconName?: string;
+  lessonIds: string[];
+  subjectNames?: string[];
+  questionCount?: number;
+  timeLimitSeconds?: number;
+  isShuffled?: boolean;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+export interface SyncUserAchievementItem {
+  id: string;
+  userId: string;
+  achievementId: string;
+  progress: number;
+  isUnlocked: boolean;
+  unlockedAt?: number;
+}
+
+export interface SyncUserStreakItem {
+  id: string;
+  userId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string;
 }
 
 export interface SyncBundleResponse {
@@ -119,6 +168,10 @@ export interface SyncBundleResponse {
   flashcards: SyncFlashcardItem[];
   questions: SyncQuestionItem[];
   quizzes: SyncQuizItem[];
+  achievements?: SyncAchievementItem[];
+  userPresets?: SyncUserPresetItem[];
+  userAchievements?: SyncUserAchievementItem[];
+  userStreaks?: SyncUserStreakItem[];
   lessonProgress?: SyncLessonProgressItem[];
 }
 
@@ -467,6 +520,7 @@ export function useSyncService() {
             questionIds: qz.questionIds,
             timeLimitSeconds: qz.timeLimitSeconds || null,
             passingScore: qz.passingScore || null,
+            specializedType: qz.specializedType || null,
           }));
           await db
             .insert(schema.quizzes)
@@ -484,6 +538,114 @@ export function useSyncService() {
                 questionIds: sql`excluded.question_ids`,
                 timeLimitSeconds: sql`excluded.time_limit_seconds`,
                 passingScore: sql`excluded.passing_score`,
+                specializedType: sql`excluded.specialized_type`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
+      // 10.1 Batch insert Achievements
+      if (bundle.achievements && bundle.achievements.length > 0) {
+        for (let i = 0; i < bundle.achievements.length; i += CHUNK_SIZE) {
+          const chunk = bundle.achievements.slice(i, i + CHUNK_SIZE).map((ach: SyncAchievementItem) => ({
+            id: ach.id,
+            convexId: ach.id,
+            title: ach.title,
+            category: ach.category,
+            description: ach.description,
+            iconName: ach.iconName,
+            bg: ach.bg || null,
+            darkBg: ach.darkBg || null,
+            iconColor: ach.iconColor || null,
+            criteriaType: ach.criteriaType,
+            targetValue: ach.targetValue,
+            order: ach.order || 0,
+            isPublished: ach.isPublished ?? true,
+          }));
+          await db
+            .insert(schema.achievements)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.achievements.id,
+              set: {
+                title: sql`excluded.title`,
+                category: sql`excluded.category`,
+                description: sql`excluded.description`,
+                iconName: sql`excluded.icon_name`,
+                bg: sql`excluded.bg`,
+                darkBg: sql`excluded.dark_bg`,
+                iconColor: sql`excluded.icon_color`,
+                criteriaType: sql`excluded.criteria_type`,
+                targetValue: sql`excluded.target_value`,
+                order: sql`excluded.order`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
+      // 10.2 Batch insert User Presets from Cloud
+      if (bundle.userPresets && bundle.userPresets.length > 0) {
+        for (let i = 0; i < bundle.userPresets.length; i += CHUNK_SIZE) {
+          const chunk = bundle.userPresets.slice(i, i + CHUNK_SIZE).map((up: SyncUserPresetItem) => ({
+            id: up.id,
+            convexId: up.id,
+            userId: up.userId,
+            type: up.type,
+            title: up.title,
+            iconName: up.iconName || null,
+            lessonIds: JSON.stringify(up.lessonIds || []),
+            subjectNames: JSON.stringify(up.subjectNames || []),
+            questionCount: up.questionCount || null,
+            timeLimitSeconds: up.timeLimitSeconds || null,
+            isShuffled: up.isShuffled ?? false,
+            syncStatus: 'synced',
+            createdAt: up.createdAt || Date.now(),
+            updatedAt: up.updatedAt || Date.now(),
+          }));
+          await db
+            .insert(schema.userPresets)
+            .values(chunk)
+            .onConflictDoUpdate({
+              target: schema.userPresets.id,
+              set: {
+                title: sql`excluded.title`,
+                iconName: sql`excluded.icon_name`,
+                lessonIds: sql`excluded.lesson_ids`,
+                subjectNames: sql`excluded.subject_names`,
+                questionCount: sql`excluded.question_count`,
+                timeLimitSeconds: sql`excluded.time_limit_seconds`,
+                isShuffled: sql`excluded.is_shuffled`,
+                syncStatus: 'synced',
+                updatedAt: sql`excluded.updated_at`,
+                convexId: sql`excluded.convex_id`,
+              },
+            });
+        }
+      }
+
+      // 10.3 Batch insert User Streaks from Cloud
+      if (bundle.userStreaks && bundle.userStreaks.length > 0) {
+        for (const us of bundle.userStreaks) {
+          await db
+            .insert(schema.userStreaks)
+            .values({
+              id: us.id,
+              convexId: us.id,
+              userId: us.userId,
+              currentStreak: us.currentStreak,
+              longestStreak: us.longestStreak,
+              lastActiveDate: us.lastActiveDate,
+              syncStatus: 'synced',
+            })
+            .onConflictDoUpdate({
+              target: schema.userStreaks.userId,
+              set: {
+                currentStreak: sql`excluded.current_streak`,
+                longestStreak: sql`excluded.longest_streak`,
+                lastActiveDate: sql`excluded.last_active_date`,
+                syncStatus: 'synced',
                 convexId: sql`excluded.convex_id`,
               },
             });
@@ -579,7 +741,22 @@ export function useSyncService() {
         .from(schema.lessonProgress)
         .where(eq(schema.lessonProgress.syncStatus, 'pending_sync'));
 
-      if ((!pendingAttempts || pendingAttempts.length === 0) && (!pendingProgress || pendingProgress.length === 0)) {
+      const pendingPresets = await db
+        .select()
+        .from(schema.userPresets)
+        .where(eq(schema.userPresets.syncStatus, 'pending_sync'));
+
+      const pendingStreaks = await db
+        .select()
+        .from(schema.userStreaks)
+        .where(eq(schema.userStreaks.syncStatus, 'pending_sync'));
+
+      if (
+        (!pendingAttempts || pendingAttempts.length === 0) &&
+        (!pendingProgress || pendingProgress.length === 0) &&
+        (!pendingPresets || pendingPresets.length === 0) &&
+        (!pendingStreaks || pendingStreaks.length === 0)
+      ) {
         console.log('[SyncService] No pending data to sync.');
         setSyncProgress({
           percentage: 100,
@@ -591,23 +768,77 @@ export function useSyncService() {
 
       setSyncProgress({
         percentage: 85,
-        message: 'Uploading offline attempts...',
+        message: 'Uploading offline attempts & presets...',
         step: 'attempts',
       });
 
+      // 1. Sync User Presets to Convex
+      if (pendingPresets && pendingPresets.length > 0) {
+        try {
+          const presetsToUpload = pendingPresets.map((p) => {
+            let lessonIds: string[] = [];
+            let subjectNames: string[] = [];
+            try {
+              lessonIds = typeof p.lessonIds === 'string' ? JSON.parse(p.lessonIds) : (p.lessonIds || []);
+            } catch {}
+            try {
+              subjectNames = typeof p.subjectNames === 'string' ? JSON.parse(p.subjectNames) : (p.subjectNames || []);
+            } catch {}
+
+            return {
+              localId: p.id,
+              type: p.type as 'flashcard' | 'quiz' | 'exam',
+              title: p.title,
+              iconName: p.iconName || undefined,
+              lessonIds,
+              subjectNames,
+              questionCount: p.questionCount || undefined,
+              timeLimitSeconds: p.timeLimitSeconds || undefined,
+              isShuffled: !!p.isShuffled,
+              createdAt: p.createdAt || Date.now(),
+              updatedAt: p.updatedAt || Date.now(),
+            };
+          });
+
+          const res = await convex.mutation(api.sync.syncUserPresetsBatch, { presets: presetsToUpload });
+          if (res?.synced?.length > 0) {
+            const syncedIds = res.synced.map((s) => s.localId);
+            await db
+              .update(schema.userPresets)
+              .set({ syncStatus: 'synced' })
+              .where(inArray(schema.userPresets.id, syncedIds));
+          }
+        } catch (presetSyncErr) {
+          console.warn('[SyncService] Presets up-sync notice:', presetSyncErr);
+        }
+      }
+
+      // 2. Sync User Streaks to Convex
+      if (pendingStreaks && pendingStreaks.length > 0) {
+        try {
+          for (const streakRecord of pendingStreaks) {
+            await convex.mutation(api.sync.syncUserStreak, {
+              currentStreak: streakRecord.currentStreak,
+              longestStreak: streakRecord.longestStreak,
+              lastActiveDate: streakRecord.lastActiveDate,
+            });
+            await db
+              .update(schema.userStreaks)
+              .set({ syncStatus: 'synced' })
+              .where(eq(schema.userStreaks.id, streakRecord.id));
+          }
+        } catch (streakSyncErr) {
+          console.warn('[SyncService] Streak up-sync notice:', streakSyncErr);
+        }
+      }
+
+      // 3. Sync Quiz Attempts to Convex (Upload all completed attempts with valid quizIds)
       const validAttemptsToSync: any[] = [];
       const validPendingAttempts: typeof pendingAttempts = [];
-
       const localOnlyIds: string[] = [];
+
       for (const attempt of pendingAttempts) {
-        // Resolve pure offline custom drills locally
-        if (
-          attempt.id.startsWith('attempt-loc-') ||
-          !attempt.quizId ||
-          attempt.quizId.startsWith('area-') ||
-          attempt.quizId.startsWith('all-') ||
-          attempt.quizId.startsWith('mock-')
-        ) {
+        if (!attempt.quizId) {
           localOnlyIds.push(attempt.id);
         } else {
           validPendingAttempts.push(attempt);

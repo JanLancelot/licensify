@@ -183,6 +183,56 @@ Individual answers selected per attempt.
 | `selected_choice_id`| `TEXT` | | Selected option ID (e.g. `'c3'`) |
 | `answered_at`| `INTEGER`| | Unix timestamp (ms) |
 
+#### 10. `user_presets`
+Student custom configurations (Flashcard decks, custom quizzes, and modular exams).
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `TEXT` | `PRIMARY KEY` | Preset ID / UUID |
+| `convex_id` | `TEXT` | `UNIQUE` | Cloud ID |
+| `user_id` | `TEXT` | `NOT NULL` | User identifier |
+| `type` | `TEXT` | `NOT NULL` | `'flashcard' \| 'quiz' \| 'exam'` |
+| `title` | `TEXT` | `NOT NULL` | Custom preset title |
+| `icon_name` | `TEXT` | | Lucide icon name |
+| `lesson_ids` | `TEXT` | `NOT NULL` | JSON array of lesson IDs |
+| `subject_names` | `TEXT` | | JSON array of subject titles |
+| `question_count` | `INTEGER` | | Desired items count |
+| `time_limit_seconds` | `INTEGER` | | Countdown timer |
+| `sync_status` | `TEXT` | `DEFAULT 'pending_sync'` | Synchronization status |
+
+#### 11. `achievements`
+Gamification badge catalog.
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `TEXT` | `PRIMARY KEY` | Achievement ID |
+| `title` | `TEXT` | `NOT NULL` | Badge name (e.g. `[Seed] Code Master`) |
+| `category` | `TEXT` | `NOT NULL` | Milestone category |
+| `description` | `TEXT` | `NOT NULL` | Unlock criteria summary |
+| `icon_name` | `TEXT` | `NOT NULL` | Lucide icon name |
+| `criteria_type` | `TEXT` | `NOT NULL` | `'perfect_score' \| 'streak' \| 'flashcard_decks' \| 'rule7_8'` |
+| `target_value` | `INTEGER` | `NOT NULL` | Target threshold to unlock |
+| `order` | `INTEGER` | `DEFAULT 0` | Display ordering |
+
+#### 12. `user_achievements`
+Unlocked achievement records per student.
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `TEXT` | `PRIMARY KEY` | Local record ID |
+| `user_id` | `TEXT` | `NOT NULL` | Student ID |
+| `achievement_id` | `TEXT` | `NOT NULL` | Achievement ID reference |
+| `progress` | `INTEGER` | `DEFAULT 0` | Current progress towards target |
+| `is_unlocked` | `INTEGER` | `DEFAULT 0` | Unlock boolean |
+| `unlocked_at` | `INTEGER` | | Unix timestamp (ms) |
+
+#### 13. `user_streaks`
+Study consistency and consecutive daily streak logs.
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `TEXT` | `PRIMARY KEY` | Local streak record ID |
+| `user_id` | `TEXT` | `NOT NULL` | Student ID |
+| `current_streak` | `INTEGER` | `DEFAULT 0` | Current active streak in days |
+| `longest_streak` | `INTEGER` | `DEFAULT 0` | All-time best streak |
+| `last_active_date` | `TEXT` | `NOT NULL` | ISO date string (`YYYY-MM-DD`) |
+
 ---
 
 ## 4. Offline Zero-Trust Answer Verification
@@ -225,10 +275,15 @@ const isCorrect = hash === question.correctChoiceHash;
 | `useLocalSubjects()` | None | `{ subjects, loading, refetch }` | Fetches published subjects sorted by order. |
 | `useLocalSubject(id)` | `subjectId` | `{ subject, loading }` | Fetches single subject by ID. |
 | `useLocalTopics(subjectId)` | `subjectId` | `{ topics, loading }` | Fetches published topics for a subject. |
+| `useLocalHierarchy()` | None | `{ curriculum, loading, refetch }` | Fetches full 3-tier hierarchy with markdown notes. |
 | `useLocalMaterials(subjectId, topicId?)` | `subjectId, topicId?` | `{ materials, loading }` | Fetches study materials. |
 | `useLocalFlashcards(subjectId, topicId?)` | `subjectId, topicId?` | `{ flashcards, loading }` | Fetches interactive flashcards. |
-| `useLocalQuizzes(subjectId, topicId?)` | `subjectId, topicId?` | `{ quizzes, loading }` | Fetches quizzes & mock exams. |
+| `useLocalQuizzes(filter?)` | `{ type?, specializedType? }` | `{ quizzes, loading }` | Fetches mock exams or specialized practice drills. |
 | `useLocalQuizWithQuestions(quizId)` | `quizId` | `{ quiz, questions, loading }` | Fetches quiz details and ordered questions list. |
+| `useLocalAttempts()` | None | `{ attempts, loading, refetch }` | Fetches student quiz attempt history. |
+| `useLocalStats()` | None | `{ stats, loading, refetch }` | Computes live progress %, average score, and streaks. |
+| `useLocalAchievements(userId?)` | `userId?` | `{ achievements, loading, refetch }` | Evaluates live unlocked status for all badges. |
+| `useUserStreak()` | None | `{ streak, loading, refetch }` | Tracks current and longest study streak. |
 | `useSubmitLocalAttempt()` | None | `submitAttempt(userId, quizId, answers)` | Submits quiz, grades offline, and queues for sync. |
 
 ---
@@ -239,9 +294,10 @@ const isCorrect = hash === question.correctChoiceHash;
   * Calls `api.sync.getSyncBundle` in **1 single network roundtrip** (replacing previous 100+ nested loops).
   * Pre-computes deterministic SHA-256 choice hashes directly on Convex server via Web Crypto, preserving answer secrecy without mobile client crypto bottlenecks.
   * Checks `sync_metadata` for `lastSyncedAt`. If Convex reports no updates, sync completes in `<50ms` (`upToDate: true`).
-  * Ingests `subjects`, `branches`, `topics`, `lessons`, `materials`, `flashcards`, `questions`, and `quizzes` using chunked Drizzle batch operations (`db.insert().values(chunk).onConflictDoUpdate()`).
+  * Ingests `subjects`, `branches`, `topics`, `lessons`, `materials`, `flashcards`, `questions`, `quizzes`, `userPresets`, `achievements`, and `userStreaks` using chunked Drizzle batch operations.
 * **Up-Sync (`syncUp`)**: 
   * Collects pending attempts and their answers from `quiz_attempts` where `sync_status = 'pending_sync'`.
+  * Uploads pending custom student presets (`user_presets`) and streaks (`user_streaks`).
   * Sends a single batch mutation to `api.sync.syncAttemptsBatch`, preventing rate limiting and reducing 50+ network calls per quiz to 1.
   * Updates SQLite `sync_status` to `'synced'` upon server confirmation.
 * **Automatic Background Sync (`src/components/SyncProvider.tsx`)**: 
@@ -250,14 +306,19 @@ const isCorrect = hash === question.correctChoiceHash;
 
 ---
 
-## 7. Seeding & Resetting Local Data (`src/db/seed.ts`)
+## 7. Seeding & Purging Content (`convex/seedAssessments.ts`)
 
-To populate or reset sample board exam data locally:
+### Seeding Seed Assessments & Questions
+To populate genuine mock exams, Rule 7 & 8 computation drills, flashcards, study notes, and achievements tagged with `[Seed]` or `[Mock]`:
 
-```ts
-import { seedSampleData } from '@/db/seed';
-
-// Clears existing data and seeds 3 subjects, 6 topics, flashcards, guides, and mock exams:
-await seedSampleData();
+```bash
+npx convex run seedAssessments:seedMockAssessmentsAndMaterials
 ```
-Users can also trigger this via the **"🌱 Populate Sample Data"** button on the Home screen or in the **Settings** tab (`src/components/DebugSQLite.tsx`).
+
+### Purging Seed Data for Production
+When production review questions are ready, purge all test data cleanly with:
+
+```bash
+npx convex run seedAssessments:deleteMockSeedData
+```
+This removes all items containing `[Seed]` or `[Mock]` without affecting user profiles or syllabus hierarchy.

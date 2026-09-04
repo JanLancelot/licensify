@@ -81,50 +81,38 @@ export default function ExamDetailsScreen() {
   const { quiz, questions } = useLocalQuizWithQuestions(examId);
 
   const getExamMetadata = () => {
-    const totalItems = questions.length > 0 ? `${questions.length} Questions` : '50 Questions';
-    switch (examId) {
-      case 'area-2':
-        return {
-          title: quiz?.title || 'Area 2: Structural & Utilities',
-          subtitle: quiz?.description || 'Building Technology, MEPFS Systems & Estimation',
-          icon: Compass,
-          gradient: ['#FBBF24', '#D97706'] as [string, string],
-          duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '1.5 Hours',
-          items: totalItems,
-          passing: `${quiz?.passingScore || 70}% Passing GWA`,
-        };
-      case 'area-3':
-        return {
-          title: quiz?.title || 'Area 3: Design & Site Planning',
-          subtitle: quiz?.description || 'Design Scenarios, Zoning & NBCP Rule 7/8',
-          icon: PenTool,
-          gradient: ['#34D399', '#059669'] as [string, string],
-          duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '2.0 Hours',
-          items: totalItems,
-          passing: `${quiz?.passingScore || 70}% Passing GWA`,
-        };
-      case 'all-modular':
-      case 'mock-day-1':
-        return {
-          title: quiz?.title || 'Comprehensive ALE Mock Exam',
-          subtitle: quiz?.description || 'Full multi-area practice exam covering History, Utilities, and Design Planning.',
-          icon: Trophy,
-          gradient: ['#38BDF8', '#0284C7'] as [string, string],
-          duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '3.0 Hours',
-          items: totalItems,
-          passing: `${quiz?.passingScore || 75}% Passing GWA`,
-        };
-      default:
-        return {
-          title: quiz?.title || 'Area 1: History, Theory & Laws',
-          subtitle: quiz?.description || 'History of Architecture, Theory of Design & RA 9266',
-          icon: Landmark,
-          gradient: colors.accentGradient,
-          duration: quiz?.timeLimitSeconds ? `${Math.round(quiz.timeLimitSeconds / 60)} Mins` : '1.5 Hours',
-          items: totalItems,
-          passing: `${quiz?.passingScore || 70}% Passing GWA`,
-        };
+    const totalItems = `${questions.length > 0 ? questions.length : 50} Questions`;
+    const title = quiz?.title || 'Board Exam Simulation';
+    const subtitle = quiz?.description || 'Standard Board Examination Simulation';
+    const durationMin = quiz?.timeLimitSeconds ? Math.round(quiz.timeLimitSeconds / 60) : 90;
+    const durationHours = (durationMin / 60).toFixed(1).replace('.0', '');
+    const duration = `${durationHours} Hours (${durationMin} Mins)`;
+    const passing = `${quiz?.passingScore || 70}% Passing GWA`;
+
+    let Icon = Landmark;
+    let gradient: [string, string] = colors.accentGradient;
+
+    const lower = (quiz?.title || '').toLowerCase();
+    if (lower.includes('area 2') || lower.includes('structural') || lower.includes('utilities')) {
+      Icon = Compass;
+      gradient = ['#FBBF24', '#D97706'];
+    } else if (lower.includes('area 3') || lower.includes('design') || lower.includes('planning') || lower.includes('zoning')) {
+      Icon = PenTool;
+      gradient = ['#34D399', '#059669'];
+    } else if (lower.includes('mock') || lower.includes('comprehensive')) {
+      Icon = Trophy;
+      gradient = ['#38BDF8', '#0284C7'];
     }
+
+    return {
+      title,
+      subtitle,
+      icon: Icon,
+      gradient,
+      duration,
+      items: totalItems,
+      passing,
+    };
   };
 
   const examMeta = getExamMetadata();

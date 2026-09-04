@@ -12,6 +12,8 @@ export const users = sqliteTable('users', {
   lastName: text('last_name'),
   role: text('role').notNull(), // 'student', 'admin', 'content_manager'
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  soundEnabled: integer('sound_enabled', { mode: 'boolean' }).default(true),
+  dailyReminder: integer('daily_reminder', { mode: 'boolean' }).default(true),
 });
 
 // ---------------------------------------------------------------------------
@@ -101,6 +103,7 @@ export const questions = sqliteTable('questions', {
   correctChoiceHash: text('correct_choice_hash'),
   explanation: text('explanation'),
   difficulty: text('difficulty').notNull(),
+  specializedType: text('specialized_type'),
 });
 
 export const quizzes = sqliteTable('quizzes', {
@@ -118,6 +121,7 @@ export const quizzes = sqliteTable('quizzes', {
   questionIds: text('question_ids', { mode: 'json' }).notNull(),
   timeLimitSeconds: integer('time_limit_seconds'),
   passingScore: integer('passing_score'),
+  specializedType: text('specialized_type'),
 });
 
 export const quizAttempts = sqliteTable('quiz_attempts', {
@@ -166,6 +170,64 @@ export const syncMetadata = sqliteTable('sync_metadata', {
   tableName: text('table_name').primaryKey(),
   lastSyncedAt: integer('last_synced_at').notNull(),
 });
+
+// ---------------------------------------------------------------------------
+// 5. STUDENT PRESETS, GAMIFICATION & ACTIVITY
+// ---------------------------------------------------------------------------
+export const userPresets = sqliteTable('user_presets', {
+  id: text('id').primaryKey(),
+  convexId: text('convex_id').unique(),
+  userId: text('user_id').notNull(),
+  type: text('type').notNull(), // 'flashcard', 'quiz', 'exam'
+  title: text('title').notNull(),
+  iconName: text('icon_name'),
+  lessonIds: text('lesson_ids', { mode: 'json' }).notNull(),
+  subjectNames: text('subject_names', { mode: 'json' }),
+  questionCount: integer('question_count'),
+  timeLimitSeconds: integer('time_limit_seconds'),
+  isShuffled: integer('is_shuffled', { mode: 'boolean' }).default(false),
+  syncStatus: text('sync_status').notNull().default('pending_sync'),
+  createdAt: integer('created_at'),
+  updatedAt: integer('updated_at'),
+});
+
+export const achievements = sqliteTable('achievements', {
+  id: text('id').primaryKey(),
+  convexId: text('convex_id').unique(),
+  title: text('title').notNull(),
+  category: text('category').notNull(),
+  description: text('description').notNull(),
+  iconName: text('icon_name').notNull(),
+  bg: text('bg'),
+  darkBg: text('dark_bg'),
+  iconColor: text('icon_color'),
+  criteriaType: text('criteria_type').notNull(),
+  targetValue: integer('target_value').notNull(),
+  order: integer('order').notNull().default(0),
+  isPublished: integer('is_published', { mode: 'boolean' }).notNull().default(true),
+});
+
+export const userAchievements = sqliteTable('user_achievements', {
+  id: text('id').primaryKey(),
+  convexId: text('convex_id').unique(),
+  userId: text('user_id').notNull(),
+  achievementId: text('achievement_id').notNull(),
+  progress: integer('progress').notNull().default(0),
+  isUnlocked: integer('is_unlocked', { mode: 'boolean' }).notNull().default(false),
+  unlockedAt: integer('unlocked_at'),
+  syncStatus: text('sync_status').notNull().default('pending_sync'),
+});
+
+export const userStreaks = sqliteTable('user_streaks', {
+  id: text('id').primaryKey(),
+  convexId: text('convex_id').unique(),
+  userId: text('user_id').notNull().unique(),
+  currentStreak: integer('current_streak').notNull().default(0),
+  longestStreak: integer('longest_streak').notNull().default(0),
+  lastActiveDate: text('last_active_date').notNull(),
+  syncStatus: text('sync_status').notNull().default('pending_sync'),
+});
+
 
 
 

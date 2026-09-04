@@ -39,6 +39,10 @@ export const getSyncBundle = query({
       rawFlashcards,
       rawQuestions,
       rawQuizzes,
+      rawAchievements,
+      rawUserPresets,
+      rawUserAchievements,
+      rawUserStreaks,
       rawLessonProgress,
     ] = await Promise.all([
       ctx.db.query("subjects").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
@@ -49,6 +53,16 @@ export const getSyncBundle = query({
       ctx.db.query("flashcards").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
       ctx.db.query("questions").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
       ctx.db.query("quizzes").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
+      ctx.db.query("achievements").filter((q) => q.neq(q.field("isPublished"), false)).collect(),
+      user
+        ? ctx.db.query("userPresets").withIndex("by_user", (q) => q.eq("userId", user._id)).collect()
+        : Promise.resolve([]),
+      user
+        ? ctx.db.query("userAchievements").withIndex("by_user", (q) => q.eq("userId", user._id)).collect()
+        : Promise.resolve([]),
+      user
+        ? ctx.db.query("userStreaks").withIndex("by_user", (q) => q.eq("userId", user._id)).collect()
+        : Promise.resolve([]),
       user
         ? ctx.db.query("lessonProgress").withIndex("by_user", (q) => q.eq("userId", user._id)).collect()
         : Promise.resolve([]),
@@ -106,6 +120,7 @@ export const getSyncBundle = query({
           correctChoiceHash,
           explanation: q.explanation,
           difficulty: q.difficulty,
+          specializedType: q.specializedType,
           isPublished: q.isPublished ?? true,
         };
       })
@@ -183,6 +198,54 @@ export const getSyncBundle = query({
       questionIds: qz.questionIds || [],
       timeLimitSeconds: qz.timeLimitSeconds,
       passingScore: qz.passingScore,
+      specializedType: qz.specializedType,
+    }));
+
+    const achievements = rawAchievements.map((a) => ({
+      id: a._id,
+      title: a.title,
+      category: a.category,
+      description: a.description,
+      iconName: a.iconName,
+      bg: a.bg,
+      darkBg: a.darkBg,
+      iconColor: a.iconColor,
+      criteriaType: a.criteriaType,
+      targetValue: a.targetValue,
+      order: a.order || 0,
+      isPublished: a.isPublished ?? true,
+    }));
+
+    const userPresets = rawUserPresets.map((up: any) => ({
+      id: up._id,
+      userId: up.userId,
+      type: up.type,
+      title: up.title,
+      iconName: up.iconName,
+      lessonIds: up.lessonIds || [],
+      subjectNames: up.subjectNames || [],
+      questionCount: up.questionCount,
+      timeLimitSeconds: up.timeLimitSeconds,
+      isShuffled: up.isShuffled ?? false,
+      createdAt: up.createdAt,
+      updatedAt: up.updatedAt,
+    }));
+
+    const userAchievements = rawUserAchievements.map((ua: any) => ({
+      id: ua._id,
+      userId: ua.userId,
+      achievementId: ua.achievementId,
+      progress: ua.progress || 0,
+      isUnlocked: ua.isUnlocked ?? false,
+      unlockedAt: ua.unlockedAt,
+    }));
+
+    const userStreaks = rawUserStreaks.map((us: any) => ({
+      id: us._id,
+      userId: us.userId,
+      currentStreak: us.currentStreak || 0,
+      longestStreak: us.longestStreak || 0,
+      lastActiveDate: us.lastActiveDate || "",
     }));
 
     const lessonProgress = rawLessonProgress.map((lp) => ({
@@ -203,6 +266,10 @@ export const getSyncBundle = query({
       flashcards,
       questions,
       quizzes,
+      achievements,
+      userPresets,
+      userAchievements,
+      userStreaks,
       lessonProgress,
     };
   },
@@ -371,5 +438,119 @@ export const syncLessonProgressBatch = mutation({
     }
 
     return { synced };
+  },
+});
+
+/**
+ * Batch up-sync mutation for student-created presets.
+ */
+export const syncUserPresetsBatch = mutation({
+  args: {
+    presets: v.array(
+      v.object({
+        localId: v.string(),
+        type: v.union(v.literal("flashcard"), v.literal("quiz"), v.literal("exam")),
+        title: v.string(),
+        iconName: v.optional(v.string()),
+        lessonIds: v.array(v.string()),
+        subjectNames: v.optional(v.array(v.string())),
+        questionCount: v.optional(v.number()),
+        timeLimitSeconds: v.optional(v.number()),
+        isShuffled: v.optional(v.boolean()),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return { synced: [] };
+    }
+
+    const synced = [];
+
+    for (const p of args.presets) {
+      const existing = await ctx.db
+        .query("userPresets")
+        .withIndex("by_user_and_type", (q) => q.eq("userId", user._id).eq("type", p.type))
+        .filter((q) => q.eq(q.field("title"), p.title))
+        .first();
+
+      let serverId;
+      if (existing) {
+        serverId = existing._id;
+        await ctx.db.patch(existing._id, {
+          title: p.title,
+          iconName: p.iconName,
+          lessonIds: p.lessonIds,
+          subjectNames: p.subjectNames,
+          questionCount: p.questionCount,
+          timeLimitSeconds: p.timeLimitSeconds,
+          isShuffled: p.isShuffled,
+          updatedAt: p.updatedAt,
+        });
+      } else {
+        serverId = await ctx.db.insert("userPresets", {
+          userId: user._id,
+          type: p.type,
+          title: p.title,
+          iconName: p.iconName,
+          lessonIds: p.lessonIds,
+          subjectNames: p.subjectNames,
+          questionCount: p.questionCount,
+          timeLimitSeconds: p.timeLimitSeconds,
+          isShuffled: p.isShuffled,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        });
+      }
+
+      synced.push({
+        localId: p.localId,
+        serverId,
+      });
+    }
+
+    return { synced };
+  },
+});
+
+/**
+ * Up-sync mutation for user study streak.
+ */
+export const syncUserStreak = mutation({
+  args: {
+    currentStreak: v.number(),
+    longestStreak: v.number(),
+    lastActiveDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
+
+    const existing = await ctx.db
+      .query("userStreaks")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .first();
+
+    const now = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        currentStreak: Math.max(existing.currentStreak, args.currentStreak),
+        longestStreak: Math.max(existing.longestStreak, args.longestStreak),
+        lastActiveDate: args.lastActiveDate,
+        updatedAt: now,
+      });
+      return existing._id;
+    } else {
+      return await ctx.db.insert("userStreaks", {
+        userId: user._id,
+        currentStreak: args.currentStreak,
+        longestStreak: args.longestStreak,
+        lastActiveDate: args.lastActiveDate,
+        updatedAt: now,
+      });
+    }
   },
 });

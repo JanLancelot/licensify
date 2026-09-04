@@ -20,6 +20,10 @@ function loadInitialStore(): TableStore {
     quiz_attempts: [],
     quiz_answers: [],
     lesson_progress: [],
+    user_presets: [],
+    achievements: [],
+    user_achievements: [],
+    user_streaks: [],
   };
 
   if (typeof window !== 'undefined' && window.localStorage) {
@@ -62,6 +66,10 @@ function resolveTableName(table: any): string {
   if (table === schema.quizAttempts) return 'quiz_attempts';
   if (table === schema.quizAnswers) return 'quiz_answers';
   if (table === schema.lessonProgress) return 'lesson_progress';
+  if (table === schema.userPresets) return 'user_presets';
+  if (table === schema.achievements) return 'achievements';
+  if (table === schema.userAchievements) return 'user_achievements';
+  if (table === schema.userStreaks) return 'user_streaks';
 
 
 

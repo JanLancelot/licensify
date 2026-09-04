@@ -91,25 +91,42 @@ export function useLocalHierarchy() {
         .where(eq(schema.lessons.isPublished, true))
         .orderBy(schema.lessons.order);
 
+      const allMaterials = await db.select().from(schema.materials);
+
       const formatted: SubjectNote[] = subs.map((sub, sIdx) => {
         const subTopics = allTopics.filter((t) => t.subjectId === sub.id);
         const mappedTopics: Topic[] = subTopics.map((top, tIdx) => {
           const topLessons = allLessons.filter((l) => l.topicId === top.id);
-          const mappedLessons: Lesson[] = topLessons.map((les, lIdx) => ({
-            id: les.id,
-            lessonId: les.id,
-            topicId: top.id,
-            subjectId: sub.id,
-            lessonNumber: les.order || (lIdx + 1),
-            title: les.name,
-            duration: '10 min',
-            summary: les.description || 'Core syllabus competencies and architectural provisions.',
-            keyPoints: [
-              `Definition & Scope: ${les.name}`,
-              `Regulatory Standard: Applicable architectural board guidelines & provisions.`,
-              `Practice Application: Professional architectural practice & code compliance.`,
-            ],
-          }));
+          const mappedLessons: Lesson[] = topLessons.map((les, lIdx) => {
+            const mat = allMaterials.find((m) => m.lessonId === les.id || m.topicId === top.id);
+            const summary = mat?.description || les.description || 'Core syllabus competencies and architectural provisions.';
+            let keyPoints: string[] = [];
+            if (mat?.content) {
+              const bulletLines = mat.content.split('\n').filter((l) => l.trim().startsWith('* ') || l.trim().startsWith('- '));
+              if (bulletLines.length > 0) {
+                keyPoints = bulletLines.slice(0, 4).map((l) => l.replace(/^[\*\-]\s*/, '').replace(/\*\*/g, '').trim());
+              }
+            }
+            if (keyPoints.length === 0) {
+              keyPoints = [
+                `Definition & Scope: ${les.name}`,
+                `Regulatory Standard: Applicable architectural board guidelines & provisions.`,
+                `Practice Application: Professional architectural practice & code compliance.`,
+              ];
+            }
+
+            return {
+              id: les.id,
+              lessonId: les.id,
+              topicId: top.id,
+              subjectId: sub.id,
+              lessonNumber: les.order || (lIdx + 1),
+              title: les.name,
+              duration: '10 min',
+              summary,
+              keyPoints,
+            };
+          });
 
           return {
             id: top.id,
@@ -165,25 +182,42 @@ export function useLocalHierarchy() {
           .where(eq(schema.lessons.isPublished, true))
           .orderBy(schema.lessons.order);
 
+        const allMaterials = await db.select().from(schema.materials);
+
         const formatted: SubjectNote[] = subs.map((sub, sIdx) => {
           const subTopics = allTopics.filter((t) => t.subjectId === sub.id);
           const mappedTopics: Topic[] = subTopics.map((top, tIdx) => {
             const topLessons = allLessons.filter((l) => l.topicId === top.id);
-            const mappedLessons: Lesson[] = topLessons.map((les, lIdx) => ({
-              id: les.id,
-              lessonId: les.id,
-              topicId: top.id,
-              subjectId: sub.id,
-              lessonNumber: les.order || (lIdx + 1),
-              title: les.name,
-              duration: '10 min',
-              summary: les.description || 'Core syllabus competencies and architectural provisions.',
-              keyPoints: [
-                `Definition & Scope: ${les.name}`,
-                `Regulatory Standard: Applicable architectural board guidelines & provisions.`,
-                `Practice Application: Professional architectural practice & code compliance.`,
-              ],
-            }));
+            const mappedLessons: Lesson[] = topLessons.map((les, lIdx) => {
+              const mat = allMaterials.find((m) => m.lessonId === les.id || m.topicId === top.id);
+              const summary = mat?.description || les.description || 'Core syllabus competencies and architectural provisions.';
+              let keyPoints: string[] = [];
+              if (mat?.content) {
+                const bulletLines = mat.content.split('\n').filter((l) => l.trim().startsWith('* ') || l.trim().startsWith('- '));
+                if (bulletLines.length > 0) {
+                  keyPoints = bulletLines.slice(0, 4).map((l) => l.replace(/^[\*\-]\s*/, '').replace(/\*\*/g, '').trim());
+                }
+              }
+              if (keyPoints.length === 0) {
+                keyPoints = [
+                  `Definition & Scope: ${les.name}`,
+                  `Regulatory Standard: Applicable architectural board guidelines & provisions.`,
+                  `Practice Application: Professional architectural practice & code compliance.`,
+                ];
+              }
+
+              return {
+                id: les.id,
+                lessonId: les.id,
+                topicId: top.id,
+                subjectId: sub.id,
+                lessonNumber: les.order || (lIdx + 1),
+                title: les.name,
+                duration: '10 min',
+                summary,
+                keyPoints,
+              };
+            });
 
             return {
               id: top.id,
@@ -399,6 +433,7 @@ export function useLocalQuestions(options?: {
   subjectId?: string;
   topicId?: string;
   difficulty?: string;
+  specializedType?: string;
   count?: number;
 }) {
   const [questions, setQuestions] = useState<typeof schema.questions.$inferSelect[]>([]);
@@ -407,12 +442,20 @@ export function useLocalQuestions(options?: {
   const subjectId = options?.subjectId;
   const topicId = options?.topicId;
   const difficulty = options?.difficulty;
+  const specializedType = options?.specializedType;
   const count = options?.count;
 
   const fetchQuestions = useCallback(async () => {
     try {
       setLoading(true);
       let data = await db.select().from(schema.questions);
+
+      if (specializedType) {
+        const filtered = data.filter((q) => q.specializedType === specializedType);
+        if (filtered.length > 0) {
+          data = filtered;
+        }
+      }
 
       if (subjectId && subjectId !== 'all') {
         const filteredBySub = data.filter((q) => q.subjectId === subjectId);
@@ -444,13 +487,20 @@ export function useLocalQuestions(options?: {
     } finally {
       setLoading(false);
     }
-  }, [subjectId, topicId, difficulty, count]);
+  }, [subjectId, topicId, difficulty, specializedType, count]);
 
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
       try {
         let data = await db.select().from(schema.questions);
+
+        if (specializedType) {
+          const filtered = data.filter((q) => q.specializedType === specializedType);
+          if (filtered.length > 0) {
+            data = filtered;
+          }
+        }
 
         if (subjectId && subjectId !== 'all') {
           const filteredBySub = data.filter((q) => q.subjectId === subjectId);
@@ -489,7 +539,7 @@ export function useLocalQuestions(options?: {
     return () => {
       isMounted = false;
     };
-  }, [subjectId, topicId, difficulty, count]);
+  }, [subjectId, topicId, difficulty, specializedType, count]);
 
   return { questions, loading, refetch: fetchQuestions };
 }
@@ -497,15 +547,24 @@ export function useLocalQuestions(options?: {
 /**
  * Hook to fetch quizzes & mock exams from local database.
  */
-export function useLocalQuizzes(type?: 'practice' | 'mock_exam') {
+export function useLocalQuizzes(
+  filter?: 'practice' | 'mock_exam' | { type?: 'practice' | 'mock_exam'; specializedType?: string }
+) {
   const [quizzes, setQuizzes] = useState<typeof schema.quizzes.$inferSelect[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const filterType = typeof filter === 'string' ? filter : filter?.type;
+  const specializedType = typeof filter === 'object' ? filter?.specializedType : undefined;
 
   const fetchQuizzes = useCallback(async () => {
     try {
       setLoading(true);
-      const data = type
-        ? await db.select().from(schema.quizzes).where(eq(schema.quizzes.type, type))
+      const conditions = [];
+      if (filterType) conditions.push(eq(schema.quizzes.type, filterType));
+      if (specializedType) conditions.push(eq(schema.quizzes.specializedType, specializedType));
+
+      const data = conditions.length > 0
+        ? await db.select().from(schema.quizzes).where(and(...conditions))
         : await db.select().from(schema.quizzes);
 
       setQuizzes(data);
@@ -514,14 +573,18 @@ export function useLocalQuizzes(type?: 'practice' | 'mock_exam') {
     } finally {
       setLoading(false);
     }
-  }, [type]);
+  }, [filterType, specializedType]);
 
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
       try {
-        const data = type
-          ? await db.select().from(schema.quizzes).where(eq(schema.quizzes.type, type))
+        const conditions = [];
+        if (filterType) conditions.push(eq(schema.quizzes.type, filterType));
+        if (specializedType) conditions.push(eq(schema.quizzes.specializedType, specializedType));
+
+        const data = conditions.length > 0
+          ? await db.select().from(schema.quizzes).where(and(...conditions))
           : await db.select().from(schema.quizzes);
 
         if (isMounted) {
@@ -537,7 +600,7 @@ export function useLocalQuizzes(type?: 'practice' | 'mock_exam') {
     return () => {
       isMounted = false;
     };
-  }, [type]);
+  }, [filterType, specializedType]);
 
   return { quizzes, loading, refetch: fetchQuizzes };
 }
@@ -694,27 +757,44 @@ export function useLocalAttempts() {
  */
 export function useLocalStats() {
   const [stats, setStats] = useState({
-    progressPercentage: 75,
+    progressPercentage: 0,
     completedQuizzes: 0,
-    averageScore: 85,
-    streakDays: 14,
+    averageScore: 0,
+    streakDays: 0,
   });
   const [loading, setLoading] = useState(true);
 
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
-      const attempts = await db.select().from(schema.quizAttempts);
-      if (attempts.length > 0) {
-        const totalScore = attempts.reduce((acc, curr) => acc + (curr.score || 0), 0);
-        const avg = Math.round(totalScore / attempts.length);
-        setStats({
-          progressPercentage: Math.min(100, Math.round((attempts.length * 15) + 40)),
-          completedQuizzes: attempts.length,
-          averageScore: avg,
-          streakDays: 14,
-        });
+      const [allLessons, completedProgress, attempts, streaks] = await Promise.all([
+        db.select().from(schema.lessons).where(eq(schema.lessons.isPublished, true)),
+        db.select().from(schema.lessonProgress).where(eq(schema.lessonProgress.isCompleted, true)),
+        db.select().from(schema.quizAttempts),
+        db.select().from(schema.userStreaks),
+      ]);
+
+      const totalLessons = allLessons.length;
+      const completedCount = completedProgress.length;
+      const progressPercentage = totalLessons > 0 ? Math.min(100, Math.round((completedCount / totalLessons) * 100)) : 0;
+
+      const completedQuizzes = attempts.length;
+      const totalScore = attempts.reduce((acc, curr) => acc + (curr.score || 0), 0);
+      const averageScore = completedQuizzes > 0 ? Math.round(totalScore / completedQuizzes) : 0;
+
+      let streakDays = 0;
+      if (streaks.length > 0 && streaks[0].currentStreak > 0) {
+        streakDays = streaks[0].currentStreak;
+      } else if (attempts.length > 0 || completedProgress.length > 0) {
+        streakDays = 1;
       }
+
+      setStats({
+        progressPercentage,
+        completedQuizzes,
+        averageScore,
+        streakDays,
+      });
     } catch (e) {
       console.warn('Failed to compute stats:', e);
     } finally {
@@ -723,33 +803,144 @@ export function useLocalStats() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    const computeStats = async () => {
-      try {
-        const attempts = await db.select().from(schema.quizAttempts);
-        if (attempts.length > 0 && isMounted) {
-          const totalScore = attempts.reduce((acc, curr) => acc + (curr.score || 0), 0);
-          const avg = Math.round(totalScore / attempts.length);
-          setStats({
-            progressPercentage: Math.min(100, Math.round((attempts.length * 15) + 40)),
-            completedQuizzes: attempts.length,
-            averageScore: avg,
-            streakDays: 14,
-          });
-        }
-      } catch (e) {
-        console.warn('Failed to compute stats:', e);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    computeStats();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    fetchStats();
+  }, [fetchStats]);
 
   return { stats, loading, refetch: fetchStats };
+}
+
+export type LocalAchievementItem = typeof schema.achievements.$inferSelect & {
+  isUnlocked: boolean;
+  progressText: string;
+};
+
+/**
+ * Hook to fetch local achievements with real-time unlocked state.
+ */
+export function useLocalAchievements(userId?: string) {
+  const [achievements, setAchievements] = useState<LocalAchievementItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAchievements = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [allAch, userAch, attempts, progress, streaks] = await Promise.all([
+        db
+          .select()
+          .from(schema.achievements)
+          .where(eq(schema.achievements.isPublished, true))
+          .orderBy(schema.achievements.order),
+        userId
+          ? db.select().from(schema.userAchievements).where(eq(schema.userAchievements.userId, userId))
+          : db.select().from(schema.userAchievements),
+        userId
+          ? db.select().from(schema.quizAttempts).where(eq(schema.quizAttempts.userId, userId))
+          : db.select().from(schema.quizAttempts),
+        db.select().from(schema.lessonProgress).where(eq(schema.lessonProgress.isCompleted, true)),
+        userId
+          ? db.select().from(schema.userStreaks).where(eq(schema.userStreaks.userId, userId))
+          : db.select().from(schema.userStreaks),
+      ]);
+
+      const currentStreak = streaks.length > 0 ? streaks[0].currentStreak : (attempts.length > 0 ? 1 : 0);
+
+      const mapped = allAch.map((ach) => {
+        const uRec = userAch.find(
+          (ua) => ua.achievementId === ach.id || ua.achievementId === ach.convexId
+        );
+        let isUnlocked = uRec?.isUnlocked || false;
+        let currentVal = uRec?.progress || 0;
+
+        // Dynamic heuristic calculation if not manually recorded
+        if (!isUnlocked) {
+          if (ach.criteriaType === 'streak') {
+            currentVal = currentStreak;
+            if (currentVal >= ach.targetValue) isUnlocked = true;
+          } else if (
+            ach.criteriaType === 'quiz_count' ||
+            ach.criteriaType === 'flashcard_decks'
+          ) {
+            currentVal = attempts.length;
+            if (currentVal >= ach.targetValue) isUnlocked = true;
+          } else if (ach.criteriaType === 'perfect_score') {
+            const hasPerfect = attempts.some((att) => (att.score || 0) >= 100);
+            currentVal = hasPerfect ? 1 : 0;
+            if (hasPerfect) isUnlocked = true;
+          } else if (
+            ach.criteriaType === 'area1_exam' ||
+            ach.criteriaType === 'rule7_8'
+          ) {
+            const passed = attempts.some((att) => (att.score || 0) >= 75);
+            currentVal = passed ? 1 : 0;
+            if (passed) isUnlocked = true;
+          }
+        }
+
+        const progressText = isUnlocked
+          ? 'Unlocked'
+          : `${Math.min(currentVal, ach.targetValue)}/${ach.targetValue} Done`;
+
+        return {
+          ...ach,
+          isUnlocked,
+          progressText,
+        };
+      });
+
+      setAchievements(mapped);
+    } catch (err) {
+      console.warn('[useLocalAchievements] Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAchievements();
+  }, [fetchAchievements]);
+
+  return { achievements, loading, refetch: fetchAchievements };
+}
+
+/**
+ * Hook to fetch study streak data.
+ */
+export function useUserStreak() {
+  const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number; lastActiveDate?: string }>({
+    currentStreak: 0,
+    longestStreak: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const fetchStreak = useCallback(async () => {
+    try {
+      setLoading(true);
+      const rows = await db.select().from(schema.userStreaks);
+      if (rows.length > 0) {
+        setStreak({
+          currentStreak: rows[0].currentStreak,
+          longestStreak: rows[0].longestStreak,
+          lastActiveDate: rows[0].lastActiveDate,
+        });
+      } else {
+        const attempts = await db.select().from(schema.quizAttempts);
+        setStreak({
+          currentStreak: attempts.length > 0 ? 1 : 0,
+          longestStreak: attempts.length > 0 ? 1 : 0,
+        });
+      }
+    } catch (e) {
+      console.warn('[useUserStreak] Error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStreak();
+  }, [fetchStreak]);
+
+  return { streak, loading, refetch: fetchStreak };
 }
 
 /**

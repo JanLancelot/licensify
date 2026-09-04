@@ -87,6 +87,8 @@ export const updateProfile = mutation({
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     profileImageId: v.optional(v.id("_storage")),
+    soundEnabled: v.optional(v.boolean()),
+    dailyReminder: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
@@ -97,6 +99,8 @@ export const updateProfile = mutation({
       ...(args.firstName !== undefined && { firstName: args.firstName }),
       ...(args.lastName !== undefined && { lastName: args.lastName }),
       ...(args.profileImageId !== undefined && { profileImageId: args.profileImageId }),
+      ...(args.soundEnabled !== undefined && { soundEnabled: args.soundEnabled }),
+      ...(args.dailyReminder !== undefined && { dailyReminder: args.dailyReminder }),
       updatedAt: now,
     });
 
