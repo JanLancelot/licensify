@@ -20,6 +20,7 @@ import type * as http from "../http.js";
 import type * as lessons from "../lessons.js";
 import type * as materials from "../materials.js";
 import type * as notifications from "../notifications.js";
+import type * as presets from "../presets.js";
 import type * as questions from "../questions.js";
 import type * as quizzes from "../quizzes.js";
 import type * as rooms from "../rooms.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   lessons: typeof lessons;
   materials: typeof materials;
   notifications: typeof notifications;
+  presets: typeof presets;
   questions: typeof questions;
   quizzes: typeof quizzes;
   rooms: typeof rooms;

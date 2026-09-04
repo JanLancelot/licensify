@@ -94,6 +94,96 @@ export const getSubjectWithHierarchy = query({
 });
 
 /**
+ * Public/Student query: Fetches full curriculum hierarchy (subjects, topics, lessons, materials)
+ * formatted for the mobile application.
+ */
+export const getFullCurriculum = query({
+  args: {},
+  handler: async (ctx) => {
+    const subjects = await ctx.db
+      .query("subjects")
+      .filter((q) => q.neq(q.field("isPublished"), false))
+      .collect();
+    subjects.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    const topics = await ctx.db
+      .query("topics")
+      .filter((q) => q.neq(q.field("isPublished"), false))
+      .collect();
+    topics.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    const lessons = await ctx.db
+      .query("lessons")
+      .filter((q) => q.neq(q.field("isPublished"), false))
+      .collect();
+    lessons.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    const materials = await ctx.db.query("materials").collect();
+
+    return subjects.map((sub, sIdx) => {
+      const subTopics = topics.filter((t) => t.subjectId === sub._id);
+      const mappedTopics = subTopics.map((top, tIdx) => {
+        const topLessons = lessons.filter((l) => l.topicId === top._id);
+        const mappedLessons = topLessons.map((les, lIdx) => {
+          const mat = materials.find((m) => m.lessonId === les._id || m.topicId === top._id);
+          const summary = mat?.description || les.description || "Core syllabus competencies and architectural provisions.";
+          let keyPoints: string[] = [];
+          if (mat?.content) {
+            const bulletLines = mat.content
+              .split("\n")
+              .filter((l) => l.trim().startsWith("* ") || l.trim().startsWith("- "));
+            if (bulletLines.length > 0) {
+              keyPoints = bulletLines
+                .slice(0, 4)
+                .map((l) => l.replace(/^[\*\-]\s*/, "").replace(/\*\*/g, "").trim());
+            }
+          }
+          if (keyPoints.length === 0) {
+            keyPoints = [
+              `Definition & Scope: ${les.name}`,
+              `Regulatory Standard: Applicable architectural board guidelines & provisions.`,
+              `Practice Application: Professional architectural practice & code compliance.`,
+            ];
+          }
+
+          return {
+            id: les._id,
+            lessonId: les._id,
+            topicId: top._id,
+            subjectId: sub._id,
+            lessonNumber: les.order || (lIdx + 1),
+            title: les.name,
+            duration: "10 min",
+            summary,
+            keyPoints,
+          };
+        });
+
+        return {
+          id: top._id,
+          topicId: top._id,
+          subjectId: sub._id,
+          topicNumber: top.order || (tIdx + 1),
+          title: top.name,
+          lessons: mappedLessons,
+        };
+      });
+
+      return {
+        id: sub._id,
+        subjectId: sub._id,
+        subjectNumber: sub.order || (sIdx + 1),
+        title: sub.name,
+        area: `Area ${sIdx + 1}`,
+        weight: sIdx === 0 ? "30%" : sIdx === 1 ? "30%" : "40%",
+        iconIndex: sIdx,
+        topics: mappedTopics,
+      };
+    });
+  },
+});
+
+/**
  * Mutation: Create a new Board Exam Subject (Requires content_manager or admin role).
  */
 export const createSubject = mutation({

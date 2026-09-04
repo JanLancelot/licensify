@@ -68,6 +68,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     async redirect({ redirectTo }) {
       if (
         redirectTo.startsWith("http://localhost:") ||
+        redirectTo.startsWith("licensify://") ||
         redirectTo.startsWith("reactnativerepo://") ||
         redirectTo.startsWith("exp://")
       ) {

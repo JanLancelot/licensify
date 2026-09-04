@@ -34,7 +34,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self' https://*.convex.cloud https://*.convex.site; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss://*.convex.cloud https://*.convex.cloud https://*.convex.site;"
+          "value": "default-src 'self' https://*.convex.cloud https://*.convex.site; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.convex.cloud https://*.convex.site; connect-src 'self' blob: data: wss://*.convex.cloud https://*.convex.cloud https://*.convex.site; media-src 'self' blob: data: https://*.convex.cloud https://*.convex.site;"
         }
       ]
     }

@@ -184,3 +184,48 @@ export const updateFlashcard = mutation({
   },
 });
 
+/**
+ * Public/Student query: Fetches all published flashcards formatted for mobile UI
+ */
+export const listPublishedFlashcards = query({
+  args: {
+    subjectId: v.optional(v.string()),
+    topicId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    let cards = await ctx.db
+      .query("flashcards")
+      .filter((q) => q.neq(q.field("isPublished"), false))
+      .collect();
+
+    if (args.subjectId) {
+      cards = cards.filter((c) => c.subjectId === args.subjectId);
+    }
+    if (args.topicId) {
+      cards = cards.filter((c) => c.topicId === args.topicId);
+    }
+
+    const subjects = await ctx.db.query("subjects").collect();
+    const topics = await ctx.db.query("topics").collect();
+
+    return cards.map((fc) => {
+      const sub = subjects.find((s) => s._id === fc.subjectId);
+      const top = topics.find((t) => t._id === fc.topicId);
+
+      return {
+        id: fc._id,
+        lessonId: fc.lessonId || "general",
+        subjectTitle: sub?.name || "Architecture Review",
+        topicTitle: top?.name || "Core Topic",
+        lessonTitle: "Key Concept",
+        question: fc.front,
+        answer: fc.back,
+        explanation: "Essential review definition and architectural standard.",
+        isDifficult: false,
+        isFavorite: false,
+      };
+    });
+  },
+});
+
+

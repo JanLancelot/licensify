@@ -67,6 +67,154 @@ export const getQuizWithQuestions = query({
 });
 
 /**
+ * Public/Student query: List published quizzes without pagination requirements,
+ * with optional type & specializedType filters.
+ */
+export const listPublishedQuizzesOnline = query({
+  args: {
+    type: v.optional(v.union(v.literal("practice"), v.literal("mock_exam"))),
+    specializedType: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    let quizzes = await ctx.db
+      .query("quizzes")
+      .filter((q) => q.neq(q.field("isPublished"), false))
+      .collect();
+
+    if (args.type) {
+      quizzes = quizzes.filter((q) => q.type === args.type);
+    }
+    if (args.specializedType) {
+      quizzes = quizzes.filter((q) => q.specializedType === args.specializedType);
+    }
+
+    return quizzes.map((qz) => ({
+      id: qz._id,
+      title: qz.title,
+      description: qz.description,
+      type: qz.type,
+      subjectId: qz.subjectId,
+      branchId: qz.branchId,
+      topicId: qz.topicId,
+      lessonId: qz.lessonId,
+      questionIds: qz.questionIds,
+      timeLimitSeconds: qz.timeLimitSeconds,
+      passingScore: qz.passingScore,
+      specializedType: qz.specializedType,
+    }));
+  },
+});
+
+/**
+ * Public/Student query: Fetches quiz by ID (Convex ID or title/string reference)
+ * and its populated question list for pure online exam execution.
+ */
+export const getQuizWithQuestionsOnline = query({
+  args: { quizId: v.string() },
+  handler: async (ctx, args) => {
+    if (!args.quizId) return null;
+
+    let quiz: any = null;
+
+    // 1. Try to find quiz by Convex document ID
+    try {
+      quiz = await ctx.db.get(args.quizId as any);
+    } catch {
+      // not a valid Convex ID
+    }
+
+    // 2. If not found by document ID, search by title match or set reference
+    if (!quiz) {
+      const allQuizzes = await ctx.db.query("quizzes").collect();
+      quiz = allQuizzes.find(
+        (q) =>
+          q._id === args.quizId ||
+          q.title.toLowerCase().includes(args.quizId.toLowerCase()) ||
+          (args.quizId === "comprehensive-set-1" && q.title.includes("Set 1")) ||
+          (args.quizId === "comprehensive-set-2" && q.title.includes("Set 2")) ||
+          (args.quizId === "comprehensive-set-3" && q.title.includes("Set 3"))
+      );
+    }
+
+    let loadedQuestions: any[] = [];
+
+    if (quiz && quiz.questionIds && quiz.questionIds.length > 0) {
+      const docs = await Promise.all(
+        quiz.questionIds.map(async (qId: any) => await ctx.db.get(qId))
+      );
+      loadedQuestions = docs.filter((d) => d !== null && d.isPublished !== false);
+    }
+
+    // If still no questions, fallback to subject questions
+    if (loadedQuestions.length === 0) {
+      let subjectId = quiz?.subjectId;
+      if (!subjectId) {
+        const subs = await ctx.db.query("subjects").collect();
+        const matched = subs.find(
+          (s) =>
+            s._id === args.quizId ||
+            s.name.toLowerCase().includes(args.quizId.toLowerCase())
+        );
+        subjectId = matched?._id;
+      }
+
+      if (subjectId) {
+        loadedQuestions = await ctx.db
+          .query("questions")
+          .withIndex("by_subject", (q) => q.eq("subjectId", subjectId))
+          .filter((q) => q.neq(q.field("isPublished"), false))
+          .collect();
+      } else {
+        loadedQuestions = await ctx.db
+          .query("questions")
+          .filter((q) => q.neq(q.field("isPublished"), false))
+          .take(50);
+      }
+    }
+
+    const formattedQuestions = loadedQuestions.map((q) => ({
+      id: q._id,
+      subjectId: q.subjectId,
+      branchId: q.branchId,
+      topicId: q.topicId,
+      lessonId: q.lessonId,
+      question: q.question,
+      choices: q.choices,
+      correctChoiceId: q.correctChoiceId,
+      correctChoiceHash: q.correctChoiceId,
+      explanation: q.explanation,
+      difficulty: q.difficulty,
+      specializedType: q.specializedType,
+    }));
+
+    const formattedQuiz = quiz
+      ? {
+          id: quiz._id,
+          title: quiz.title,
+          description: quiz.description,
+          type: quiz.type,
+          subjectId: quiz.subjectId,
+          timeLimitSeconds: quiz.timeLimitSeconds,
+          passingScore: quiz.passingScore,
+          specializedType: quiz.specializedType,
+        }
+      : {
+          id: args.quizId,
+          title: "Architecture Board Exam Drill",
+          description: "Comprehensive Board Exam Assessment",
+          type: "practice",
+          timeLimitSeconds: 5400,
+          passingScore: 75,
+        };
+
+    return {
+      quiz: formattedQuiz,
+      questions: formattedQuestions,
+    };
+  },
+});
+
+/**
  * Mutation: Curate and create a fixed Quiz or Mock Exam (Content Manager or Admin).
  */
 export const createQuiz = mutation({

@@ -18,7 +18,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableFreeze, enableScreens } from 'react-native-screens';
 
-import { SyncProvider } from '@/components/SyncProvider';
 import {
   ThemeProvider as AppThemeProvider,
   useAppTheme,
@@ -108,47 +107,45 @@ function AppLayoutContent() {
     <ExpoNavThemeProvider value={navigationTheme}>
       <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <SyncProvider>
-          <Stack
-            screenOptions={{
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            animationDuration: 200,
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
+            contentStyle: {
+              backgroundColor: colors.background,
+            },
+          }}>
+          {/* Auth Screens */}
+          <Stack.Screen
+            name="(auth)"
+            options={{
               headerShown: false,
-              animation: 'slide_from_right',
-              animationDuration: 200,
-              gestureEnabled: true,
-              fullScreenGestureEnabled: true,
-              contentStyle: {
-                backgroundColor: colors.background,
-              },
-            }}>
-            {/* Auth Screens */}
-            <Stack.Screen
-              name="(auth)"
-              options={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.background },
-              }}
-            />
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
 
-            {/* Main Tabs Navigator (Hosts nested tab stacks) */}
-            <Stack.Screen
-              name="(tabs)"
-              options={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.background },
-              }}
-            />
+          {/* Main Tabs Navigator (Hosts nested tab stacks) */}
+          <Stack.Screen
+            name="(tabs)"
+            options={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
 
-            {/* Global Modals / Study Room */}
-            <Stack.Screen
-              name="room/[id]"
-              options={{
-                headerShown: false,
-                presentation: 'modal',
-                contentStyle: { backgroundColor: colors.background },
-              }}
-            />
-          </Stack>
-        </SyncProvider>
+          {/* Global Modals / Study Room */}
+          <Stack.Screen
+            name="room/[id]"
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
+        </Stack>
       </View>
     </ExpoNavThemeProvider>
   );

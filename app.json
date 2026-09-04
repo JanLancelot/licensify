@@ -35,7 +35,6 @@
           "imageWidth": 76
         }
       ],
-      "expo-sqlite",
       "expo-secure-store",
       [
         "expo-image-picker",
