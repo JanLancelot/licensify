@@ -671,9 +671,9 @@ export default function ExamSessionScreen() {
     return {
       top: clampedTop,
       left: clampedLeft,
-      backgroundColor: tutorialStep === 1 ? '#D97706' : colors.accent,
+      backgroundColor: colors.accent,
     };
-  }, [targetHighlightStyle, tutorialStep, colors.accent, insets.top, windowHeight, windowWidth]);
+  }, [targetHighlightStyle, colors.accent, insets.top, windowHeight, windowWidth]);
 
   // 3. Safe Clamped Tooltip Card Placement positioned adjacent to the active target
   const tooltipCardStyle = useMemo(() => {
@@ -1810,10 +1810,8 @@ export default function ExamSessionScreen() {
               styles.spotlightTargetBox,
               targetHighlightStyle,
               {
-                borderColor: tutorialStep === 1 ? '#D97706' : colors.accent,
-                backgroundColor: tutorialStep === 1
-                  ? isDark ? 'rgba(217, 119, 6, 0.14)' : 'rgba(217, 119, 6, 0.08)'
-                  : colors.accentMuted,
+                borderColor: colors.accent,
+                backgroundColor: colors.accentMuted,
               },
             ]}
           />
@@ -1844,18 +1842,15 @@ export default function ExamSessionScreen() {
               <View style={styles.spotlightHeaderLeft}>
                 {(() => {
                   const CurrentIcon = TUTORIAL_STEPS[tutorialStep].icon;
-                  const iconColor = tutorialStep === 1 ? '#D97706' : colors.accent;
                   return (
                     <View
                       style={[
                         styles.spotlightIconWrapper,
                         {
-                          backgroundColor: tutorialStep === 1
-                            ? isDark ? 'rgba(217, 119, 6, 0.2)' : '#FEF3C7'
-                            : colors.accentMuted,
+                          backgroundColor: colors.accentMuted,
                         },
                       ]}>
-                      <CurrentIcon size={18} color={iconColor} strokeWidth={2.4} />
+                      <CurrentIcon size={18} color={colors.accent} strokeWidth={2.4} />
                     </View>
                   );
                 })()}

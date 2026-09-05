@@ -21,7 +21,18 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
-import { useLessonProgress, useLocalAttempts, useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
+import {
+  trackLessonInteraction,
+  useLessonProgress,
+  useLocalAttempts,
+  useLocalHierarchy,
+  useLocalStats,
+} from '@/hooks/useLocalData';
+import Animated, {
+  FadeInDown,
+  FadeOutUp,
+  LinearTransition,
+} from 'react-native-reanimated';
 import { api } from '../../../convex/_generated/api';
 
 interface ConfidenceItem {
@@ -39,7 +50,7 @@ export default function HomeScreen() {
   const userProfile = useQuery(api.users.getCurrentUserProfile);
   const { stats, refetch } = useLocalStats();
   const { curriculum } = useLocalHierarchy();
-  const { completedLessonIds, refetch: refetchProgress } = useLessonProgress();
+  const { completedLessonIds, lessonTimestamps, refetch: refetchProgress } = useLessonProgress();
   const { attempts, refetch: refetchAttempts } = useLocalAttempts();
 
   const [showAllLessons, setShowAllLessons] = useState(false);
@@ -67,10 +78,41 @@ export default function HomeScreen() {
 
     // Calculate real progress for each subject
     const subjectsWithProgress = curriculum.map((sub, sIdx) => {
-      const allLessonIds = sub.topics.flatMap((t) => t.lessons.map((l) => l.id));
+      const allLessonsWithTopic = sub.topics.flatMap((t) =>
+        t.lessons.map((l) => ({
+          id: l.id,
+          topicId: t.id,
+        }))
+      );
+      const allLessonIds = allLessonsWithTopic.map((l) => l.id);
+      const allTopicIds = sub.topics.map((t) => t.id);
       const total = allLessonIds.length;
       const done = allLessonIds.filter((id) => completedLessonIds.has(id)).length;
       const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+      // Find the next incomplete lesson to focus when continuing
+      const nextLesson =
+        allLessonsWithTopic.find((l) => !completedLessonIds.has(l.id)) ||
+        allLessonsWithTopic[0];
+
+      let lastActiveTimestamp = 0;
+      for (const lid of allLessonIds) {
+        const ts = lessonTimestamps?.get(lid) || 0;
+        if (ts > lastActiveTimestamp) {
+          lastActiveTimestamp = ts;
+        }
+      }
+      for (const tid of allTopicIds) {
+        const ts = lessonTimestamps?.get(tid) || 0;
+        if (ts > lastActiveTimestamp) {
+          lastActiveTimestamp = ts;
+        }
+      }
+      const subDirectTs = lessonTimestamps?.get(sub.id) || 0;
+      if (subDirectTs > lastActiveTimestamp) {
+        lastActiveTimestamp = subDirectTs;
+      }
+
       return {
         id: sub.id,
         title: sub.title.toUpperCase(),
@@ -78,21 +120,27 @@ export default function HomeScreen() {
         done,
         total,
         icon: sIdx === 0 ? BookOpen : Landmark,
+        lastActiveTimestamp,
+        nextLessonId: nextLesson?.id,
+        nextTopicId: nextLesson?.topicId,
       };
     });
 
-    // Prioritize subjects with actual student activity (done > 0)
-    const inProgress = subjectsWithProgress.filter((s) => s.done > 0);
-    const displayed = inProgress.length > 0
-      ? inProgress.slice(0, 2)
-      : subjectsWithProgress.slice(0, 2);
+    // Only include subjects with progress (> 0) that are not yet 100% completed (done < total)
+    const inProgress = subjectsWithProgress.filter((s) => s.done > 0 && s.done < s.total);
 
-    return displayed;
-  }, [curriculum, completedLessonIds]);
+    // Sort by latest clicked/completed at the top (highest timestamp first)
+    inProgress.sort((a, b) => b.lastActiveTimestamp - a.lastActiveTimestamp);
+
+    // Display up to 5 items
+    return inProgress.slice(0, 5);
+  }, [curriculum, completedLessonIds, lessonTimestamps]);
 
   // Up to 10 Recent / Syllabus Lessons for the Confidence Rate Section
   const confidenceLessons: ConfidenceItem[] = useMemo(() => {
-    const collected: ConfidenceItem[] = [];
+    if (!curriculum || curriculum.length === 0) return [];
+
+    const collected: (ConfidenceItem & { lastActiveTimestamp: number })[] = [];
 
     // Map quiz attempts by subject/quiz to derive subject mastery scores
     const subjectScores = new Map<string, number[]>();
@@ -135,37 +183,53 @@ export default function HomeScreen() {
       const effectiveScore = directAvgScore !== null ? directAvgScore : generalAvgScore;
 
       for (const topic of sub.topics) {
-        for (const les of topic.lessons) {
-          const isDone = completedLessonIds.has(les.id);
-          
-          let confidencePercent = 0;
+        const topicLessonIds = topic.lessons.map((l) => l.id);
+        const total = topicLessonIds.length;
+        const done = topicLessonIds.filter((id) => completedLessonIds.has(id)).length;
+
+        let confidencePercent = 0;
+        let lastActiveTimestamp = 0;
+
+        if (total > 0 && done > 0) {
+          const completionPct = Math.round((done / total) * 100);
           if (effectiveScore !== null && effectiveScore > 0) {
-            // Tested in practice drills: confidence reflects test accuracy (with 5% bonus if notes studied)
-            confidencePercent = isDone ? Math.min(100, Math.round(effectiveScore * 1.05)) : effectiveScore;
-          } else if (effectiveScore === 0) {
-            confidencePercent = 0;
-          } else if (isDone) {
-            // Notes completed but no quizzes taken yet: 65% baseline
-            confidencePercent = 65;
+            // Weighted blend of lesson completion & quiz accuracy
+            confidencePercent = Math.min(100, Math.round(completionPct * 0.5 + effectiveScore * 0.5));
           } else {
-            confidencePercent = 0;
+            confidencePercent = completionPct;
           }
 
-          collected.push({
-            id: les.id,
-            lessonName: les.title,
-            topicName: topic.title,
-            confidencePercent,
-          });
-          if (collected.length >= 10) break;
+          for (const lid of topicLessonIds) {
+            const ts = lessonTimestamps?.get(lid) || 0;
+            if (ts > lastActiveTimestamp) {
+              lastActiveTimestamp = ts;
+            }
+          }
+
+          const topicDirectTs = lessonTimestamps?.get(topic.id) || 0;
+          if (topicDirectTs > lastActiveTimestamp) {
+            lastActiveTimestamp = topicDirectTs;
+          }
         }
-        if (collected.length >= 10) break;
+
+        // Only include topics with progress (> 0%)
+        if (confidencePercent > 0) {
+          collected.push({
+            id: topic.id,
+            lessonName: topic.title,
+            topicName: sub.title,
+            confidencePercent,
+            lastActiveTimestamp,
+          });
+        }
       }
-      if (collected.length >= 10) break;
     }
 
-    return collected;
-  }, [curriculum, completedLessonIds, attempts, stats]);
+    // Sort by recent clicked progress at the top (descending timestamp)
+    collected.sort((a, b) => b.lastActiveTimestamp - a.lastActiveTimestamp);
+
+    return collected.slice(0, 10).map(({ lastActiveTimestamp, ...item }) => item);
+  }, [curriculum, completedLessonIds, lessonTimestamps, attempts, stats]);
 
   const displayedLessons = useMemo(() => {
     return showAllLessons ? confidenceLessons : confidenceLessons.slice(0, 5);
@@ -302,35 +366,46 @@ export default function HomeScreen() {
               {/* Rows Area with Bounded Vertical Axis Line */}
               <View style={styles.chartContentArea}>
                 {/* Continuous Vertical Axis Line strictly bounded to the rows */}
-                <View
-                  style={[
-                    styles.chartVerticalAxis,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(255, 255, 255, 0.35)'
-                        : '#111827',
-                    },
-                  ]}
-                />
+                {displayedLessons.length > 0 && (
+                  <View
+                    style={[
+                      styles.chartVerticalAxis,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.35)'
+                          : '#111827',
+                      },
+                    ]}
+                  />
+                )}
 
                 {/* Rows */}
-                <View style={styles.chartRowsContainer}>
+                <Animated.View
+                  layout={LinearTransition.duration(250)}
+                  style={styles.chartRowsContainer}>
                   {displayedLessons.length === 0 ? (
-                    <View style={{ paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500' }}>
-                        No curriculum lessons available yet.
+                    <View style={{ paddingVertical: 24, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', textAlign: 'center', lineHeight: 18 }}>
+                        No progress yet. Study lessons or take quizzes to see your confidence rate!
                       </Text>
                     </View>
                   ) : (
-                    displayedLessons.map((item) => {
+                    displayedLessons.map((item, index) => {
                       // Bar width ratio relative to 68% max container width so % fits on right
                       const barWidthPercent = Math.max(3, Math.min(100, item.confidencePercent)) * 0.68;
 
                       return (
-                        <View key={item.id} style={styles.chartRow}>
+                        <Animated.View
+                          key={item.id}
+                          entering={FadeInDown.duration(200).delay(index >= 5 ? (index - 5) * 35 : 0)}
+                          exiting={FadeOutUp.duration(160)}
+                          layout={LinearTransition.duration(240)}
+                          style={styles.chartRow}>
                           {/* Left Column: Actual Lesson Name */}
                           <View style={styles.chartLeftLabelBox}>
                             <Text
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
                               style={[
                                 styles.chartLessonText,
                                 { color: colors.text },
@@ -358,11 +433,11 @@ export default function HomeScreen() {
                               {item.confidencePercent}%
                             </Text>
                           </View>
-                        </View>
+                        </Animated.View>
                       );
                     })
                   )}
-                </View>
+                </Animated.View>
               </View>
 
               {/* Show More / Show Less Toggle Button (Up to 10) - Outside Axis Boundary */}
@@ -383,7 +458,7 @@ export default function HomeScreen() {
                   ]}>
                   <Text
                     style={[styles.toggleLessonsBtnText, { color: colors.accent }]}>
-                    {showAllLessons ? 'Show Top 5' : 'Show Up to 10 Lessons'}
+                    {showAllLessons ? 'Show Less' : 'Show More'}
                   </Text>
                   {showAllLessons ? (
                     <ChevronUp size={14} color={colors.accent} strokeWidth={2.4} />
@@ -397,161 +472,147 @@ export default function HomeScreen() {
         </View>
 
         {/* ================================================================= */}
-        {/* 3. CONTINUE LEARNING SECTION                                      */}
+        {/* 3. CONTINUE LEARNING SECTION (Only show if there is progress)     */}
         {/* ================================================================= */}
-        <View style={styles.sectionContainer}>
-          {/* Section Header Row with Vertical Accent Bar */}
-          <View style={styles.continueSectionHeader}>
-            <View
-              style={[
-                styles.continueHeaderAccentBar,
-                { backgroundColor: colors.accent },
-              ]}
-            />
-            <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
-              CONTINUE LEARNING
-            </Text>
-          </View>
+        {continueItems.length > 0 && (
+          <View style={styles.sectionContainer}>
+            {/* Section Header Row with Vertical Accent Bar */}
+            <View style={styles.continueSectionHeader}>
+              <View
+                style={[
+                  styles.continueHeaderAccentBar,
+                  { backgroundColor: colors.accent },
+                ]}
+              />
+              <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
+                CONTINUE LEARNING
+              </Text>
+            </View>
 
-          {/* List of Continue Learning Cards */}
-          <View style={styles.continueCardsList}>
-            {continueItems.length === 0 ? (
-              <Pressable
-                onPress={() => router.push('/(tabs)/learn' as any)}
-                style={({ pressed }) => [
-                  styles.continueLearningCard,
-                  {
-                    backgroundColor: isDark
-                      ? colors.backgroundElement
-                      : '#FFFFFF',
-                    borderColor: isDark
-                      ? 'rgba(255, 255, 255, 0.08)'
-                      : 'rgba(0, 0, 0, 0.06)',
-                    justifyContent: 'center',
-                    paddingVertical: 18,
-                    opacity: pressed ? 0.9 : 1,
-                  },
-                ]}>
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 13.5,
-                    fontWeight: '500',
-                    textAlign: 'center',
-                  }}>
-                  Explore the curriculum to start learning →
-                </Text>
-              </Pressable>
-            ) : (
-              continueItems.map((item) => {
-              const IconComp = item.icon;
+            {/* List of Continue Learning Cards */}
+            <View style={styles.continueCardsList}>
+              {continueItems.map((item) => {
+                const IconComp = item.icon;
 
-              return (
-                <Pressable
-                  key={item.id}
-                  onPress={() => router.push('/(tabs)/learn' as any)}
-                  style={({ pressed }) => [
-                    styles.continueLearningCard,
-                    {
-                      backgroundColor: isDark
-                        ? colors.backgroundElement
-                        : '#FFFFFF',
-                      borderColor: isDark
-                        ? 'rgba(255, 255, 255, 0.08)'
-                        : 'rgba(0, 0, 0, 0.06)',
-                      opacity: pressed ? 0.92 : 1,
-                      transform: [{ scale: pressed ? 0.99 : 1 }],
-                    },
-                  ]}>
-                  {/* Left: Soft Tinted Circular Icon Container */}
-                  <View
-                    style={[
-                      styles.circularIconWrap,
-                      {
-                        backgroundColor: colors.accentMuted,
-                        borderColor: colors.accentBorder,
-                      },
-                    ]}>
-                    <IconComp
-                      size={22}
-                      color={colors.accent}
-                      strokeWidth={2.2}
-                    />
-                  </View>
-
-                  {/* Middle: Title & % on header row, Progress track below */}
-                  <View style={styles.continueCardContent}>
-                    <View style={styles.continueCardHeaderRow}>
-                      <Text
-                        style={[
-                          styles.continueSubjectTitle,
-                          { color: colors.text },
-                        ]}>
-                        {item.title}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.continuePercentBadge,
-                          { color: colors.accent },
-                        ]}>
-                        {item.percent}%
-                      </Text>
-                    </View>
-
-                    {/* Progress Track */}
-                    <View
-                      style={[
-                        styles.continueProgressTrack,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255, 255, 255, 0.10)'
-                            : 'rgba(239, 241, 245, 1)',
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => {
+                      trackLessonInteraction(item.id);
+                      if (item.nextTopicId) trackLessonInteraction(item.nextTopicId);
+                      if (item.nextLessonId) trackLessonInteraction(item.nextLessonId);
+                      router.push({
+                        pathname: '/(tabs)/learn/notes' as any,
+                        params: {
+                          subjectId: item.id,
+                          topicId: item.nextTopicId,
+                          lessonId: item.nextLessonId,
                         },
-                      ]}>
-                      <View
-                        style={[
-                          styles.continueProgressFill,
-                          {
-                            width: `${item.percent}%`,
-                            backgroundColor: colors.accent,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-
-                  {/* Right Divider & Circular Chevron Action Button */}
-                  <View
-                    style={[
-                      styles.continueRightDivider,
+                      });
+                    }}
+                    style={({ pressed }) => [
+                      styles.continueLearningCard,
                       {
                         backgroundColor: isDark
+                          ? colors.backgroundElement
+                          : '#FFFFFF',
+                        borderColor: isDark
                           ? 'rgba(255, 255, 255, 0.08)'
                           : 'rgba(0, 0, 0, 0.06)',
-                      },
-                    ]}
-                  />
-
-                  <View
-                    style={[
-                      styles.chevronCircleWrap,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(255, 255, 255, 0.06)'
-                          : '#F8FAFC',
+                        opacity: pressed ? 0.92 : 1,
+                        transform: [{ scale: pressed ? 0.99 : 1 }],
                       },
                     ]}>
-                    <ChevronRight
-                      size={18}
-                      color={colors.text}
-                      strokeWidth={2.4}
+                    {/* Left: Soft Tinted Circular Icon Container */}
+                    <View
+                      style={[
+                        styles.circularIconWrap,
+                        {
+                          backgroundColor: colors.accentMuted,
+                          borderColor: colors.accentBorder,
+                        },
+                      ]}>
+                      <IconComp
+                        size={22}
+                        color={colors.accent}
+                        strokeWidth={2.2}
+                      />
+                    </View>
+
+                    {/* Middle: Title & % on header row, Progress track below */}
+                    <View style={styles.continueCardContent}>
+                      <View style={styles.continueCardHeaderRow}>
+                        <Text
+                          style={[
+                            styles.continueSubjectTitle,
+                            { color: colors.text },
+                          ]}>
+                          {item.title}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.continuePercentBadge,
+                            { color: colors.accent },
+                          ]}>
+                          {item.percent}%
+                        </Text>
+                      </View>
+
+                      {/* Progress Track */}
+                      <View
+                        style={[
+                          styles.continueProgressTrack,
+                          {
+                            backgroundColor: isDark
+                              ? 'rgba(255, 255, 255, 0.10)'
+                              : 'rgba(239, 241, 245, 1)',
+                          },
+                        ]}>
+                        <View
+                          style={[
+                            styles.continueProgressFill,
+                            {
+                              width: `${item.percent}%`,
+                              backgroundColor: colors.accent,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Right Divider & Circular Chevron Action Button */}
+                    <View
+                      style={[
+                        styles.continueRightDivider,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : 'rgba(0, 0, 0, 0.06)',
+                        },
+                      ]}
                     />
-                  </View>
-                </Pressable>
-              );
-            }))}
+
+                    <View
+                      style={[
+                        styles.chevronCircleWrap,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255, 255, 255, 0.06)'
+                            : '#F8FAFC',
+                        },
+                      ]}>
+                      <ChevronRight
+                        size={18}
+                        color={colors.text}
+                        strokeWidth={2.4}
+                      />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

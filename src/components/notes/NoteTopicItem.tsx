@@ -1,15 +1,12 @@
+import { useRouter } from 'expo-router';
 import { Check, ChevronRight, FileText } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  LinearTransition,
-} from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
+import { trackLessonInteraction } from '@/hooks/useLocalData';
 import { Lesson, Topic } from '@/types/curriculum';
 
 export interface NoteTopicItemProps {
@@ -26,11 +23,12 @@ export interface NoteTopicItemProps {
     darkIcon: string;
   };
   completedLessonIds?: Set<string>;
-  setSelectedLesson: (lessonData: {
+  setSelectedLesson?: (lessonData: {
     subjectTitle: string;
     topicTitle: string;
     lesson: Lesson;
   }) => void;
+  onPressLesson?: (lesson: Lesson, topicTitle: string, subjectTitle: string) => void;
   theme?: any;
 }
 
@@ -125,8 +123,10 @@ export function NoteTopicItem({
   parentPalette,
   completedLessonIds = new Set(),
   setSelectedLesson,
+  onPressLesson,
 }: NoteTopicItemProps) {
   const { colors, isDark } = useAppTheme();
+  const router = useRouter();
 
   // Calculate topic progress
   const topicLessonIds = topic.lessons.map((l) => l.id);
@@ -151,8 +151,7 @@ export function NoteTopicItem({
     : colors.accent;
 
   return (
-    <Animated.View
-      layout={LinearTransition.duration(200)}
+    <View
       style={[
         styles.topicCardBox,
         {
@@ -218,10 +217,7 @@ export function NoteTopicItem({
 
       {/* LEVEL 3: CLEAN LESSONS LIST */}
       {isTopicOpen && (
-        <Animated.View
-          entering={FadeInDown.duration(200)}
-          exiting={FadeOutUp.duration(160)}
-          layout={LinearTransition.duration(200)}
+        <View
           style={[
             styles.lessonsWrapper,
             {
@@ -230,20 +226,48 @@ export function NoteTopicItem({
                 : 'rgba(0, 0, 0, 0.05)',
             },
           ]}>
-          {topic.lessons.map((lesson, lIdx) => {
-            const isCompleted = completedLessonIds.has(lesson.id);
-            const isLast = lIdx === topic.lessons.length - 1;
+          {topic.lessons.length === 0 ? (
+            <View style={styles.emptyLessonsRow}>
+              <Text
+                style={[
+                  styles.emptyLessonsText,
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                ]}>
+                No lessons yet
+              </Text>
+            </View>
+          ) : (
+            topic.lessons.map((lesson, lIdx) => {
+              const isCompleted = completedLessonIds.has(lesson.id);
+              const isLast = lIdx === topic.lessons.length - 1;
+
+            const handlePress = () => {
+              trackLessonInteraction(lesson.id);
+              trackLessonInteraction(topic.id);
+              if (onPressLesson) {
+                onPressLesson(lesson, topic.title, subjectTitle);
+              } else if (setSelectedLesson) {
+                setSelectedLesson({
+                  subjectTitle,
+                  topicTitle: topic.title,
+                  lesson,
+                });
+              } else {
+                router.push({
+                  pathname: '/(tabs)/learn/notes/[lessonId]' as any,
+                  params: {
+                    lessonId: lesson.id,
+                    subjectTitle,
+                    topicTitle: topic.title,
+                  },
+                });
+              }
+            };
 
             return (
               <Pressable
                 key={lesson.id}
-                onPress={() =>
-                  setSelectedLesson({
-                    subjectTitle,
-                    topicTitle: topic.title,
-                    lesson,
-                  })
-                }
+                onPress={handlePress}
                 style={({ pressed }) => [
                   styles.lessonRow,
                   {
@@ -299,10 +323,11 @@ export function NoteTopicItem({
                 />
               </Pressable>
             );
-          })}
-        </Animated.View>
+          })
+        )}
+        </View>
       )}
-    </Animated.View>
+    </View>
   );
 }
 
@@ -310,7 +335,6 @@ const styles = StyleSheet.create({
   topicCardBox: {
     borderRadius: 14,
     borderWidth: 1,
-    overflow: 'hidden',
     marginBottom: 4,
   },
   topicHeader: {
@@ -319,6 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     gap: 12,
+    borderRadius: 13,
   },
   topicBadgeNumber: {
     fontSize: 14,
@@ -362,5 +387,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.1,
     lineHeight: 19,
+  },
+  emptyLessonsRow: {
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyLessonsText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

@@ -1,22 +1,18 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  LayoutAnimation,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  UIManager,
   View,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  LinearTransition,
-} from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LessonDetailModal } from '@/components/notes/LessonDetailModal';
 import { NoteTopicItem } from '@/components/notes/NoteTopicItem';
 import {
   CircularProgressIconBadge,
@@ -24,8 +20,11 @@ import {
 } from '@/components/ui/CircularProgressIconBadge';
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
-import { useLessonProgress, useLocalHierarchy } from '@/hooks/useLocalData';
-import { Lesson } from '@/types/curriculum';
+import { trackLessonInteraction, useLessonProgress, useLocalHierarchy } from '@/hooks/useLocalData';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export { CircularProgressIconBadge, SUBJECT_PALETTES };
 
@@ -33,23 +32,54 @@ export default function NotesScreen() {
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    subjectId?: string;
+    topicId?: string;
+    lessonId?: string;
+  }>();
 
   const { curriculum } = useLocalHierarchy();
-  const { completedLessonIds, toggleLessonCompleted, isCompleted } = useLessonProgress();
+  const { completedLessonIds } = useLessonProgress();
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const subjectPositions = useRef<Record<string, number>>({});
 
   // Track which subjects are expanded (Level 1)
-  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>(() => {
+    return params.subjectId ? { [params.subjectId]: true } : {};
+  });
   // Track which topics are expanded (Level 2)
-  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>(() => {
+    return params.topicId ? { [params.topicId]: true } : {};
+  });
 
-  // Modal for reading lesson notes
-  const [selectedLesson, setSelectedLesson] = useState<{
-    subjectTitle: string;
-    topicTitle: string;
-    lesson: Lesson;
-  } | null>(null);
+  // Auto-expand target subject and topic cleanly when opened from Continue Learning
+  useEffect(() => {
+    if (!params.subjectId) return;
+
+    const timer = setTimeout(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setExpandedSubjects((prev) =>
+        prev[params.subjectId!] ? prev : { ...prev, [params.subjectId!]: true }
+      );
+      if (params.topicId) {
+        setExpandedTopics((prev) =>
+          prev[params.topicId!] ? prev : { ...prev, [params.topicId!]: true }
+        );
+      }
+
+      const pos = subjectPositions.current[params.subjectId!];
+      if (typeof pos === 'number' && scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: Math.max(0, pos - 16), animated: true });
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [params.subjectId, params.topicId]);
 
   const toggleSubject = (subjectId: string) => {
+    trackLessonInteraction(subjectId);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedSubjects((prev) => {
       const isCurrentlyOpen = !!prev[subjectId];
       if (isCurrentlyOpen) {
@@ -72,6 +102,8 @@ export default function NotesScreen() {
   };
 
   const toggleTopic = (topicId: string) => {
+    trackLessonInteraction(topicId);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedTopics((prev) => ({
       ...prev,
       [topicId]: !prev[topicId],
@@ -106,6 +138,7 @@ export default function NotesScreen() {
 
       {/* Clean Uncluttered Subject List */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
@@ -129,9 +162,11 @@ export default function NotesScreen() {
             const progress = totalLessons > 0 ? completedCount / totalLessons : 0;
 
             return (
-              <Animated.View
+              <View
                 key={subject.id}
-                layout={LinearTransition.duration(240)}
+                onLayout={(e) => {
+                  subjectPositions.current[subject.id] = e.nativeEvent.layout.y;
+                }}
                 style={[
                   styles.subjectCardBox,
                   {
@@ -195,10 +230,7 @@ export default function NotesScreen() {
 
                 {/* LEVEL 2: TOPICS LIST INSIDE CARD */}
                 {isSubjectOpen && (
-                  <Animated.View
-                    entering={FadeInDown.duration(220)}
-                    exiting={FadeOutUp.duration(180)}
-                    layout={LinearTransition.duration(240)}
+                  <View
                     style={[
                       styles.topicsContainer,
                       {
@@ -218,26 +250,15 @@ export default function NotesScreen() {
                         subjectTitle={subject.title}
                         parentPalette={palette}
                         completedLessonIds={completedLessonIds}
-                        setSelectedLesson={(data) => {
-                          setSelectedLesson(data);
-                        }}
                       />
                     ))}
-                  </Animated.View>
+                  </View>
                 )}
-              </Animated.View>
+              </View>
             );
           })}
         </View>
       </ScrollView>
-
-      {/* LESSON READING & COMPLETION MODAL */}
-      <LessonDetailModal
-        selectedLesson={selectedLesson}
-        onClose={() => setSelectedLesson(null)}
-        isCompleted={selectedLesson ? isCompleted(selectedLesson.lesson.id) : false}
-        onToggleComplete={toggleLessonCompleted}
-      />
     </SafeAreaView>
   );
 }
@@ -282,7 +303,6 @@ const styles = StyleSheet.create({
   subjectCardBox: {
     borderRadius: 18,
     borderWidth: 1,
-    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
@@ -304,6 +324,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     gap: 14,
+    borderRadius: 17,
   },
   subjectTitle: {
     flex: 1,
