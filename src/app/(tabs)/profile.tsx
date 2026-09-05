@@ -172,7 +172,8 @@ export default function ProfileScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        await uploadProfilePhoto(result.assets[0].uri);
+        const asset = result.assets[0];
+        await uploadProfilePhoto(asset.uri, asset.mimeType);
       }
     } catch (err) {
       console.error('Error selecting image from library:', err);
@@ -199,7 +200,8 @@ export default function ProfileScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        await uploadProfilePhoto(result.assets[0].uri);
+        const asset = result.assets[0];
+        await uploadProfilePhoto(asset.uri, asset.mimeType);
       }
     } catch (err) {
       console.error('Error taking photo:', err);
@@ -207,7 +209,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const uploadProfilePhoto = async (uri: string) => {
+  const uploadProfilePhoto = async (uri: string, explicitMimeType?: string | null) => {
     setLocalAvatarUri(uri);
     setIsUploadingPhoto(true);
     try {
@@ -215,23 +217,60 @@ export default function ProfileScreen() {
       const response = await fetch(uri);
       const blob = await response.blob();
 
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': blob.type || 'image/jpeg' },
-        body: blob,
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error(`Upload failed with status ${uploadRes.status}`);
+      // Determine the best MIME type
+      const lowerUri = uri.toLowerCase();
+      let contentType = explicitMimeType || blob.type;
+      if (!contentType || contentType === 'application/octet-stream' || contentType === '') {
+        if (lowerUri.endsWith('.png')) {
+          contentType = 'image/png';
+        } else if (lowerUri.endsWith('.webp')) {
+          contentType = 'image/webp';
+        } else if (lowerUri.endsWith('.heic')) {
+          contentType = 'image/heic';
+        } else {
+          contentType = 'image/jpeg';
+        }
       }
 
-      const { storageId } = await uploadRes.json();
-      await updateProfileMutation({ profileImageId: storageId });
+      // Use XMLHttpRequest to avoid React Native fetch's duplicate header bug:
+      // In React Native, fetch() with a body Blob calls setRequestHeader twice if headers['Content-Type']
+      // is provided, concatenating them into "image/jpeg, image/jpeg" which causes Convex to reject with
+      // "Bad header for content-type: invalid HTTP header".
+      const { storageId } = await new Promise<{ storageId: string }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', uploadUrl);
+
+        // If blob has no type, explicitly set it; if it has type, xhr.send(blob) will set it natively
+        if (!blob.type) {
+          xhr.setRequestHeader('Content-Type', contentType);
+        }
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              resolve(data);
+            } catch (e) {
+              reject(new Error(`Failed to parse upload response: ${xhr.responseText}`));
+            }
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error('Network error during photo upload. Please check your connection.'));
+        };
+
+        xhr.send(blob);
+      });
+
+      await updateProfileMutation({ profileImageId: storageId as any });
 
       Alert.alert('Success', 'Profile photo updated successfully!');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to upload profile photo:', err);
-      Alert.alert('Upload Failed', 'Could not upload your profile photo. Please try again.');
+      Alert.alert('Upload Failed', err?.message || 'Could not upload your profile photo. Please try again.');
     } finally {
       setIsUploadingPhoto(false);
     }
