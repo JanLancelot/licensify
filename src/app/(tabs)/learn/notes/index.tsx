@@ -16,7 +16,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LessonDetailModal } from '@/components/notes/LessonDetailModal';
 import { NoteTopicItem } from '@/components/notes/NoteTopicItem';
 import {
   CircularProgressIconBadge,
@@ -25,7 +24,6 @@ import {
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
 import { useLessonProgress, useLocalHierarchy } from '@/hooks/useLocalData';
-import { Lesson } from '@/types/curriculum';
 
 export { CircularProgressIconBadge, SUBJECT_PALETTES };
 
@@ -35,19 +33,12 @@ export default function NotesScreen() {
   const router = useRouter();
 
   const { curriculum } = useLocalHierarchy();
-  const { completedLessonIds, toggleLessonCompleted, isCompleted } = useLessonProgress();
+  const { completedLessonIds } = useLessonProgress();
 
   // Track which subjects are expanded (Level 1)
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   // Track which topics are expanded (Level 2)
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
-
-  // Modal for reading lesson notes
-  const [selectedLesson, setSelectedLesson] = useState<{
-    subjectTitle: string;
-    topicTitle: string;
-    lesson: Lesson;
-  } | null>(null);
 
   const toggleSubject = (subjectId: string) => {
     setExpandedSubjects((prev) => {
@@ -218,9 +209,6 @@ export default function NotesScreen() {
                         subjectTitle={subject.title}
                         parentPalette={palette}
                         completedLessonIds={completedLessonIds}
-                        setSelectedLesson={(data) => {
-                          setSelectedLesson(data);
-                        }}
                       />
                     ))}
                   </Animated.View>
@@ -230,14 +218,6 @@ export default function NotesScreen() {
           })}
         </View>
       </ScrollView>
-
-      {/* LESSON READING & COMPLETION MODAL */}
-      <LessonDetailModal
-        selectedLesson={selectedLesson}
-        onClose={() => setSelectedLesson(null)}
-        isCompleted={selectedLesson ? isCompleted(selectedLesson.lesson.id) : false}
-        onToggleComplete={toggleLessonCompleted}
-      />
     </SafeAreaView>
   );
 }

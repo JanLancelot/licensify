@@ -22,6 +22,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
 import { useLessonProgress, useLocalAttempts, useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
+import Animated, {
+  FadeInDown,
+  FadeOutUp,
+  LinearTransition,
+} from 'react-native-reanimated';
 import { api } from '../../../convex/_generated/api';
 
 interface ConfidenceItem {
@@ -151,13 +156,16 @@ export default function HomeScreen() {
             confidencePercent = 0;
           }
 
-          collected.push({
-            id: les.id,
-            lessonName: les.title,
-            topicName: topic.title,
-            confidencePercent,
-          });
-          if (collected.length >= 10) break;
+          // Don't show those that are 0% - only show those with progress
+          if (confidencePercent > 0) {
+            collected.push({
+              id: les.id,
+              lessonName: les.title,
+              topicName: topic.title,
+              confidencePercent,
+            });
+            if (collected.length >= 10) break;
+          }
         }
         if (collected.length >= 10) break;
       }
@@ -302,35 +310,46 @@ export default function HomeScreen() {
               {/* Rows Area with Bounded Vertical Axis Line */}
               <View style={styles.chartContentArea}>
                 {/* Continuous Vertical Axis Line strictly bounded to the rows */}
-                <View
-                  style={[
-                    styles.chartVerticalAxis,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(255, 255, 255, 0.35)'
-                        : '#111827',
-                    },
-                  ]}
-                />
+                {displayedLessons.length > 0 && (
+                  <View
+                    style={[
+                      styles.chartVerticalAxis,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(255, 255, 255, 0.35)'
+                          : '#111827',
+                      },
+                    ]}
+                  />
+                )}
 
                 {/* Rows */}
-                <View style={styles.chartRowsContainer}>
+                <Animated.View
+                  layout={LinearTransition.duration(250)}
+                  style={styles.chartRowsContainer}>
                   {displayedLessons.length === 0 ? (
-                    <View style={{ paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500' }}>
-                        No curriculum lessons available yet.
+                    <View style={{ paddingVertical: 24, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', textAlign: 'center', lineHeight: 18 }}>
+                        No progress yet. Study lessons or take quizzes to see your confidence rate!
                       </Text>
                     </View>
                   ) : (
-                    displayedLessons.map((item) => {
+                    displayedLessons.map((item, index) => {
                       // Bar width ratio relative to 68% max container width so % fits on right
                       const barWidthPercent = Math.max(3, Math.min(100, item.confidencePercent)) * 0.68;
 
                       return (
-                        <View key={item.id} style={styles.chartRow}>
+                        <Animated.View
+                          key={item.id}
+                          entering={FadeInDown.duration(200).delay(index >= 5 ? (index - 5) * 35 : 0)}
+                          exiting={FadeOutUp.duration(160)}
+                          layout={LinearTransition.duration(240)}
+                          style={styles.chartRow}>
                           {/* Left Column: Actual Lesson Name */}
                           <View style={styles.chartLeftLabelBox}>
                             <Text
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
                               style={[
                                 styles.chartLessonText,
                                 { color: colors.text },
@@ -358,11 +377,11 @@ export default function HomeScreen() {
                               {item.confidencePercent}%
                             </Text>
                           </View>
-                        </View>
+                        </Animated.View>
                       );
                     })
                   )}
-                </View>
+                </Animated.View>
               </View>
 
               {/* Show More / Show Less Toggle Button (Up to 10) - Outside Axis Boundary */}
@@ -383,7 +402,7 @@ export default function HomeScreen() {
                   ]}>
                   <Text
                     style={[styles.toggleLessonsBtnText, { color: colors.accent }]}>
-                    {showAllLessons ? 'Show Top 5' : 'Show Up to 10 Lessons'}
+                    {showAllLessons ? 'Show Less' : 'Show More'}
                   </Text>
                   {showAllLessons ? (
                     <ChevronUp size={14} color={colors.accent} strokeWidth={2.4} />
