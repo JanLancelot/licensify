@@ -3,7 +3,7 @@ import {
   ArrowLeft,
   Check,
 } from 'lucide-react-native';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -24,7 +24,7 @@ export default function LessonDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const { lessonId, subjectTitle: paramSubjectTitle, topicTitle: paramTopicTitle } =
+  const { lessonId, topicTitle: paramTopicTitle } =
     useLocalSearchParams<{
       lessonId: string;
       subjectTitle?: string;
@@ -36,27 +36,33 @@ export default function LessonDetailScreen() {
   const [isToggling, setIsToggling] = useState(false);
 
   // Locate the target lesson, its topic, and subject in the curriculum hierarchy
-  const lessonData = useMemo(() => {
-    if (!curriculum || !lessonId) return null;
+  let lessonData: {
+    lesson: (typeof curriculum)[0]['topics'][0]['lessons'][0];
+    topic: (typeof curriculum)[0]['topics'][0];
+    subject: (typeof curriculum)[0];
+    palette: (typeof SUBJECT_PALETTES)[0];
+  } | null = null;
+
+  if (curriculum && lessonId) {
     for (let sIdx = 0; sIdx < curriculum.length; sIdx++) {
       const subject = curriculum[sIdx];
       for (const topic of subject.topics) {
-        const lesson = topic.lessons.find(
+        const foundLesson = topic.lessons.find(
           (l) => l.id === lessonId || l.lessonId === lessonId
         );
-        if (lesson) {
-          const palette = SUBJECT_PALETTES[sIdx % SUBJECT_PALETTES.length];
-          return {
-            lesson,
+        if (foundLesson) {
+          lessonData = {
+            lesson: foundLesson,
             topic,
             subject,
-            palette,
+            palette: SUBJECT_PALETTES[sIdx % SUBJECT_PALETTES.length],
           };
+          break;
         }
       }
+      if (lessonData) break;
     }
-    return null;
-  }, [curriculum, lessonId]);
+  }
 
   const targetLessonId = lessonData?.lesson.id || lessonId;
   const completed = targetLessonId ? isCompleted(targetLessonId) : false;
@@ -76,18 +82,19 @@ export default function LessonDetailScreen() {
 
   const topicTitle = lessonData?.topic.title || paramTopicTitle || 'Notes';
   const lesson = lessonData?.lesson;
+  const rawKeyPoints = lesson?.keyPoints;
 
   // Filter out any empty or placeholder bullet points
-  const keyPoints = useMemo(() => {
-    if (!lesson?.keyPoints || lesson.keyPoints.length === 0) return [];
-    return lesson.keyPoints.filter(
-      (point) =>
-        point &&
-        typeof point === 'string' &&
-        point.trim().length > 0 &&
-        !point.toLowerCase().startsWith('practice application: professional architectural practice')
-    );
-  }, [lesson?.keyPoints]);
+  const keyPoints =
+    rawKeyPoints && rawKeyPoints.length > 0
+      ? rawKeyPoints.filter(
+          (point) =>
+            point &&
+            typeof point === 'string' &&
+            point.trim().length > 0 &&
+            !point.toLowerCase().startsWith('practice application: professional architectural practice')
+        )
+      : [];
 
   const hasContent = Boolean(
     (lesson?.summary && lesson.summary.trim().length > 0) || keyPoints.length > 0

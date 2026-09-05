@@ -293,6 +293,8 @@ export function useLessonProgress() {
   }, [rawProgress]);
 
   const lessonTimestamps = useMemo(() => {
+    // Reference interactionTick so recalculation triggers upon new interactions
+    void interactionTick;
     const map = new Map<string, number>();
     if (!rawProgress && clientInteractionTimestamps.size === 0) return map;
 

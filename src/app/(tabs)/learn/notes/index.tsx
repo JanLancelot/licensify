@@ -45,21 +45,29 @@ export default function NotesScreen() {
   const subjectPositions = useRef<Record<string, number>>({});
 
   // Track which subjects are expanded (Level 1)
-  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>(() => {
+    return params.subjectId ? { [params.subjectId]: true } : {};
+  });
   // Track which topics are expanded (Level 2)
-  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>(() => {
+    return params.topicId ? { [params.topicId]: true } : {};
+  });
 
   // Auto-expand target subject and topic cleanly when opened from Continue Learning
   useEffect(() => {
     if (!params.subjectId) return;
 
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedSubjects((prev) => ({ ...prev, [params.subjectId!]: true }));
-    if (params.topicId) {
-      setExpandedTopics((prev) => ({ ...prev, [params.topicId!]: true }));
-    }
-
     const timer = setTimeout(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setExpandedSubjects((prev) =>
+        prev[params.subjectId!] ? prev : { ...prev, [params.subjectId!]: true }
+      );
+      if (params.topicId) {
+        setExpandedTopics((prev) =>
+          prev[params.topicId!] ? prev : { ...prev, [params.topicId!]: true }
+        );
+      }
+
       const pos = subjectPositions.current[params.subjectId!];
       if (typeof pos === 'number' && scrollViewRef.current) {
         scrollViewRef.current.scrollTo({ y: Math.max(0, pos - 16), animated: true });
