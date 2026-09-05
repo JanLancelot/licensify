@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireUser } from "./authHelpers";
+import { getCurrentUser, requireUser } from "./authHelpers";
 import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
 import { components } from "./_generated/api";
 
@@ -167,7 +167,8 @@ export const submitQuizAttempt = mutation({
 export const getAttemptWithAnswers = query({
   args: { attemptId: v.id("quizAttempts") },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
     const attempt = await ctx.db.get(args.attemptId);
     if (!attempt) return null;
 
@@ -206,7 +207,8 @@ async function getQuizDoc(ctx: any, quizId: string) {
 export const getUserQuizHistory = query({
   args: {},
   handler: async (ctx) => {
-    const user = await requireUser(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
     const attempts = await ctx.db
       .query("quizAttempts")
       .withIndex("by_user", (q) => q.eq("userId", user._id))

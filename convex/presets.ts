@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireUser } from "./authHelpers";
+import { getCurrentUser, requireUser } from "./authHelpers";
 
 /**
  * Public/Student query: Fetches user presets by type (flashcard, quiz, or exam).
@@ -10,7 +10,8 @@ export const getUserPresets = query({
     type: v.union(v.literal("flashcard"), v.literal("quiz"), v.literal("exam")),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
 
     const presets = await ctx.db
       .query("userPresets")
