@@ -136,34 +136,31 @@ export default function HomeScreen() {
       const effectiveScore = directAvgScore !== null ? directAvgScore : generalAvgScore;
 
       for (const topic of sub.topics) {
-        for (const les of topic.lessons) {
-          const isDone = completedLessonIds.has(les.id);
-          
-          let confidencePercent = 0;
-          if (effectiveScore !== null && effectiveScore > 0) {
-            // Tested in practice drills: confidence reflects test accuracy (with 5% bonus if notes studied)
-            confidencePercent = isDone ? Math.min(100, Math.round(effectiveScore * 1.05)) : effectiveScore;
-          } else if (effectiveScore === 0) {
-            confidencePercent = 0;
-          } else if (isDone) {
-            // Notes completed but no quizzes taken yet: 65% baseline
-            confidencePercent = 65;
-          } else {
-            confidencePercent = 0;
-          }
+        const topicLessonIds = topic.lessons.map((l) => l.id);
+        const total = topicLessonIds.length;
+        const done = topicLessonIds.filter((id) => completedLessonIds.has(id)).length;
 
-          // Don't show those that are 0% - only show those with progress
-          if (confidencePercent > 0) {
-            collected.push({
-              id: les.id,
-              lessonName: les.title,
-              topicName: topic.title,
-              confidencePercent,
-            });
-            if (collected.length >= 10) break;
+        let confidencePercent = 0;
+        if (total > 0 && done > 0) {
+          const completionPct = Math.round((done / total) * 100);
+          if (effectiveScore !== null && effectiveScore > 0) {
+            // Weighted blend of lesson completion & quiz accuracy
+            confidencePercent = Math.min(100, Math.round(completionPct * 0.5 + effectiveScore * 0.5));
+          } else {
+            confidencePercent = completionPct;
           }
         }
-        if (collected.length >= 10) break;
+
+        // Only include topics with progress (> 0%)
+        if (confidencePercent > 0) {
+          collected.push({
+            id: topic.id,
+            lessonName: topic.title,
+            topicName: sub.title,
+            confidencePercent,
+          });
+          if (collected.length >= 10) break;
+        }
       }
       if (collected.length >= 10) break;
     }
