@@ -2,15 +2,11 @@ import { useRouter } from 'expo-router';
 import { Check, ChevronRight, FileText } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  LinearTransition,
-} from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
 import { useAppTheme } from '@/context/theme-context';
+import { trackLessonInteraction } from '@/hooks/useLocalData';
 import { Lesson, Topic } from '@/types/curriculum';
 
 export interface NoteTopicItemProps {
@@ -155,8 +151,7 @@ export function NoteTopicItem({
     : colors.accent;
 
   return (
-    <Animated.View
-      layout={LinearTransition.duration(200)}
+    <View
       style={[
         styles.topicCardBox,
         {
@@ -222,10 +217,7 @@ export function NoteTopicItem({
 
       {/* LEVEL 3: CLEAN LESSONS LIST */}
       {isTopicOpen && (
-        <Animated.View
-          entering={FadeInDown.duration(200)}
-          exiting={FadeOutUp.duration(160)}
-          layout={LinearTransition.duration(200)}
+        <View
           style={[
             styles.lessonsWrapper,
             {
@@ -250,6 +242,8 @@ export function NoteTopicItem({
               const isLast = lIdx === topic.lessons.length - 1;
 
             const handlePress = () => {
+              trackLessonInteraction(lesson.id);
+              trackLessonInteraction(topic.id);
               if (onPressLesson) {
                 onPressLesson(lesson, topic.title, subjectTitle);
               } else if (setSelectedLesson) {
@@ -331,9 +325,9 @@ export function NoteTopicItem({
             );
           })
         )}
-        </Animated.View>
+        </View>
       )}
-    </Animated.View>
+    </View>
   );
 }
 
@@ -341,7 +335,6 @@ const styles = StyleSheet.create({
   topicCardBox: {
     borderRadius: 14,
     borderWidth: 1,
-    overflow: 'hidden',
     marginBottom: 4,
   },
   topicHeader: {
@@ -350,6 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     gap: 12,
+    borderRadius: 13,
   },
   topicBadgeNumber: {
     fontSize: 14,

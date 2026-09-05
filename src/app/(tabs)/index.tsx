@@ -44,7 +44,7 @@ export default function HomeScreen() {
   const userProfile = useQuery(api.users.getCurrentUserProfile);
   const { stats, refetch } = useLocalStats();
   const { curriculum } = useLocalHierarchy();
-  const { completedLessonIds, refetch: refetchProgress } = useLessonProgress();
+  const { completedLessonIds, lessonTimestamps, refetch: refetchProgress } = useLessonProgress();
   const { attempts, refetch: refetchAttempts } = useLocalAttempts();
 
   const [showAllLessons, setShowAllLessons] = useState(false);
@@ -72,10 +72,41 @@ export default function HomeScreen() {
 
     // Calculate real progress for each subject
     const subjectsWithProgress = curriculum.map((sub, sIdx) => {
-      const allLessonIds = sub.topics.flatMap((t) => t.lessons.map((l) => l.id));
+      const allLessonsWithTopic = sub.topics.flatMap((t) =>
+        t.lessons.map((l) => ({
+          id: l.id,
+          topicId: t.id,
+        }))
+      );
+      const allLessonIds = allLessonsWithTopic.map((l) => l.id);
+      const allTopicIds = sub.topics.map((t) => t.id);
       const total = allLessonIds.length;
       const done = allLessonIds.filter((id) => completedLessonIds.has(id)).length;
       const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+      // Find the next incomplete lesson to focus when continuing
+      const nextLesson =
+        allLessonsWithTopic.find((l) => !completedLessonIds.has(l.id)) ||
+        allLessonsWithTopic[0];
+
+      let lastActiveTimestamp = 0;
+      for (const lid of allLessonIds) {
+        const ts = lessonTimestamps?.get(lid) || 0;
+        if (ts > lastActiveTimestamp) {
+          lastActiveTimestamp = ts;
+        }
+      }
+      for (const tid of allTopicIds) {
+        const ts = lessonTimestamps?.get(tid) || 0;
+        if (ts > lastActiveTimestamp) {
+          lastActiveTimestamp = ts;
+        }
+      }
+      const subDirectTs = lessonTimestamps?.get(sub.id) || 0;
+      if (subDirectTs > lastActiveTimestamp) {
+        lastActiveTimestamp = subDirectTs;
+      }
+
       return {
         id: sub.id,
         title: sub.title.toUpperCase(),
@@ -83,17 +114,27 @@ export default function HomeScreen() {
         done,
         total,
         icon: sIdx === 0 ? BookOpen : Landmark,
+        lastActiveTimestamp,
+        nextLessonId: nextLesson?.id,
+        nextTopicId: nextLesson?.topicId,
       };
     });
 
-    // Only include subjects with actual student activity (done > 0)
-    const inProgress = subjectsWithProgress.filter((s) => s.done > 0);
-    return inProgress.slice(0, 2);
-  }, [curriculum, completedLessonIds]);
+    // Only include subjects with progress (> 0) that are not yet 100% completed (done < total)
+    const inProgress = subjectsWithProgress.filter((s) => s.done > 0 && s.done < s.total);
+
+    // Sort by latest clicked/completed at the top (highest timestamp first)
+    inProgress.sort((a, b) => b.lastActiveTimestamp - a.lastActiveTimestamp);
+
+    // Display up to 5 items
+    return inProgress.slice(0, 5);
+  }, [curriculum, completedLessonIds, lessonTimestamps]);
 
   // Up to 10 Recent / Syllabus Lessons for the Confidence Rate Section
   const confidenceLessons: ConfidenceItem[] = useMemo(() => {
-    const collected: ConfidenceItem[] = [];
+    if (!curriculum || curriculum.length === 0) return [];
+
+    const collected: (ConfidenceItem & { lastActiveTimestamp: number })[] = [];
 
     // Map quiz attempts by subject/quiz to derive subject mastery scores
     const subjectScores = new Map<string, number[]>();
@@ -141,6 +182,8 @@ export default function HomeScreen() {
         const done = topicLessonIds.filter((id) => completedLessonIds.has(id)).length;
 
         let confidencePercent = 0;
+        let lastActiveTimestamp = 0;
+
         if (total > 0 && done > 0) {
           const completionPct = Math.round((done / total) * 100);
           if (effectiveScore !== null && effectiveScore > 0) {
@@ -148,6 +191,18 @@ export default function HomeScreen() {
             confidencePercent = Math.min(100, Math.round(completionPct * 0.5 + effectiveScore * 0.5));
           } else {
             confidencePercent = completionPct;
+          }
+
+          for (const lid of topicLessonIds) {
+            const ts = lessonTimestamps?.get(lid) || 0;
+            if (ts > lastActiveTimestamp) {
+              lastActiveTimestamp = ts;
+            }
+          }
+
+          const topicDirectTs = lessonTimestamps?.get(topic.id) || 0;
+          if (topicDirectTs > lastActiveTimestamp) {
+            lastActiveTimestamp = topicDirectTs;
           }
         }
 
@@ -158,15 +213,17 @@ export default function HomeScreen() {
             lessonName: topic.title,
             topicName: sub.title,
             confidencePercent,
+            lastActiveTimestamp,
           });
-          if (collected.length >= 10) break;
         }
       }
-      if (collected.length >= 10) break;
     }
 
-    return collected;
-  }, [curriculum, completedLessonIds, attempts, stats]);
+    // Sort by recent clicked progress at the top (descending timestamp)
+    collected.sort((a, b) => b.lastActiveTimestamp - a.lastActiveTimestamp);
+
+    return collected.slice(0, 10).map(({ lastActiveTimestamp, ...item }) => item);
+  }, [curriculum, completedLessonIds, lessonTimestamps, attempts, stats]);
 
   const displayedLessons = useMemo(() => {
     return showAllLessons ? confidenceLessons : confidenceLessons.slice(0, 5);
@@ -434,7 +491,16 @@ export default function HomeScreen() {
                 return (
                   <Pressable
                     key={item.id}
-                    onPress={() => router.push('/(tabs)/learn/notes' as any)}
+                    onPress={() => {
+                      router.push({
+                        pathname: '/(tabs)/learn/notes' as any,
+                        params: {
+                          subjectId: item.id,
+                          topicId: item.nextTopicId,
+                          lessonId: item.nextLessonId,
+                        },
+                      });
+                    }}
                     style={({ pressed }) => [
                       styles.continueLearningCard,
                       {

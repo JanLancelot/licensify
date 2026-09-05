@@ -251,21 +251,67 @@ export function useUserStreak() {
   return { streak, loading, refetch: () => {} };
 }
 
+// Global in-memory recency registry to guarantee real-time recency of user interactions
+const clientInteractionTimestamps = new Map<string, number>();
+let interactionCounter = 1;
+
+export function trackLessonInteraction(lessonId: string) {
+  if (!lessonId) return;
+  // Use current time plus counter to guarantee absolute top priority
+  clientInteractionTimestamps.set(lessonId, Date.now() + (++interactionCounter) * 1000);
+}
+
 /**
  * Pure Online Hook: Manages persistent lesson completion progress stored in Convex Cloud.
  */
 export function useLessonProgress() {
-  const completedIdsArray = useQuery(api.sync.getUserLessonProgress);
+  const rawProgress = useQuery(api.sync.getUserLessonProgress);
   const toggleMutation = useMutation(api.sync.toggleLessonProgress);
-  const loading = completedIdsArray === undefined;
+  const loading = rawProgress === undefined;
 
-  const completedLessonIds = useMemo(
-    () => new Set(completedIdsArray || []),
-    [completedIdsArray]
-  );
+  const completedLessonIds = useMemo(() => {
+    if (!rawProgress) return new Set<string>();
+    return new Set(
+      rawProgress.map((item: any) =>
+        typeof item === 'string' ? item : item.lessonId
+      )
+    );
+  }, [rawProgress]);
+
+  const lessonTimestamps = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!rawProgress) return map;
+    const total = rawProgress.length;
+
+    rawProgress.forEach((item: any, index: number) => {
+      const id = typeof item === 'string' ? item : item?.lessonId;
+      if (id) {
+        // In Convex .collect(), items are returned in insertion order (0 = oldest, total-1 = newest).
+        // Therefore higher index has a higher baseline timestamp.
+        const baseTs = 1000000000000 + index * 10000;
+        const serverTs =
+          typeof item === 'object' && typeof item.updatedAt === 'number' && item.updatedAt > 0
+            ? item.updatedAt
+            : baseTs;
+
+        const clientTs = clientInteractionTimestamps.get(id) || 0;
+        map.set(id, Math.max(serverTs, clientTs, baseTs));
+      }
+    });
+
+    // Also include any client interactions not yet reflected in rawProgress
+    clientInteractionTimestamps.forEach((ts, id) => {
+      if (!map.has(id) || (map.get(id) || 0) < ts) {
+        map.set(id, ts);
+      }
+    });
+
+    return map;
+  }, [rawProgress]);
 
   const toggleLessonCompleted = useCallback(
     async (lessonId: string) => {
+      trackLessonInteraction(lessonId);
       try {
         await toggleMutation({ lessonId });
       } catch (error) {
@@ -277,6 +323,7 @@ export function useLessonProgress() {
 
   const markLessonCompleted = useCallback(
     async (lessonId: string) => {
+      trackLessonInteraction(lessonId);
       try {
         await toggleMutation({ lessonId, isCompleted: true });
       } catch (error) {
@@ -293,6 +340,8 @@ export function useLessonProgress() {
 
   return {
     completedLessonIds,
+    lessonTimestamps,
+    trackInteraction: trackLessonInteraction,
     toggleLessonCompleted,
     markLessonCompleted,
     isCompleted,

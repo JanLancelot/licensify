@@ -574,7 +574,17 @@ export const getUserLessonProgress = query({
       .filter((q) => q.eq(q.field("isCompleted"), true))
       .collect();
 
-    return records.map((r) => r.lessonId);
+    // Sort by most recently updated or completed first
+    records.sort(
+      (a, b) =>
+        (b.updatedAt ?? b.completedAt ?? b._creationTime) -
+        (a.updatedAt ?? a.completedAt ?? a._creationTime)
+    );
+
+    return records.map((r) => ({
+      lessonId: r.lessonId,
+      updatedAt: r.updatedAt ?? r.completedAt ?? r._creationTime,
+    }));
   },
 });
 

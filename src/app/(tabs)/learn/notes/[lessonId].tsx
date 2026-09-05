@@ -3,7 +3,7 @@ import {
   ArrowLeft,
   Check,
 } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -17,7 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { SUBJECT_PALETTES } from '@/components/ui/CircularProgressIconBadge';
 import { useAppTheme } from '@/context/theme-context';
-import { useLessonProgress, useLocalHierarchy } from '@/hooks/useLocalData';
+import { trackLessonInteraction, useLessonProgress, useLocalHierarchy } from '@/hooks/useLocalData';
 
 export default function LessonDetailScreen() {
   const { colors, isDark } = useAppTheme();
@@ -60,6 +60,19 @@ export default function LessonDetailScreen() {
 
   const targetLessonId = lessonData?.lesson.id || lessonId;
   const completed = targetLessonId ? isCompleted(targetLessonId) : false;
+
+  // Track user click/open interaction on this lesson
+  useEffect(() => {
+    if (targetLessonId) {
+      trackLessonInteraction(targetLessonId);
+      if (lessonData?.topic?.id) {
+        trackLessonInteraction(lessonData.topic.id);
+      }
+      if (lessonData?.subject?.id) {
+        trackLessonInteraction(lessonData.subject.id);
+      }
+    }
+  }, [targetLessonId, lessonData?.topic?.id, lessonData?.subject?.id]);
 
   const topicTitle = lessonData?.topic.title || paramTopicTitle || 'Notes';
   const lesson = lessonData?.lesson;
