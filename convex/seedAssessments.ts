@@ -697,3 +697,146 @@ export const deleteMockSeedData = mutation({
     };
   },
 });
+
+/**
+ * Seed Mutation: Creates a sample subject with a complete, rich-content lesson and material.
+ */
+export const seedSampleFullLesson = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+
+    // 0. Get or create Admin user
+    let admin = await ctx.db
+      .query("users")
+      .withIndex("by_userId", (q) => q.eq("userId", "system_admin_seed"))
+      .first();
+
+    if (!admin) {
+      const adminId = await ctx.db.insert("users", {
+        userId: "system_admin_seed",
+        username: "ArchAdmin",
+        firstName: "Architecture",
+        lastName: "Board Reviewer",
+        role: "admin",
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+      admin = (await ctx.db.get(adminId))!;
+    }
+
+    // 1. Create or find Sample Subject
+    let subject = await ctx.db
+      .query("subjects")
+      .filter((q) => q.eq(q.field("name"), "Architectural Building Laws & NBCP"))
+      .first();
+
+    if (!subject) {
+      const subjectId = await ctx.db.insert("subjects", {
+        createdBy: admin._id,
+        name: "Architectural Building Laws & NBCP",
+        description: "National Building Code of the Philippines (P.D. 1096), Fire Code (R.A. 9514), and Architectural Practice Laws.",
+        order: 99,
+        isPublished: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+      subject = (await ctx.db.get(subjectId))!;
+    }
+
+    // 2. Create Topic under Subject
+    let topic = await ctx.db
+      .query("topics")
+      .withIndex("by_subject", (q) => q.eq("subjectId", subject._id))
+      .filter((q) => q.eq(q.field("name"), "NBCP Rule 7 & 8: Open Space & Building Bulk Controls"))
+      .first();
+
+    if (!topic) {
+      const topicId = await ctx.db.insert("topics", {
+        subjectId: subject._id,
+        name: "NBCP Rule 7 & 8: Open Space & Building Bulk Controls",
+        description: "Formulas and developmental control limits governing AMBF, PSO, TOSL, BHL, and minimum setbacks.",
+        order: 1,
+        isPublished: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+      topic = (await ctx.db.get(topicId))!;
+    }
+
+    // 3. Create Sample Lesson under Topic
+    let lesson = await ctx.db
+      .query("lessons")
+      .withIndex("by_topic_and_order", (q) => q.eq("topicId", topic._id))
+      .filter((q) => q.eq(q.field("name"), "Rule 7 & 8 Masterclass: AMBF, PSO, TOSL, and Setbacks"))
+      .first();
+
+    if (!lesson) {
+      const lessonId = await ctx.db.insert("lessons", {
+        subjectId: subject._id,
+        topicId: topic._id,
+        name: "Rule 7 & 8 Masterclass: AMBF, PSO, TOSL, and Setbacks",
+        description: "Comprehensive step-by-step calculations for Total Lot Area, Allowable Maximum Building Footprint, and required Open Spaces.",
+        order: 1,
+        isPublished: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+      lesson = (await ctx.db.get(lessonId))!;
+    }
+
+    // 4. Create Material linked to Lesson with rich markdown content and bullet points
+    const existingMaterial = await ctx.db
+      .query("materials")
+      .filter((q) => q.eq(q.field("lessonId"), lesson._id))
+      .first();
+
+    const fullContent = `# Rule 7 & 8: Building Bulk & Development Controls
+
+## Core Concepts & Formulas
+The National Building Code of the Philippines (P.D. 1096) Rule 7 and 8 mandate precise zoning limits to ensure proper light, ventilation, and structural site safety.
+
+* **AMBF (Allowable Maximum Building Footprint):** Calculated as \`AMBF = TLA × PSO\`. It defines the maximum ground area a building structure can cover.
+* **PSO (Percentage of Site Occupancy):** Maximum percentage of Total Lot Area (TLA) permitted for building coverage (e.g., 60% for R-1 residential inside lot).
+* **TOSL (Total Open Space within Lot):** Composed of Unpaved Surface Area (USA) and Impervious Surface Area (ISA). Calculated as \`TOSL = 100% - PSO = USA + ISA\`.
+* **USA (Unpaved Surface Area):** Required natural permeable soil area for rain percolation (minimum 20% of TLA for R-1).
+* **ISA (Impervious Surface Area):** Paved outdoor areas like driveways, carports, and paved courtyards (maximum 20% of TLA for R-1).
+
+## Setback Requirements for R-1 Zoning
+* **Front Setback:** Minimum 4.50 meters measured from property line to building wall.
+* **Side Setbacks:** Minimum 2.00 meters required on both sides for unabutted structures.
+* **Rear Setback:** Minimum 2.00 meters measured from rear property boundary line.
+* **Building Height Limit (BHL):** R-1 zones are limited to 3 storeys or a maximum height of 10.00 meters above established grade level.`;
+
+    if (!existingMaterial) {
+      await ctx.db.insert("materials", {
+        subjectId: subject._id,
+        topicId: topic._id,
+        lessonId: lesson._id,
+        title: "Rule 7 & 8 Study Notes & Formulas",
+        description: "Complete guide to AMBF, PSO, TOSL calculations, setback rules, and BHL height limits under P.D. 1096.",
+        type: "article",
+        content: fullContent,
+        isPublished: true,
+        createdBy: admin._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+    } else {
+      await ctx.db.patch(existingMaterial._id, {
+        content: fullContent,
+        updatedAt: now,
+      });
+    }
+
+    return {
+      success: true,
+      subjectId: subject._id,
+      topicId: topic._id,
+      lessonId: lesson._id,
+      message: "Sample subject, topic, lesson, and full content material seeded successfully!",
+    };
+  },
+});
+

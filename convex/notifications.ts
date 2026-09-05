@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireUser } from "./authHelpers";
+import { getCurrentUser, requireUser } from "./authHelpers";
 
 /**
  * Public/Student query: Fetches notifications for the logged-in user.
@@ -8,7 +8,8 @@ import { requireUser } from "./authHelpers";
 export const getUserNotifications = query({
   args: { unreadOnly: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
+    const user = await getCurrentUser(ctx);
+    if (!user) return [];
 
     if (args.unreadOnly) {
       return await ctx.db
