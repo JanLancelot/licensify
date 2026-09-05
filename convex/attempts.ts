@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getCurrentUser, requireUser } from "./authHelpers";
+import { getCurrentUser, requireUser } from "./_helpers/auth";
 import { RateLimiter, MINUTE } from "@convex-dev/rate-limiter";
 import { components } from "./_generated/api";
 
@@ -87,30 +87,50 @@ export const recordAnswer = mutation({
     const isCorrect = question.correctChoiceId === args.selectedChoiceId;
     const now = Date.now();
 
-    // Look for existing answer in this attempt
+    // Look for existing answer in this attempt using composite index (O(1) seek instead of O(N) scan)
     const existingAnswer = await ctx.db
       .query("quizAnswers")
-      .withIndex("by_attempt", (q) => q.eq("attemptId", args.attemptId))
-      .filter((q) => q.eq(q.field("questionId"), args.questionId))
+      .withIndex("by_attempt_and_question", (q) =>
+        q.eq("attemptId", args.attemptId).eq("questionId", args.questionId)
+      )
       .first();
 
+    let answerId = existingAnswer?._id;
     if (existingAnswer) {
       await ctx.db.patch(existingAnswer._id, {
         selectedChoiceId: args.selectedChoiceId,
         isCorrect,
         answeredAt: now,
       });
-      return existingAnswer._id;
     } else {
-      const answerId = await ctx.db.insert("quizAnswers", {
+      answerId = await ctx.db.insert("quizAnswers", {
         attemptId: args.attemptId,
         questionId: args.questionId,
         selectedChoiceId: args.selectedChoiceId,
         isCorrect,
         answeredAt: now,
       });
-      return answerId;
     }
+
+    // Keep embedded answers array on attempt in sync
+    const currentAnswers = attempt.answers ? [...attempt.answers] : [];
+    const ansIdx = currentAnswers.findIndex((a) => a.questionId === args.questionId);
+    const answerObj = {
+      questionId: args.questionId,
+      selectedChoiceId: args.selectedChoiceId,
+      isCorrect,
+      answeredAt: now,
+    };
+    if (ansIdx >= 0) {
+      currentAnswers[ansIdx] = answerObj;
+    } else {
+      currentAnswers.push(answerObj);
+    }
+    await ctx.db.patch(args.attemptId, {
+      answers: currentAnswers,
+    });
+
+    return answerId!;
   },
 });
 
@@ -132,11 +152,14 @@ export const submitQuizAttempt = mutation({
       return { status: attempt.status, score: attempt.score };
     }
 
-    // Fetch all recorded answers for this attempt
-    const answers = await ctx.db
-      .query("quizAnswers")
-      .withIndex("by_attempt", (q) => q.eq("attemptId", args.attemptId))
-      .collect();
+    // Read embedded answers or fallback to quizAnswers table for older attempts
+    let answers = attempt.answers;
+    if (!answers || answers.length === 0) {
+      answers = await ctx.db
+        .query("quizAnswers")
+        .withIndex("by_attempt", (q) => q.eq("attemptId", args.attemptId))
+        .collect();
+    }
 
     const correctAnswers = answers.filter((a) => a.isCorrect === true).length;
     const totalQuestions = attempt.totalQuestions > 0 ? attempt.totalQuestions : 1;
@@ -149,6 +172,14 @@ export const submitQuizAttempt = mutation({
       correctAnswers,
       score: scorePercentage,
       submittedAt: now,
+      ...(attempt.answers ? {} : {
+        answers: answers.map((a: any) => ({
+          questionId: a.questionId,
+          selectedChoiceId: a.selectedChoiceId,
+          isCorrect: a.isCorrect,
+          answeredAt: a.answeredAt,
+        })),
+      }),
     });
 
     return {
@@ -177,10 +208,15 @@ export const getAttemptWithAnswers = query({
     }
 
     const quiz = await getQuizDoc(ctx, attempt.quizId);
-    const answers = await ctx.db
-      .query("quizAnswers")
-      .withIndex("by_attempt", (q) => q.eq("attemptId", args.attemptId))
-      .collect();
+
+    // O(1) read if answers are embedded; fallback to indexed query for legacy records
+    let answers = attempt.answers;
+    if (!answers || answers.length === 0) {
+      answers = await ctx.db
+        .query("quizAnswers")
+        .withIndex("by_attempt", (q) => q.eq("attemptId", args.attemptId))
+        .collect();
+    }
 
     return {
       ...attempt,
@@ -274,7 +310,19 @@ export const submitAttemptDirect = mutation({
     const totalQuestions = args.answers.length > 0 ? args.answers.length : 1;
     const score = Math.round((correctAnswers / totalQuestions) * 100);
 
-    // 2. Insert attempt record
+    // 2. Prepare embedded graded answers
+    const gradedAnswers = args.answers.map((ans) => {
+      const qDoc = questionMap.get(ans.questionId);
+      const isCorrect = qDoc ? qDoc.correctChoiceId === ans.selectedChoiceId : false;
+      return {
+        questionId: ans.questionId as any,
+        selectedChoiceId: ans.selectedChoiceId,
+        isCorrect,
+        answeredAt: now,
+      };
+    });
+
+    // 3. Insert attempt record with embedded answers (Single atomic write)
     const attemptId = await ctx.db.insert("quizAttempts", {
       userId: user._id,
       quizId: args.quizId,
@@ -282,26 +330,10 @@ export const submitAttemptDirect = mutation({
       score,
       correctAnswers,
       totalQuestions: args.answers.length,
+      answers: gradedAnswers,
       startedAt: now,
       submittedAt: now,
     });
-
-    // 3. Insert individual answer records
-    for (const ans of args.answers) {
-      const qDoc = questionMap.get(ans.questionId);
-      const isCorrect = qDoc ? qDoc.correctChoiceId === ans.selectedChoiceId : false;
-      try {
-        await ctx.db.insert("quizAnswers", {
-          attemptId,
-          questionId: ans.questionId as any,
-          selectedChoiceId: ans.selectedChoiceId,
-          isCorrect,
-          answeredAt: now,
-        });
-      } catch {
-        // ignore malformed questionId reference
-      }
-    }
 
     // 4. Update or create user streak
     const todayStr = new Date().toISOString().split("T")[0];

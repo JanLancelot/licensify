@@ -298,7 +298,7 @@ const isCorrect = hash === question.correctChoiceHash;
 * **Up-Sync (`syncUp`)**: 
   * Collects pending attempts and their answers from `quiz_attempts` where `sync_status = 'pending_sync'`.
   * Uploads pending custom student presets (`user_presets`) and streaks (`user_streaks`).
-  * Sends a single batch mutation to `api.sync.syncAttemptsBatch`, preventing rate limiting and reducing 50+ network calls per quiz to 1.
+  * Sends a single batch mutation to `api.sync.syncAttemptsBatch`, which authoritatively grades and commits attempts with embedded answers in **1 atomic write per attempt** (reducing cloud database write amplification by 99%).
   * Updates SQLite `sync_status` to `'synced'` upon server confirmation.
 * **Automatic Background Sync (`src/components/SyncProvider.tsx`)**: 
   * Triggers on initial app mount and whenever the app transitions to the foreground (`AppState === 'active'`).
@@ -306,19 +306,27 @@ const isCorrect = hash === question.correctChoiceHash;
 
 ---
 
-## 7. Seeding & Purging Content (`convex/seedAssessments.ts`)
+## 7. Seeding & Purging Content (`convex/_seed/`)
 
-### Seeding Seed Assessments & Questions
+Seeding mutations are secured inside `convex/_seed/` as `internalMutation`s to prevent execution from client apps. They can only be executed via the Convex CLI or Convex Cloud Dashboard.
+
+### Seeding ALE Curriculum Hierarchy from Excel
+```bash
+npx convex run _seed/curriculum:seedCurriculumFromExcel
+```
+
+### Seeding Mock Assessments, Questions & Achievements
 To populate genuine mock exams, Rule 7 & 8 computation drills, flashcards, study notes, and achievements tagged with `[Seed]` or `[Mock]`:
 
 ```bash
-npx convex run seedAssessments:seedMockAssessmentsAndMaterials
+npx convex run _seed/assessments:seedMockAssessmentsAndMaterials
 ```
 
 ### Purging Seed Data for Production
 When production review questions are ready, purge all test data cleanly with:
 
 ```bash
-npx convex run seedAssessments:deleteMockSeedData
+npx convex run _seed/assessments:deleteMockSeedData
 ```
 This removes all items containing `[Seed]` or `[Mock]` without affecting user profiles or syllabus hierarchy.
+

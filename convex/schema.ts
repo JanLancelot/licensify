@@ -188,6 +188,7 @@ export default defineSchema({
     ),
 
     correctChoiceId: v.string(),
+    correctChoiceHash: v.optional(v.string()),
     explanation: v.optional(v.string()),
 
     difficulty: v.union(
@@ -207,7 +208,10 @@ export default defineSchema({
     .index("by_branch", ["branchId"])
     .index("by_topic", ["topicId"])
     .index("by_lesson", ["lessonId"])
-    .index("by_difficulty", ["difficulty"]),
+    .index("by_difficulty", ["difficulty"])
+    .index("by_published", ["isPublished"])
+    .index("by_subject_and_published", ["subjectId", "isPublished"])
+    .index("by_topic_and_published", ["topicId", "isPublished"]),
 
   quizzes: defineTable({
     title: v.string(),
@@ -237,6 +241,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_type", ["type"])
+    .index("by_published", ["isPublished"])
+    .index("by_type_and_published", ["type", "isPublished"])
     .index("by_subject", ["subjectId"])
     .index("by_branch", ["branchId"])
     .index("by_topic", ["topicId"])
@@ -256,6 +262,18 @@ export default defineSchema({
     correctAnswers: v.optional(v.number()),
     totalQuestions: v.number(),
 
+    // Embedded answers array for 1-write atomic submissions and O(1) reads
+    answers: v.optional(
+      v.array(
+        v.object({
+          questionId: v.id("questions"),
+          selectedChoiceId: v.optional(v.string()),
+          isCorrect: v.optional(v.boolean()),
+          answeredAt: v.optional(v.number()),
+        })
+      )
+    ),
+
     startedAt: v.number(),
     submittedAt: v.optional(v.number()),
   })
@@ -272,7 +290,8 @@ export default defineSchema({
     answeredAt: v.optional(v.number()),
   })
     .index("by_attempt", ["attemptId"])
-    .index("by_question", ["questionId"]),
+    .index("by_question", ["questionId"])
+    .index("by_attempt_and_question", ["attemptId", "questionId"]),
 
   // ---------------------------------------------------------------------------
   // 4. PROGRESS

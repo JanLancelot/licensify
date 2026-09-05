@@ -39,7 +39,7 @@ This document tracks all tasks required to eliminate mock, static, and ephemeral
 
 ## 📦 Phase 2: Database Content Seeding
 
-### 2.1 Convex Seed Script ([`convex/seedAssessments.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/seedAssessments.ts))
+### 2.1 Convex Seed Scripts ([`convex/_seed/assessments.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/_seed/assessments.ts) & [`convex/_seed/curriculum.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/_seed/curriculum.ts))
 - [x] **Seed Comprehensive Mock Exam Quizzes** (All tagged with `[Mock]` or `[Seed]`):
   - `[Mock] Comprehensive Mock Set 1` (Area 1: HOA, TOA, Tropical Design, Prof Practice).
   - `[Mock] Comprehensive Mock Set 2` (Area 2: Utilities, Building Tech, Materials).
@@ -155,7 +155,12 @@ Migrate stores away from `window.localStorage` (which fails on iOS/Android nativ
 - [x] Verified stores operate seamlessly offline with SQLite and background sync.
 - [x] Verified Confidence Rate calculation dynamically reflects test attempts and auto-refetches on screen focus.
 - [x] Verified Continue Learning strictly displays real student progress and prioritizes active subjects.
-- [x] Verified automated backend security and unit tests pass (`vitest run`).
+- [x] Verified automated backend security and unit tests pass (`npm run test`, 4/4 suites pass).
+- [x] **Convex Backend Optimization & Security Hardening**:
+  - Embedded `answers` array in `quizAttempts` to reduce write amplification by 99% and eliminate mutation bounds.
+  - Added composite indexes on `quizAnswers` (`by_attempt_and_question`), `questions` (`by_subject_and_published`, `by_topic_and_published`), and `quizzes` (`by_type_and_published`, `by_published`).
+  - Precalculated SHA-256 `correctChoiceHash` at question write-time; stripped plain `correctChoiceId` from live exam and practice queries for anti-cheat protection.
+  - Restructured backend folders: private helpers isolated in `convex/_helpers/`, destructive seeders converted to `internalMutation` in `convex/_seed/`, and tests organized in `convex/__tests__/`.
 
 ---
 
@@ -176,8 +181,8 @@ Here are the immediate actions and upcoming roadmap for the application:
     git push origin feat/updated-database-integration-and-offline-sync
     ```
 - [ ] **Run Initial Content Seed (If not yet populated)**:
-  - Seed Curriculum: `npx convex run seed:seedCurriculumFromExcel`.
-  - Seed Mock Assessments & Questions: `npx convex run seedAssessments:seedMockAssessmentsAndMaterials`.
+  - Seed Curriculum: `npx convex run _seed/curriculum:seedCurriculumFromExcel`.
+  - Seed Mock Assessments & Questions: `npx convex run _seed/assessments:seedMockAssessmentsAndMaterials`.
 - [ ] **Initial Device Sync**:
   - Open the mobile app in Expo, navigate to **Profile**, and tap **"Cloud Backup & Sync"** to pull down all syllabus items, mock exams, and badges.
 
@@ -188,7 +193,7 @@ Here are the immediate actions and upcoming roadmap for the application:
 - [ ] **Clean-up Seed Data**:
   - When production questions and mock sets are ready, run:
     ```bash
-    npx convex run seedAssessments:deleteMockSeedData
+    npx convex run _seed/assessments:deleteMockSeedData
     ```
   - This purges all test data tagged with `[Seed]` and `[Mock]` cleanly without touching user profiles or syllabus hierarchy.
 

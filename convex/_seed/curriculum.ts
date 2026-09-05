@@ -1,10 +1,10 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { internalMutation } from "../_generated/server";
 
 /**
  * Auto-generated seed mutation from Excel syllabus import.
  */
-export const seedCurriculumFromExcel = mutation({
+export const seedCurriculumFromExcel = internalMutation({
     args: {},
     handler: async (ctx) => {
         const now = Date.now();
@@ -4795,7 +4795,7 @@ export const seedCurriculumFromExcel = mutation({
 
 export const seedDatabase = seedCurriculumFromExcel;
 
-export const promoteUserToAdmin = mutation({
+export const promoteUserToAdmin = internalMutation({
     args: { email: v.string() },
     handler: async (ctx, args) => {
         const user = await ctx.db

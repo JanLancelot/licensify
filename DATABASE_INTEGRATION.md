@@ -30,9 +30,9 @@ The application implements an **offline-first, sync-eventual** data architecture
 ### B. High-Performance Sync Engine
 * **[`convex/sync.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/sync.ts)**
   * `getSyncBundle`: Single-roundtrip bulk query that fetches all published curriculum, presets, achievements, and streaks atomically.
-  * Server-side SHA-256 choice hashing via Web Crypto API (fast + secure).
+  * Server-side SHA-256 choice hashing via Web Crypto API (fast + secure, precomputed at write time).
   * Delta sync support with `sinceTimestamp` (<50ms when database is unchanged).
-  * `syncAttemptsBatch`: Single atomic mutation to sync multiple offline quiz attempts and answers with no skip filters.
+  * `syncAttemptsBatch`: Single atomic mutation to sync multiple offline quiz attempts and answers with no skip filters. Embeds answers directly inside each `quizAttempts` document in 1 atomic write per attempt (reducing write amplification by 99% and avoiding mutation limits).
   * `syncUserPresets`: Syncs custom student decks and configurations cross-device.
   * `syncUserStreaks`: Synchronizes study streaks and longest consistency records.
 * **[`src/services/useSyncService.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/services/useSyncService.ts)**
@@ -50,10 +50,14 @@ The application implements an **offline-first, sync-eventual** data architecture
   * Replaced `window.localStorage` (which fails on iOS/Android native builds) with reactive SQLite `user_presets` queries backed by Drizzle and background cloud sync.
 
 ### D. Standardized Seed Data & Clean-up Mutation
-* **[`convex/seedAssessments.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/seedAssessments.ts)**
+* **[`convex/_seed/assessments.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/_seed/assessments.ts) & [`convex/_seed/curriculum.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/_seed/curriculum.ts)**
   * All seeded test data (questions, quizzes, flashcards, materials, achievements) are prefixed with `[Seed]` or `[Mock]`.
   * Includes genuine ALE questions, SHA-256 target choice verification, and specialized Rule 7 & 8 computation questions (AMBF, BHL, TGFA, setbacks, parking).
-  * Provides `deleteMockSeedData` mutation to cleanly purge all seeded records when production review content is ready.
+  * Provides `deleteMockSeedData` internal mutation to cleanly purge all seeded records when production review content is ready.
+  * Protected via `internalMutation` in `convex/_seed/` to prevent execution from client apps. Run via CLI:
+    - `npx convex run _seed/assessments:seedMockAssessmentsAndMaterials`
+    - `npx convex run _seed/assessments:deleteMockSeedData`
+    - `npx convex run _seed/curriculum:seedCurriculumFromExcel`
 
 ### E. SQLite Web Client Mock
 * **[`src/db/client.web.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/db/client.web.ts)**
@@ -93,5 +97,5 @@ All screens have been completely detached from static imports and bound to live 
 To enforce strict reliance on the database, the static mock files have been deprecated and emptied:
 * **[`src/data/curriculum.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/data/curriculum.ts)** (Deprecated, exports empty arrays).
 * **[`src/data/quiz-questions.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/data/quiz-questions.ts)** (Deprecated, exports empty arrays).
-* **[`src/db/seed.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/db/seed.ts)** (Deprecated, replaced by `convex/seedAssessments.ts`).
+* **[`src/db/seed.ts`](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/src/db/seed.ts)** (Deprecated, replaced by `convex/_seed/assessments.ts`).
 * **`window.localStorage` preset stores**: Replaced with SQLite `user_presets`.

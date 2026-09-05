@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireContentManager } from "./authHelpers";
+import { requireContentManager } from "./_helpers/auth";
 
 /**
  * Public/Student query: Fetches published reviewer materials for a subject.
