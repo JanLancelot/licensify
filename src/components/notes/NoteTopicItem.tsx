@@ -2,11 +2,6 @@ import { useRouter } from 'expo-router';
 import { Check, ChevronRight, FileText } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  LinearTransition,
-} from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import { RotatingChevron } from '@/components/ui/RotatingChevron';
@@ -120,7 +115,7 @@ function TopicProgressBadge({
   );
 }
 
-export const NoteTopicItem = React.memo(function NoteTopicItem({
+export function NoteTopicItem({
   topic,
   isTopicOpen,
   toggleTopic,
@@ -156,8 +151,7 @@ export const NoteTopicItem = React.memo(function NoteTopicItem({
     : colors.accent;
 
   return (
-    <Animated.View
-      layout={LinearTransition.duration(200)}
+    <View
       style={[
         styles.topicCardBox,
         {
@@ -223,10 +217,7 @@ export const NoteTopicItem = React.memo(function NoteTopicItem({
 
       {/* LEVEL 3: CLEAN LESSONS LIST */}
       {isTopicOpen && (
-        <Animated.View
-          entering={FadeInDown.duration(200)}
-          exiting={FadeOutUp.duration(160)}
-          layout={LinearTransition.duration(200)}
+        <View
           style={[
             styles.lessonsWrapper,
             {
@@ -334,17 +325,16 @@ export const NoteTopicItem = React.memo(function NoteTopicItem({
             );
           })
         )}
-        </Animated.View>
+        </View>
       )}
-    </Animated.View>
+    </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   topicCardBox: {
     borderRadius: 14,
     borderWidth: 1,
-    overflow: 'hidden',
     marginBottom: 4,
   },
   topicHeader: {
