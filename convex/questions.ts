@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
-import { requireContentManager } from "./authHelpers";
+import { requireContentManager } from "./_helpers/auth";
+import { hashAnswer } from "./_helpers/crypto";
 
 /**
  * Public/Student query: Fetches all published questions across all subjects for offline sync.
@@ -9,7 +10,10 @@ import { requireContentManager } from "./authHelpers";
 export const listAllPublishedQuestions = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("questions").collect();
+    return await ctx.db
+      .query("questions")
+      .withIndex("by_published", (q) => q.eq("isPublished", true))
+      .collect();
   },
 });
 
@@ -21,8 +25,9 @@ export const listQuestionsBySubject = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("questions")
-      .withIndex("by_subject", (q) => q.eq("subjectId", args.subjectId))
-      .filter((q) => q.neq(q.field("isPublished"), false))
+      .withIndex("by_subject_and_published", (q) =>
+        q.eq("subjectId", args.subjectId).eq("isPublished", true)
+      )
       .collect();
   },
 });
@@ -35,8 +40,9 @@ export const listQuestionsByTopic = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("questions")
-      .withIndex("by_topic", (q) => q.eq("topicId", args.topicId))
-      .filter((q) => q.neq(q.field("isPublished"), false))
+      .withIndex("by_topic_and_published", (q) =>
+        q.eq("topicId", args.topicId).eq("isPublished", true)
+      )
       .collect();
   },
 });
@@ -92,6 +98,9 @@ export const createQuestion = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    const correctChoiceHash = await hashAnswer(questionId, args.correctChoiceId);
+    await ctx.db.patch(questionId, { correctChoiceHash });
 
     return questionId;
   },
@@ -214,6 +223,11 @@ export const updateQuestion = mutation({
       }
     }
 
+    let newHash: string | undefined = undefined;
+    if (args.correctChoiceId && args.correctChoiceId !== existing.correctChoiceId) {
+      newHash = await hashAnswer(args.questionId, args.correctChoiceId);
+    }
+
     await ctx.db.patch(args.questionId, {
       ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
       ...(args.topicId !== undefined && { topicId: args.topicId }),
@@ -222,6 +236,7 @@ export const updateQuestion = mutation({
       ...(args.questionImageId !== undefined && { questionImageId: args.questionImageId }),
       ...(args.choices !== undefined && { choices: args.choices }),
       ...(args.correctChoiceId !== undefined && { correctChoiceId: args.correctChoiceId }),
+      ...(newHash !== undefined && { correctChoiceHash: newHash }),
       ...(args.explanation !== undefined && { explanation: args.explanation }),
       ...(args.difficulty !== undefined && { difficulty: args.difficulty }),
       ...(args.isPublished !== undefined && { isPublished: args.isPublished }),
@@ -297,6 +312,9 @@ export const bulkCreateQuestions = mutation({
         createdAt: now,
         updatedAt: now,
       });
+
+      const hash = await hashAnswer(qId, item.correctChoiceId);
+      await ctx.db.patch(qId, { correctChoiceHash: hash });
       createdIds.push(qId);
     }
 
@@ -316,23 +334,40 @@ export const getQuestionsForPractice = query({
     count: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let questions = await ctx.db
-      .query("questions")
-      .filter((q) => q.neq(q.field("isPublished"), false))
-      .collect();
+    let questions: any[] = [];
+
+    // Target specific indexes to prevent full-table memory scans
+    if (args.topicId && args.topicId !== "all") {
+      try {
+        questions = await ctx.db
+          .query("questions")
+          .withIndex("by_topic_and_published", (q) =>
+            q.eq("topicId", args.topicId as any).eq("isPublished", true)
+          )
+          .collect();
+      } catch {
+        questions = [];
+      }
+    } else if (args.subjectId && args.subjectId !== "all") {
+      try {
+        questions = await ctx.db
+          .query("questions")
+          .withIndex("by_subject_and_published", (q) =>
+            q.eq("subjectId", args.subjectId as any).eq("isPublished", true)
+          )
+          .collect();
+      } catch {
+        questions = [];
+      }
+    } else {
+      questions = await ctx.db
+        .query("questions")
+        .withIndex("by_published", (q) => q.eq("isPublished", true))
+        .take(200);
+    }
 
     if (args.specializedType) {
       const filtered = questions.filter((q) => q.specializedType === args.specializedType);
-      if (filtered.length > 0) questions = filtered;
-    }
-
-    if (args.subjectId && args.subjectId !== "all") {
-      const filtered = questions.filter((q) => q.subjectId === args.subjectId);
-      if (filtered.length > 0) questions = filtered;
-    }
-
-    if (args.topicId) {
-      const filtered = questions.filter((q) => q.topicId === args.topicId);
       if (filtered.length > 0) questions = filtered;
     }
 
@@ -348,20 +383,25 @@ export const getQuestionsForPractice = query({
     const targetCount = args.count || 10;
     const selected = shuffled.slice(0, targetCount);
 
-    return selected.map((q) => ({
-      id: q._id,
-      subjectId: q.subjectId,
-      branchId: q.branchId,
-      topicId: q.topicId,
-      lessonId: q.lessonId,
-      question: q.question,
-      choices: q.choices,
-      correctChoiceId: q.correctChoiceId,
-      correctChoiceHash: q.correctChoiceId,
-      explanation: q.explanation,
-      difficulty: q.difficulty,
-      specializedType: q.specializedType,
-    }));
+    return await Promise.all(
+      selected.map(async (q) => {
+        const correctChoiceHash =
+          q.correctChoiceHash || (await hashAnswer(q._id, q.correctChoiceId));
+        return {
+          id: q._id,
+          subjectId: q.subjectId,
+          branchId: q.branchId,
+          topicId: q.topicId,
+          lessonId: q.lessonId,
+          question: q.question,
+          choices: q.choices,
+          correctChoiceHash,
+          explanation: q.explanation,
+          difficulty: q.difficulty,
+          specializedType: q.specializedType,
+        };
+      })
+    );
   },
 });
 

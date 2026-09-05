@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getCurrentUser, requireUser } from "./authHelpers";
+import { getCurrentUser, requireUser } from "./_helpers/auth";
 
 /**
  * Public/Student query: Fetches notifications for the logged-in user.

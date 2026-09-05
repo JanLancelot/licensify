@@ -75,10 +75,11 @@ The schema is defined in Drizzle (`src/db/schema.ts`) and mirrored in Convex (`c
   - `materials`: Detailed study notes and markdown articles.
   - `flashcards`: Front/Back active recall cards.
 - **Assessment Tables:**
-  - `questions`: Individual quiz questions with multiple choices and `specializedType`. Correct choice is SHA-256 hashed locally.
-  - `quizzes`: Curated sets of questions (Mock Exams, Specialized Drills).
+  - `questions`: Individual quiz questions with multiple choices and `specializedType`. Stores precomputed write-time `correctChoiceHash` for instant verification without exposing plaintext answer keys.
+  - `quizzes`: Curated sets of questions (Mock Exams, Specialized Drills) indexed by published status and type.
 - **User Activity & Gamification Tables:**
-  - `quizAttempts` & `quizAnswers`: Logs of user quiz sessions, scores, and choices.
+  - `quizAttempts`: Logs of user quiz sessions and scores with embedded `answers` array for atomic 1-write submissions and O(1) single-document reads.
+  - `quizAnswers`: Preserved for legacy records and indexed via composite `["attemptId", "questionId"]`.
   - `userPresets`: Student-configured custom decks and quiz presets (replaces `localStorage`).
   - `achievements` & `userAchievements`: Badges catalog and unlocked student records.
   - `userStreaks`: Consecutive study days and longest streak records.
@@ -90,7 +91,7 @@ The schema is defined in Drizzle (`src/db/schema.ts`) and mirrored in Convex (`c
 ### Down-Sync (Cloud ➔ Device - High-Performance Bulk & Delta Sync)
 Handled by `syncDown` in `useSyncService.ts` via `api.sync.getSyncBundle`:
 1. **Single-Roundtrip Bundle (`api.sync.getSyncBundle`)**: Convex atomically collects all published `subjects`, `branches`, `topics`, `lessons`, `materials`, `flashcards`, `questions`, `quizzes`, `userPresets`, `achievements`, and `userStreaks`.
-2. **Server-Side SHA-256 Hashing**: Answer choice hashes are computed on the Convex backend using standard Web Crypto API.
+2. **Precomputed SHA-256 Hashing**: Answer choice hashes are precomputed and stored on the Convex backend on question write, eliminating runtime CPU loops during sync bundles.
 3. **Delta Syncing**: Uses `lastSyncedAt` timestamps from SQLite `sync_metadata`. If no cloud updates have occurred, sync completes in `<50ms` (`upToDate: true`).
 4. **Chunked SQLite Batch Ingestion**: Uses `drizzle-orm` chunked batch inserts (`db.insert().values(chunk).onConflictDoUpdate()`).
 
@@ -98,7 +99,7 @@ Handled by `syncDown` in `useSyncService.ts` via `api.sync.getSyncBundle`:
 Handled by `syncUp` in `useSyncService.ts` via `api.sync.syncAttemptsBatch`, `api.sync.syncUserPresets`, and `api.sync.syncUserStreaks`:
 1. Scans local SQLite for pending attempts, custom presets, and streak updates.
 2. Uploads all completed offline practice drills and mock exams without skip filters.
-3. Convex authoritatively grades the attempts, records the server attempts, and returns synced IDs.
+3. Convex authoritatively grades the attempts, records the server attempts with embedded answers in a single write per attempt (reducing write amplification by 99%), and returns synced IDs.
 4. Upon success, updates local `sync_status` to `'synced'` in SQLite.
 
 ### Automatic Sync Lifecycle & Debouncing (`src/components/SyncProvider.tsx`)
@@ -132,14 +133,17 @@ npm run dev
 # Run Convex development server
 npx convex dev
 
-# Seed Curriculum from Excel
-npx convex run seed:seedCurriculumFromExcel
+# Seed Curriculum from Excel (CLI / Internal Mutation)
+npx convex run _seed/curriculum:seedCurriculumFromExcel
 
 # Seed Mock Assessments, Questions & Achievements
-npx convex run seedAssessments:seedMockAssessmentsAndMaterials
+npx convex run _seed/assessments:seedMockAssessmentsAndMaterials
 
 # Clean-up / Purge Seed Data when ready for production
-npx convex run seedAssessments:deleteMockSeedData
+npx convex run _seed/assessments:deleteMockSeedData
+
+# Promote User to Admin
+npx convex run _seed/curriculum:promoteUserToAdmin '{"email": "your_email@example.com"}'
 ```
 
 ### Testing Offline Mode

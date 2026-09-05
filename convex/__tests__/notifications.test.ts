@@ -1,11 +1,11 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { api } from "./_generated/api";
-import schema from "./schema";
+import { api } from "../_generated/api";
+import schema from "../schema";
 import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
 
 test("Notification & Study Room Invite System Tests", async () => {
-  const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+  const t = convexTest(schema, import.meta.glob("../**/*.ts"));
   registerRateLimiter(t, "ratelimiter");
 
   // Create user identities

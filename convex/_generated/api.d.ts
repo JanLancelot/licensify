@@ -8,11 +8,14 @@
  * @module
  */
 
-import type * as ResendOTP from "../ResendOTP.js";
+import type * as _helpers_ResendOTP from "../_helpers/ResendOTP.js";
+import type * as _helpers_auth from "../_helpers/auth.js";
+import type * as _helpers_crypto from "../_helpers/crypto.js";
+import type * as _seed_assessments from "../_seed/assessments.js";
+import type * as _seed_curriculum from "../_seed/curriculum.js";
 import type * as admin from "../admin.js";
 import type * as attempts from "../attempts.js";
 import type * as auth from "../auth.js";
-import type * as authHelpers from "../authHelpers.js";
 import type * as branches from "../branches.js";
 import type * as crons from "../crons.js";
 import type * as flashcards from "../flashcards.js";
@@ -24,8 +27,6 @@ import type * as presets from "../presets.js";
 import type * as questions from "../questions.js";
 import type * as quizzes from "../quizzes.js";
 import type * as rooms from "../rooms.js";
-import type * as seed from "../seed.js";
-import type * as seedAssessments from "../seedAssessments.js";
 import type * as subjects from "../subjects.js";
 import type * as sync from "../sync.js";
 import type * as topics from "../topics.js";
@@ -38,11 +39,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  ResendOTP: typeof ResendOTP;
+  "_helpers/ResendOTP": typeof _helpers_ResendOTP;
+  "_helpers/auth": typeof _helpers_auth;
+  "_helpers/crypto": typeof _helpers_crypto;
+  "_seed/assessments": typeof _seed_assessments;
+  "_seed/curriculum": typeof _seed_curriculum;
   admin: typeof admin;
   attempts: typeof attempts;
   auth: typeof auth;
-  authHelpers: typeof authHelpers;
   branches: typeof branches;
   crons: typeof crons;
   flashcards: typeof flashcards;
@@ -54,8 +58,6 @@ declare const fullApi: ApiFromModules<{
   questions: typeof questions;
   quizzes: typeof quizzes;
   rooms: typeof rooms;
-  seed: typeof seed;
-  seedAssessments: typeof seedAssessments;
   subjects: typeof subjects;
   sync: typeof sync;
   topics: typeof topics;

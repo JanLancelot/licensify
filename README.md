@@ -41,21 +41,40 @@ The repository includes comprehensive technical guides:
 
 ---
 
+---
+
 ## 🗄️ Database Seeding & Clean-Up
+
+Database seeding scripts are protected as internal mutations inside `convex/_seed/` to prevent unauthorized execution from client applications:
 
 ### Seed Curriculum Hierarchy from Excel
 ```bash
-npx convex run seed:seedCurriculumFromExcel
+npx convex run _seed/curriculum:seedCurriculumFromExcel
 ```
 
 ### Seed Genuine Mock Assessments, Questions & Achievements
 Populates board exam mock tests, NBCP Rule 7 & 8 computation drills, flashcards, study notes, and achievements tagged with `[Seed]` or `[Mock]`:
 ```bash
-npx convex run seedAssessments:seedMockAssessmentsAndMaterials
+npx convex run _seed/assessments:seedMockAssessmentsAndMaterials
 ```
 
 ### Purge Seed Data for Production Content
 Cleanly deletes all seeded test data when production review content is ready:
 ```bash
-npx convex run seedAssessments:deleteMockSeedData
+npx convex run _seed/assessments:deleteMockSeedData
 ```
+
+---
+
+## 🧪 Automated Testing
+
+Backend unit tests run using Vitest and `convex-test`:
+
+```bash
+# Run backend test suite
+npm run test
+
+# Run tests in watch mode
+npx vitest
+```
+

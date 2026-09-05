@@ -1,11 +1,11 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { api } from "./_generated/api";
-import schema from "./schema";
+import { api } from "../_generated/api";
+import schema from "../schema";
 import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
 
 test("Admin Dashboard & Content Management API Tests", async () => {
-  const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+  const t = convexTest(schema, import.meta.glob("../**/*.ts"));
   registerRateLimiter(t, "ratelimiter");
 
   // 1. Create Admin & Student users
@@ -167,4 +167,3 @@ test("Admin Dashboard & Content Management API Tests", async () => {
   expect(finalStats!.totals.flashcards).toBe(1);
   expect(finalStats!.totals.quizzes).toBe(1);
 });
-

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { internalMutation } from "../_generated/server";
 
 /**
  * Seeds comprehensive mock exams, drills, questions, flashcards, study notes,
@@ -8,7 +8,7 @@ import { mutation } from "./_generated/server";
  * NOTE: As requested, all seeded entities contain "[Seed]" or "[Mock]" in their names
  * so they can be identified, tracked, and cleanly deleted when production content is ready.
  */
-export const seedMockAssessmentsAndMaterials = mutation({
+export const seedMockAssessmentsAndMaterials = internalMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
@@ -640,7 +640,7 @@ export const seedMockAssessmentsAndMaterials = mutation({
  * Clean-up Mutation: Purges all items seeded with "[Seed]" or "[Mock]"
  * in their titles or question text. Leaves syllabus hierarchy intact.
  */
-export const deleteMockSeedData = mutation({
+export const deleteMockSeedData = internalMutation({
   args: {},
   handler: async (ctx) => {
     let deletedCount = 0;
@@ -701,7 +701,7 @@ export const deleteMockSeedData = mutation({
 /**
  * Seed Mutation: Creates a sample subject with a complete, rich-content lesson and material.
  */
-export const seedSampleFullLesson = mutation({
+export const seedSampleFullLesson = internalMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();

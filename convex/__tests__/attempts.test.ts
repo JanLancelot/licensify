@@ -1,12 +1,12 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { api } from "./_generated/api";
-import schema from "./schema";
+import { api } from "../_generated/api";
+import schema from "../schema";
 
 import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
 
 test("Backend Security and Robustness Tests", async () => {
-  const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+  const t = convexTest(schema, import.meta.glob("../**/*.ts"));
   registerRateLimiter(t, "ratelimiter");
 
   // --------------------------------------------------------
@@ -161,4 +161,36 @@ test("Backend Security and Robustness Tests", async () => {
       selectedChoiceId: "choice_1"
     })
   ).rejects.toThrow(/Rate limit exceeded/);
+
+  // --------------------------------------------------------
+  // Test 7: Embedded Answers Atomic Storage
+  // --------------------------------------------------------
+  const directSubmission = await studentA.mutation(api.attempts.submitAttemptDirect, {
+    quizId: "comprehensive-set-1",
+    answers: [
+      { questionId: questionId as string, selectedChoiceId: "choice_1" },
+    ],
+  });
+  expect(directSubmission.score).toBe(100);
+  expect(directSubmission.correctAnswers).toBe(1);
+
+  // Verify attempt has answers embedded directly in the attempt document
+  const directAttemptDoc = await t.run(async (ctx) => {
+    return await ctx.db.get(directSubmission.attemptId);
+  });
+  expect(directAttemptDoc).not.toBeNull();
+  expect(directAttemptDoc!.answers).toBeDefined();
+  expect(directAttemptDoc!.answers!.length).toBe(1);
+  expect(directAttemptDoc!.answers![0].isCorrect).toBe(true);
+
+  // --------------------------------------------------------
+  // Test 8: Sanitization in Online Quiz Queries (Anti-Cheat)
+  // --------------------------------------------------------
+  const onlineQuizData = await studentA.query(api.quizzes.getQuizWithQuestionsOnline, {
+    quizId,
+  });
+  expect(onlineQuizData).not.toBeNull();
+  expect(onlineQuizData!.questions.length).toBeGreaterThan(0);
+  expect(onlineQuizData!.questions[0]).not.toHaveProperty("correctChoiceId");
+  expect(onlineQuizData!.questions[0]).toHaveProperty("correctChoiceHash");
 });

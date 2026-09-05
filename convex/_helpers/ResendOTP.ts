@@ -1,4 +1,3 @@
-import { ConvexError } from "convex/values";
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend } from "resend";
 

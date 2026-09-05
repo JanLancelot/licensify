@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
-import { requireContentManager } from "./authHelpers";
+import { requireContentManager } from "./_helpers/auth";
 
 /**
  * Public query: Fetch published branches for a specific subject area, sorted by order.

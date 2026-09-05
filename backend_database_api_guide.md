@@ -152,7 +152,7 @@ console.log(`Score: ${result.score}% (${result.correctAnswers}/${result.totalQue
 | Function | Type | Parameters | Description |
 |---|---|---|---|
 | `api.sync.getSyncBundle` | Query | `{ sinceTimestamp?: number }` | Fetches entire published curriculum, presets, achievements, and streaks in 1 single atomic query with precomputed SHA-256 choice hashes (supports Delta sync) |
-| `api.sync.syncAttemptsBatch` | Mutation | `{ attempts: Array<{ localId, quizId, status, score?, correctAnswers?, totalQuestions, startedAt, submittedAt?, answers: Array<{ questionId, selectedChoiceId?, answeredAt? }> }> }` | Batch uploads and authoritatively grades multiple offline quiz attempts in 1 network call |
+| `api.sync.syncAttemptsBatch` | Mutation | `{ attempts: Array<{ localId, quizId, status, score?, correctAnswers?, totalQuestions, startedAt, submittedAt?, answers: Array<{ questionId, selectedChoiceId?, answeredAt? }> }> }` | Batch uploads and authoritatively grades multiple offline quiz attempts in 1 atomic write per attempt |
 | `api.sync.syncUserPresets` | Mutation | `{ presets: Array<{ localId, type, title, iconName?, lessonIds, subjectNames?, questionCount?, timeLimitSeconds?, isShuffled?, createdAt, updatedAt }> }` | Batch synchronizes custom student decks and quiz presets cross-device |
 | `api.sync.syncUserStreaks` | Mutation | `{ currentStreak, longestStreak, lastActiveDate }` | Synchronizes student study streaks and consistency records |
 
@@ -160,90 +160,90 @@ console.log(`Score: ${result.score}% (${result.correctAnswers}/${result.totalQue
 
 ## 4. Seeding & Purging ALE Exam Data
 
+Seed scripts are protected as `internalMutation`s inside `convex/_seed/` to prevent public execution via client DevTools or unauthenticated network requests. They can only be executed via the Convex CLI or Convex Cloud Dashboard.
+
 ### A. Seed Curriculum Hierarchy
 ```bash
-npx convex run seed:seedCurriculumFromExcel
+npx convex run _seed/curriculum:seedCurriculumFromExcel
 ```
 
 ### B. Seed Genuine Mock Assessments, Questions & Achievements
 All seeded review questions, drills, flashcards, study notes, and achievements contain `[Seed]` or `[Mock]` in their name:
 ```bash
-npx convex run seedAssessments:seedMockAssessmentsAndMaterials
+npx convex run _seed/assessments:seedMockAssessmentsAndMaterials
 ```
 
 ### C. Clean-Up / Purge Seed Data for Production
 To cleanly delete all seeded test records when production review content is ready:
 ```bash
-npx convex run seedAssessments:deleteMockSeedData
+npx convex run _seed/assessments:deleteMockSeedData
+```
+
+### D. Promote User to Administrator (CLI Only)
+```bash
+npx convex run _seed/curriculum:promoteUserToAdmin '{"email": "your_email@example.com"}'
 ```
 
 ---
 
-## 5. Security Patterns
+## 5. Security & Architectural Patterns
 
-The backend enforces the following security patterns which the frontend must be aware of:
+The backend enforces the following security and storage patterns:
 
-1. **Pagination Required:** Endpoints returning unbounded lists (e.g., `api.quizzes.listQuizzes`) require `paginationOpts`. The frontend must use Convex's `usePaginatedQuery` hook to interact with these endpoints to prevent memory and bandwidth exhaustion.
-2. **IDOR Protection:** Queries fetching user-specific records (e.g., `api.attempts.getAttemptWithAnswers`) enforce strict ownership checks. Ensure you only request attempts owned by the logged-in user, otherwise the API will throw an `Unauthorized` error.
-3. **Data Sanitization:** Endpoints that return test or quiz data (e.g., `api.quizzes.getQuizWithQuestions`) automatically strip sensitive fields like `correctChoiceId` and `explanation` to prevent cheating. These fields are only available when the attempt is graded and returned via `api.attempts.submitQuizAttempt`.
-4. **Rate Limiting:** Key mutations (`startQuizAttempt`, `recordAnswer`) are rate-limited. Ensure the frontend handles potential `Error("Rate limit exceeded")` exceptions gracefully, especially during network reconnection bursts.
+1. **Embedded Attempt Storage (99% Write Amplification Reduction):** Rather than writing 100+ individual documents to a normalized `quizAnswers` table on each submission, `quizAttempts` embeds the graded `answers` array directly. This reduces writes from 101 to 1 per attempt, prevents write quota exhaustion, and allows O(1) single-document reads on exam review.
+2. **Composite Indexing:** High-frequency lookups utilize targeted composite indexes to eliminate memory and B-tree scans:
+   - `quizAnswers`: `.index("by_attempt_and_question", ["attemptId", "questionId"])` (Eliminates O(N) linear filter scans in `recordAnswer`).
+   - `questions`: `.index("by_subject_and_published", ["subjectId", "isPublished"])` and `.index("by_topic_and_published", ["topicId", "isPublished"])`.
+   - `quizzes`: `.index("by_type_and_published", ["type", "isPublished"])` and `.index("by_published", ["isPublished"])`.
+3. **Private Backend Modules (`_helpers/`):** Modules prefixed with an underscore (such as `_helpers/auth.ts`, `_helpers/crypto.ts`, `_helpers/ResendOTP.ts`) are internal to Convex and are excluded from the public client `api.*` code-generation.
+4. **Internal-Only Administrative Tools (`_seed/`):** Destructive seeding or account promotion functions use `internalMutation`, making them inaccessible from client apps and restricted to authenticated CLI/Dashboard developers.
+5. **Anti-Cheat Data Sanitization:** Endpoints returning questions for active test-taking (`api.quizzes.getQuizWithQuestionsOnline` and `api.questions.getQuestionsForPractice`) omit plain text `correctChoiceId`. They supply precomputed `correctChoiceHash` values generated via Web Crypto SHA-256 for instant client verification without exposing answers in plain text.
+6. **Rate Limiting:** Critical mutations (`startQuizAttempt`, `recordAnswer`) are token-bucket rate-limited.
 
 ---
 
 ## 6. Automated Backend Testing
 
-To ensure the backend functions remain secure, reliable, and regression-free, we have established an automated testing environment. Tests run against a mock database inside an in-memory execution context and do not require a running frontend.
+Tests run against an in-memory execution context via `convex-test` and Vitest.
 
 ### Running Tests
-To run the test suite once (useful for CI/CD checks):
+To run the test suite once:
 ```bash
 npm run test
 ```
 
-To run tests in interactive watch mode (automatically re-runs when files are modified):
+To run tests in watch mode:
 ```bash
 npx vitest
 ```
 
 ### Setup Overview
-*   **Test Runner:** [Vitest](https://vitest.dev/) (defined in [vitest.config.ts](file:///c:/Users/Adrian/OneDrive/Desktop/ReApp/react-native-repo/vitest.config.ts))
+*   **Test Runner:** [Vitest](https://vitest.dev/) (defined in `vitest.config.ts`)
 *   **Mock Database:** `convex-test` (manages mock clients, mock database transactions, and component mocking)
-*   **Test File Location:** Backend tests are located inside the `convex/` directory with a `.test.ts` extension (e.g., [attempts.test.ts](file:///c:/Users/Adrian/OneDrive/Desktop/ReApp/react-native-repo/convex/attempts.test.ts)).
-*   **Scenarios Covered:**
-    1.  **Data Sanitization:** Ensures answer keys (`correctChoiceId` and `explanation`) are stripped from payloads.
-    2.  **IDOR Protection:** Validates that users cannot query attempts belonging to others.
-    3.  **Invalid Choice Validation:** Asserts that registering invalid choice IDs throws a validation error.
-    4.  **Quiz Start Rate Limiter:** Confirms the mutation limits starting too many quiz attempts.
-    5.  **Practice Quiz Size Limit:** Verifies that generating a practice quiz with >100 questions is blocked.
-    6.  **Answer Submission Rate Limiter:** Confirms that recording answers too quickly triggers the rate limiter.
+*   **Test File Location:** Backend tests are located inside `convex/__tests__/` (e.g., [attempts.test.ts](file:///c:/Users/Adrian/Desktop/Folders/websites/archiapp/react-native-repo/convex/__tests__/attempts.test.ts)).
 
 ### Writing a New Test (Template)
-If you add new backend functions, create a test file in the `convex/` directory using this template:
+To add a test suite, place a file in `convex/__tests__/`:
 
 ```typescript
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { api } from "./_generated/api";
-import schema from "./schema";
+import { api } from "../_generated/api";
+import schema from "../schema";
 import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
 
 test("Module description under test", async () => {
   // 1. Initialize in-memory DB and register backend functions
-  const t = convexTest(schema, import.meta.glob("./**/*.ts"));
+  const t = convexTest(schema, import.meta.glob("../**/*.ts"));
   
-  // 2. Register required components (e.g., rate-limiter component)
+  // 2. Register required components
   registerRateLimiter(t, "ratelimiter");
 
   // 3. Setup Mock Identities (User Auth Context)
   const student = t.withIdentity({ subject: "student_a_subject" });
   const studentId = await student.mutation(api.users.storeUser, { username: "stud_a" });
 
-  // 4. Perform direct database seeding (if needed) bypassing validation
-  await t.run(async (ctx) => {
-    await ctx.db.patch(studentId, { role: "student" });
-  });
-
-  // 5. Execute queries/mutations and assert output behavior
+  // 4. Assert behavior
   const profile = await student.query(api.users.getCurrentUserProfile);
   expect(profile).not.toBeNull();
   expect(profile!.username).toBe("stud_a");

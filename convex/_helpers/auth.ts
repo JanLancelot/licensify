@@ -1,5 +1,5 @@
-import { QueryCtx, MutationCtx } from "./_generated/server";
-import { Doc, Id } from "./_generated/dataModel";
+import { QueryCtx, MutationCtx } from "../_generated/server";
+import { Doc, Id } from "../_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export type Role = "student" | "admin" | "content_manager";
@@ -62,7 +62,6 @@ export async function getCurrentUser(
 
   return null;
 }
-
 
 /**
  * Asserts that the caller is authenticated and exists in the database.

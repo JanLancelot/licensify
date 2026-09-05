@@ -1,21 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getCurrentUser } from "./authHelpers";
-
-/**
- * Deterministic SHA-256 hash using standard Web Crypto API.
- */
-async function hashAnswer(questionId: string, choiceId: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(`${questionId}:${choiceId}`);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const bytes = new Uint8Array(hashBuffer);
-  let hex = "";
-  for (let i = 0; i < bytes.length; i++) {
-    hex += (bytes[i] < 16 ? "0" : "") + bytes[i].toString(16);
-  }
-  return hex;
-}
+import { getCurrentUser } from "./_helpers/auth";
+import { hashAnswer } from "./_helpers/crypto";
 
 /**
  * High-performance bulk and delta sync endpoint.
@@ -102,12 +88,12 @@ export const getSyncBundle = query({
       }
     }
 
-    // 3. Pre-compute SHA-256 question hashes on server (so client never leaks plain answers or runs slow crypto loops)
+    // 3. Use pre-computed SHA-256 question hashes from DB (fallback to computation for legacy rows)
     const questions = await Promise.all(
       rawQuestions.map(async (q) => {
-        const correctChoiceHash = q.correctChoiceId
-          ? await hashAnswer(q._id, q.correctChoiceId)
-          : undefined;
+        const correctChoiceHash =
+          q.correctChoiceHash ||
+          (q.correctChoiceId ? await hashAnswer(q._id, q.correctChoiceId) : undefined);
 
         return {
           id: q._id,
@@ -352,21 +338,9 @@ export const syncAttemptsBatch = mutation({
           });
         }
       } else {
-        // Insert Attempt
-        attemptId = await ctx.db.insert("quizAttempts", {
-          userId: user._id,
-          quizId: attempt.quizId,
-          status: attempt.status,
-          score: attempt.score,
-          correctAnswers: attempt.correctAnswers,
-          totalQuestions: attempt.totalQuestions,
-          startedAt: attempt.startedAt,
-          submittedAt: attempt.submittedAt,
-        });
-
-        // 3. Insert and grade answers with instant in-memory lookup
+        // Grade answers in memory
         let calculatedCorrect = 0;
-        for (const ans of attempt.answers) {
+        const gradedAnswers = attempt.answers.map((ans) => {
           let isCorrect: boolean | undefined = undefined;
           if (ans.selectedChoiceId) {
             const qDoc = questionMap.get(ans.questionId);
@@ -375,25 +349,32 @@ export const syncAttemptsBatch = mutation({
               if (isCorrect) calculatedCorrect++;
             }
           }
-
-          await ctx.db.insert("quizAnswers", {
-            attemptId,
+          return {
             questionId: ans.questionId,
             selectedChoiceId: ans.selectedChoiceId,
             isCorrect,
             answeredAt: ans.answeredAt ?? Date.now(),
-          });
-        }
+          };
+        });
 
-        // 4. Finalize score on server if submitted
-        if (attempt.status === "submitted") {
-          const total = attempt.totalQuestions > 0 ? attempt.totalQuestions : 1;
-          const finalScore = Math.round((calculatedCorrect / total) * 100);
-          await ctx.db.patch(attemptId, {
-            correctAnswers: calculatedCorrect,
-            score: finalScore,
-          });
-        }
+        const total = attempt.totalQuestions > 0 ? attempt.totalQuestions : 1;
+        const finalScore =
+          attempt.status === "submitted"
+            ? Math.round((calculatedCorrect / total) * 100)
+            : attempt.score;
+
+        // Insert Attempt with embedded answers in a single atomic write
+        attemptId = await ctx.db.insert("quizAttempts", {
+          userId: user._id,
+          quizId: attempt.quizId,
+          status: attempt.status,
+          score: finalScore,
+          correctAnswers: calculatedCorrect,
+          totalQuestions: attempt.totalQuestions,
+          answers: gradedAnswers,
+          startedAt: attempt.startedAt,
+          submittedAt: attempt.submittedAt,
+        });
       }
 
       synced.push({

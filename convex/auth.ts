@@ -3,7 +3,7 @@ import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
 import type { DataModel } from "./_generated/dataModel";
-import { ResendOTP } from "./ResendOTP";
+import { ResendOTP } from "./_helpers/ResendOTP";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;

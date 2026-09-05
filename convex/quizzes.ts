@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireContentManager, requireUser } from "./authHelpers";
+import { requireContentManager, requireUser } from "./_helpers/auth";
 import { paginationOptsValidator } from "convex/server";
+import { hashAnswer } from "./_helpers/crypto";
 
 /**
  * Public/Student query: Fetches all published quizzes for offline sync.
@@ -9,7 +10,10 @@ import { paginationOptsValidator } from "convex/server";
 export const listAllPublishedQuizzes = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("quizzes").collect();
+    return await ctx.db
+      .query("quizzes")
+      .withIndex("by_published", (q) => q.eq("isPublished", true))
+      .collect();
   },
 });
 
@@ -22,17 +26,19 @@ export const listQuizzes = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    let quizQuery = ctx.db.query("quizzes").filter((q) => q.neq(q.field("isPublished"), false));
-
     if (args.type) {
       return await ctx.db
         .query("quizzes")
-        .withIndex("by_type", (q) => q.eq("type", args.type!))
-        .filter((q) => q.neq(q.field("isPublished"), false))
+        .withIndex("by_type_and_published", (q) =>
+          q.eq("type", args.type!).eq("isPublished", true)
+        )
         .paginate(args.paginationOpts);
     }
 
-    return await quizQuery.paginate(args.paginationOpts);
+    return await ctx.db
+      .query("quizzes")
+      .withIndex("by_published", (q) => q.eq("isPublished", true))
+      .paginate(args.paginationOpts);
   },
 });
 
@@ -76,14 +82,21 @@ export const listPublishedQuizzesOnline = query({
     specializedType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    let quizzes = await ctx.db
-      .query("quizzes")
-      .filter((q) => q.neq(q.field("isPublished"), false))
-      .collect();
-
+    let quizzes;
     if (args.type) {
-      quizzes = quizzes.filter((q) => q.type === args.type);
+      quizzes = await ctx.db
+        .query("quizzes")
+        .withIndex("by_type_and_published", (q) =>
+          q.eq("type", args.type!).eq("isPublished", true)
+        )
+        .collect();
+    } else {
+      quizzes = await ctx.db
+        .query("quizzes")
+        .withIndex("by_published", (q) => q.eq("isPublished", true))
+        .collect();
     }
+
     if (args.specializedType) {
       quizzes = quizzes.filter((q) => q.specializedType === args.specializedType);
     }
@@ -125,7 +138,10 @@ export const getQuizWithQuestionsOnline = query({
 
     // 2. If not found by document ID, search by title match or set reference
     if (!quiz) {
-      const allQuizzes = await ctx.db.query("quizzes").collect();
+      const allQuizzes = await ctx.db
+        .query("quizzes")
+        .withIndex("by_published", (q) => q.eq("isPublished", true))
+        .collect();
       quiz = allQuizzes.find(
         (q) =>
           q._id === args.quizId ||
@@ -161,31 +177,37 @@ export const getQuizWithQuestionsOnline = query({
       if (subjectId) {
         loadedQuestions = await ctx.db
           .query("questions")
-          .withIndex("by_subject", (q) => q.eq("subjectId", subjectId))
-          .filter((q) => q.neq(q.field("isPublished"), false))
+          .withIndex("by_subject_and_published", (q) =>
+            q.eq("subjectId", subjectId).eq("isPublished", true)
+          )
           .collect();
       } else {
         loadedQuestions = await ctx.db
           .query("questions")
-          .filter((q) => q.neq(q.field("isPublished"), false))
+          .withIndex("by_published", (q) => q.eq("isPublished", true))
           .take(50);
       }
     }
 
-    const formattedQuestions = loadedQuestions.map((q) => ({
-      id: q._id,
-      subjectId: q.subjectId,
-      branchId: q.branchId,
-      topicId: q.topicId,
-      lessonId: q.lessonId,
-      question: q.question,
-      choices: q.choices,
-      correctChoiceId: q.correctChoiceId,
-      correctChoiceHash: q.correctChoiceId,
-      explanation: q.explanation,
-      difficulty: q.difficulty,
-      specializedType: q.specializedType,
-    }));
+    const formattedQuestions = await Promise.all(
+      loadedQuestions.map(async (q) => {
+        const correctChoiceHash =
+          q.correctChoiceHash || (await hashAnswer(q._id, q.correctChoiceId));
+        return {
+          id: q._id,
+          subjectId: q.subjectId,
+          branchId: q.branchId,
+          topicId: q.topicId,
+          lessonId: q.lessonId,
+          question: q.question,
+          choices: q.choices,
+          correctChoiceHash,
+          explanation: q.explanation,
+          difficulty: q.difficulty,
+          specializedType: q.specializedType,
+        };
+      })
+    );
 
     const formattedQuiz = quiz
       ? {
