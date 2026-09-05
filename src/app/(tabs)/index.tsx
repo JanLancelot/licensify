@@ -86,13 +86,9 @@ export default function HomeScreen() {
       };
     });
 
-    // Prioritize subjects with actual student activity (done > 0)
+    // Only include subjects with actual student activity (done > 0)
     const inProgress = subjectsWithProgress.filter((s) => s.done > 0);
-    const displayed = inProgress.length > 0
-      ? inProgress.slice(0, 2)
-      : subjectsWithProgress.slice(0, 2);
-
-    return displayed;
+    return inProgress.slice(0, 2);
   }, [curriculum, completedLessonIds]);
 
   // Up to 10 Recent / Syllabus Lessons for the Confidence Rate Section
@@ -416,161 +412,135 @@ export default function HomeScreen() {
         </View>
 
         {/* ================================================================= */}
-        {/* 3. CONTINUE LEARNING SECTION                                      */}
+        {/* 3. CONTINUE LEARNING SECTION (Only show if there is progress)     */}
         {/* ================================================================= */}
-        <View style={styles.sectionContainer}>
-          {/* Section Header Row with Vertical Accent Bar */}
-          <View style={styles.continueSectionHeader}>
-            <View
-              style={[
-                styles.continueHeaderAccentBar,
-                { backgroundColor: colors.accent },
-              ]}
-            />
-            <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
-              CONTINUE LEARNING
-            </Text>
-          </View>
+        {continueItems.length > 0 && (
+          <View style={styles.sectionContainer}>
+            {/* Section Header Row with Vertical Accent Bar */}
+            <View style={styles.continueSectionHeader}>
+              <View
+                style={[
+                  styles.continueHeaderAccentBar,
+                  { backgroundColor: colors.accent },
+                ]}
+              />
+              <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
+                CONTINUE LEARNING
+              </Text>
+            </View>
 
-          {/* List of Continue Learning Cards */}
-          <View style={styles.continueCardsList}>
-            {continueItems.length === 0 ? (
-              <Pressable
-                onPress={() => router.push('/(tabs)/learn' as any)}
-                style={({ pressed }) => [
-                  styles.continueLearningCard,
-                  {
-                    backgroundColor: isDark
-                      ? colors.backgroundElement
-                      : '#FFFFFF',
-                    borderColor: isDark
-                      ? 'rgba(255, 255, 255, 0.08)'
-                      : 'rgba(0, 0, 0, 0.06)',
-                    justifyContent: 'center',
-                    paddingVertical: 18,
-                    opacity: pressed ? 0.9 : 1,
-                  },
-                ]}>
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontSize: 13.5,
-                    fontWeight: '500',
-                    textAlign: 'center',
-                  }}>
-                  Explore the curriculum to start learning →
-                </Text>
-              </Pressable>
-            ) : (
-              continueItems.map((item) => {
-              const IconComp = item.icon;
+            {/* List of Continue Learning Cards */}
+            <View style={styles.continueCardsList}>
+              {continueItems.map((item) => {
+                const IconComp = item.icon;
 
-              return (
-                <Pressable
-                  key={item.id}
-                  onPress={() => router.push('/(tabs)/learn' as any)}
-                  style={({ pressed }) => [
-                    styles.continueLearningCard,
-                    {
-                      backgroundColor: isDark
-                        ? colors.backgroundElement
-                        : '#FFFFFF',
-                      borderColor: isDark
-                        ? 'rgba(255, 255, 255, 0.08)'
-                        : 'rgba(0, 0, 0, 0.06)',
-                      opacity: pressed ? 0.92 : 1,
-                      transform: [{ scale: pressed ? 0.99 : 1 }],
-                    },
-                  ]}>
-                  {/* Left: Soft Tinted Circular Icon Container */}
-                  <View
-                    style={[
-                      styles.circularIconWrap,
-                      {
-                        backgroundColor: colors.accentMuted,
-                        borderColor: colors.accentBorder,
-                      },
-                    ]}>
-                    <IconComp
-                      size={22}
-                      color={colors.accent}
-                      strokeWidth={2.2}
-                    />
-                  </View>
-
-                  {/* Middle: Title & % on header row, Progress track below */}
-                  <View style={styles.continueCardContent}>
-                    <View style={styles.continueCardHeaderRow}>
-                      <Text
-                        style={[
-                          styles.continueSubjectTitle,
-                          { color: colors.text },
-                        ]}>
-                        {item.title}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.continuePercentBadge,
-                          { color: colors.accent },
-                        ]}>
-                        {item.percent}%
-                      </Text>
-                    </View>
-
-                    {/* Progress Track */}
-                    <View
-                      style={[
-                        styles.continueProgressTrack,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255, 255, 255, 0.10)'
-                            : 'rgba(239, 241, 245, 1)',
-                        },
-                      ]}>
-                      <View
-                        style={[
-                          styles.continueProgressFill,
-                          {
-                            width: `${item.percent}%`,
-                            backgroundColor: colors.accent,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-
-                  {/* Right Divider & Circular Chevron Action Button */}
-                  <View
-                    style={[
-                      styles.continueRightDivider,
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => router.push('/(tabs)/learn/notes' as any)}
+                    style={({ pressed }) => [
+                      styles.continueLearningCard,
                       {
                         backgroundColor: isDark
+                          ? colors.backgroundElement
+                          : '#FFFFFF',
+                        borderColor: isDark
                           ? 'rgba(255, 255, 255, 0.08)'
                           : 'rgba(0, 0, 0, 0.06)',
-                      },
-                    ]}
-                  />
-
-                  <View
-                    style={[
-                      styles.chevronCircleWrap,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(255, 255, 255, 0.06)'
-                          : '#F8FAFC',
+                        opacity: pressed ? 0.92 : 1,
+                        transform: [{ scale: pressed ? 0.99 : 1 }],
                       },
                     ]}>
-                    <ChevronRight
-                      size={18}
-                      color={colors.text}
-                      strokeWidth={2.4}
+                    {/* Left: Soft Tinted Circular Icon Container */}
+                    <View
+                      style={[
+                        styles.circularIconWrap,
+                        {
+                          backgroundColor: colors.accentMuted,
+                          borderColor: colors.accentBorder,
+                        },
+                      ]}>
+                      <IconComp
+                        size={22}
+                        color={colors.accent}
+                        strokeWidth={2.2}
+                      />
+                    </View>
+
+                    {/* Middle: Title & % on header row, Progress track below */}
+                    <View style={styles.continueCardContent}>
+                      <View style={styles.continueCardHeaderRow}>
+                        <Text
+                          style={[
+                            styles.continueSubjectTitle,
+                            { color: colors.text },
+                          ]}>
+                          {item.title}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.continuePercentBadge,
+                            { color: colors.accent },
+                          ]}>
+                          {item.percent}%
+                        </Text>
+                      </View>
+
+                      {/* Progress Track */}
+                      <View
+                        style={[
+                          styles.continueProgressTrack,
+                          {
+                            backgroundColor: isDark
+                              ? 'rgba(255, 255, 255, 0.10)'
+                              : 'rgba(239, 241, 245, 1)',
+                          },
+                        ]}>
+                        <View
+                          style={[
+                            styles.continueProgressFill,
+                            {
+                              width: `${item.percent}%`,
+                              backgroundColor: colors.accent,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Right Divider & Circular Chevron Action Button */}
+                    <View
+                      style={[
+                        styles.continueRightDivider,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : 'rgba(0, 0, 0, 0.06)',
+                        },
+                      ]}
                     />
-                  </View>
-                </Pressable>
-              );
-            }))}
+
+                    <View
+                      style={[
+                        styles.chevronCircleWrap,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(255, 255, 255, 0.06)'
+                            : '#F8FAFC',
+                        },
+                      ]}>
+                      <ChevronRight
+                        size={18}
+                        color={colors.text}
+                        strokeWidth={2.4}
+                      />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
