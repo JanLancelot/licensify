@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from 'convex/react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BookOpen, Compass, Landmark } from 'lucide-react-native';
 import { api } from '../../convex/_generated/api';
 import { SubjectNote, FlashcardItem } from '@/types/curriculum';
@@ -251,14 +251,20 @@ export function useUserStreak() {
   return { streak, loading, refetch: () => {} };
 }
 
-// Global in-memory recency registry to guarantee real-time recency of user interactions
+// Global in-memory recency registry and subscribers to guarantee real-time recency of user interactions
 const clientInteractionTimestamps = new Map<string, number>();
+const interactionListeners = new Set<() => void>();
 let interactionCounter = 1;
 
 export function trackLessonInteraction(lessonId: string) {
   if (!lessonId) return;
   // Use current time plus counter to guarantee absolute top priority
   clientInteractionTimestamps.set(lessonId, Date.now() + (++interactionCounter) * 1000);
+  interactionListeners.forEach((fn) => {
+    try {
+      fn();
+    } catch {}
+  });
 }
 
 /**
@@ -267,7 +273,15 @@ export function trackLessonInteraction(lessonId: string) {
 export function useLessonProgress() {
   const rawProgress = useQuery(api.sync.getUserLessonProgress);
   const toggleMutation = useMutation(api.sync.toggleLessonProgress);
-  const loading = rawProgress === undefined;
+  const [interactionTick, setInteractionTick] = useState(0);
+
+  useEffect(() => {
+    const listener = () => setInteractionTick((t) => t + 1);
+    interactionListeners.add(listener);
+    return () => {
+      interactionListeners.delete(listener);
+    };
+  }, []);
 
   const completedLessonIds = useMemo(() => {
     if (!rawProgress) return new Set<string>();
@@ -280,24 +294,25 @@ export function useLessonProgress() {
 
   const lessonTimestamps = useMemo(() => {
     const map = new Map<string, number>();
-    if (!rawProgress) return map;
-    const total = rawProgress.length;
+    if (!rawProgress && clientInteractionTimestamps.size === 0) return map;
 
-    rawProgress.forEach((item: any, index: number) => {
-      const id = typeof item === 'string' ? item : item?.lessonId;
-      if (id) {
-        // In Convex .collect(), items are returned in insertion order (0 = oldest, total-1 = newest).
-        // Therefore higher index has a higher baseline timestamp.
-        const baseTs = 1000000000000 + index * 10000;
-        const serverTs =
-          typeof item === 'object' && typeof item.updatedAt === 'number' && item.updatedAt > 0
-            ? item.updatedAt
-            : baseTs;
+    if (rawProgress) {
+      rawProgress.forEach((item: any, index: number) => {
+        const id = typeof item === 'string' ? item : item?.lessonId;
+        if (id) {
+          // In Convex .collect(), items are returned in insertion order (0 = oldest, total-1 = newest).
+          // Therefore higher index has a higher baseline timestamp.
+          const baseTs = 1000000000000 + index * 10000;
+          const serverTs =
+            typeof item === 'object' && typeof item.updatedAt === 'number' && item.updatedAt > 0
+              ? item.updatedAt
+              : baseTs;
 
-        const clientTs = clientInteractionTimestamps.get(id) || 0;
-        map.set(id, Math.max(serverTs, clientTs, baseTs));
-      }
-    });
+          const clientTs = clientInteractionTimestamps.get(id) || 0;
+          map.set(id, Math.max(serverTs, clientTs, baseTs));
+        }
+      });
+    }
 
     // Also include any client interactions not yet reflected in rawProgress
     clientInteractionTimestamps.forEach((ts, id) => {
@@ -307,7 +322,7 @@ export function useLessonProgress() {
     });
 
     return map;
-  }, [rawProgress]);
+  }, [rawProgress, interactionTick]);
 
   const toggleLessonCompleted = useCallback(
     async (lessonId: string) => {
@@ -345,7 +360,7 @@ export function useLessonProgress() {
     toggleLessonCompleted,
     markLessonCompleted,
     isCompleted,
-    loading,
-    refetch: () => {},
+    loading: rawProgress === undefined,
+    refetch: () => setInteractionTick((t) => t + 1),
   };
 }

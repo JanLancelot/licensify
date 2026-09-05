@@ -21,7 +21,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
-import { useLessonProgress, useLocalAttempts, useLocalHierarchy, useLocalStats } from '@/hooks/useLocalData';
+import {
+  trackLessonInteraction,
+  useLessonProgress,
+  useLocalAttempts,
+  useLocalHierarchy,
+  useLocalStats,
+} from '@/hooks/useLocalData';
 import Animated, {
   FadeInDown,
   FadeOutUp,
@@ -492,6 +498,9 @@ export default function HomeScreen() {
                   <Pressable
                     key={item.id}
                     onPress={() => {
+                      trackLessonInteraction(item.id);
+                      if (item.nextTopicId) trackLessonInteraction(item.nextTopicId);
+                      if (item.nextLessonId) trackLessonInteraction(item.nextLessonId);
                       router.push({
                         pathname: '/(tabs)/learn/notes' as any,
                         params: {
