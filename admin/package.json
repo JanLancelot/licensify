@@ -13,13 +13,12 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-
-
   "dependencies": {
     "@convex-dev/auth": "^0.0.95",
     "clsx": "^2.1.1",
     "convex": "^1.17.4",
     "lucide-react": "^0.475.0",
+    "marked": "^18.0.13",
     "next": "^15.5.23",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

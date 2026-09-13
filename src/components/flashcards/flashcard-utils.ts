@@ -3,17 +3,40 @@ import { FlashcardItem, SubjectNote } from '@/types/curriculum';
 export function buildCardsForLessons(
   selectedLessonIds: Set<string>,
   isShuffled: boolean = false,
-  curriculum: SubjectNote[] = []
+  curriculum: SubjectNote[] = [],
+  availableDbFlashcards: FlashcardItem[] = []
 ): FlashcardItem[] {
   const generated: FlashcardItem[] = [];
 
+  // 1. First, include matching real flashcards from Convex database created in Admin
+  if (availableDbFlashcards.length > 0) {
+    availableDbFlashcards.forEach((card) => {
+      if (card.lessonId && selectedLessonIds.has(card.lessonId)) {
+        generated.push(card);
+      }
+    });
+  }
+
+  // 2. For selected lessons without DB flashcards, generate cards from real notes (filter out boilerplate)
   curriculum.forEach((subject) => {
     subject.topics.forEach((topic) => {
       topic.lessons.forEach((lesson) => {
         if (selectedLessonIds.has(lesson.id)) {
-          const points = lesson.keyPoints && lesson.keyPoints.length > 0
-            ? lesson.keyPoints
-            : [lesson.summary || lesson.title];
+          // If already has official DB cards, don't duplicate with auto-generated cards
+          const hasDbCardsForLesson = availableDbFlashcards.some(
+            (c) => c.lessonId === lesson.id
+          );
+          if (hasDbCardsForLesson) return;
+
+          // Filter out legacy boilerplate placeholders
+          const points = (lesson.keyPoints || []).filter((p) => {
+            const lower = p.toLowerCase();
+            return (
+              !lower.startsWith('definition & scope:') &&
+              !lower.startsWith('regulatory standard:') &&
+              !lower.startsWith('practice application:')
+            );
+          });
 
           points.forEach((point, pIdx) => {
             const colonIndex = point.indexOf(':');

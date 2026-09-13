@@ -1,9 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
+  BookOpen,
   Check,
+  Clock,
+  FileText,
 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -15,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MarkdownContentView } from '@/components/notes/MarkdownContentView';
 import { SUBJECT_PALETTES } from '@/components/ui/CircularProgressIconBadge';
 import { useAppTheme } from '@/context/theme-context';
 import { trackLessonInteraction, useLessonProgress, useLocalHierarchy } from '@/hooks/useLocalData';
@@ -82,9 +86,21 @@ export default function LessonDetailScreen() {
 
   const topicTitle = lessonData?.topic.title || paramTopicTitle || 'Notes';
   const lesson = lessonData?.lesson;
-  const rawKeyPoints = lesson?.keyPoints;
 
-  // Filter out any empty or placeholder bullet points
+  // Check if a real description was entered (filtering out legacy system placeholders)
+  const hasDescription = Boolean(
+    lesson?.description &&
+      lesson.description.trim().length > 0 &&
+      !lesson.description.toLowerCase().includes('core syllabus competencies')
+  );
+
+  // Check if real markdown content is available
+  const hasMarkdownContent = Boolean(
+    lesson?.content && lesson.content.trim().length > 0
+  );
+
+  // Filter out any legacy or placeholder bullet points
+  const rawKeyPoints = lesson?.keyPoints;
   const keyPoints =
     rawKeyPoints && rawKeyPoints.length > 0
       ? rawKeyPoints.filter(
@@ -92,13 +108,12 @@ export default function LessonDetailScreen() {
             point &&
             typeof point === 'string' &&
             point.trim().length > 0 &&
-            !point.toLowerCase().startsWith('practice application: professional architectural practice')
+            !point.toLowerCase().startsWith('practice application: professional architectural practice') &&
+            !point.toLowerCase().startsWith('regulatory standard: applicable architectural')
         )
       : [];
 
-  const hasContent = Boolean(
-    (lesson?.summary && lesson.summary.trim().length > 0) || keyPoints.length > 0
-  );
+  const hasContent = hasDescription || hasMarkdownContent || keyPoints.length > 0;
 
   const handleToggle = async () => {
     if (!targetLessonId || isToggling) return;
@@ -116,10 +131,16 @@ export default function LessonDetailScreen() {
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      {/* 1. CLEAN TOP BAR */}
+      {/* 1. TOP BAR */}
       <View style={styles.topBar}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/learn/notes' as any);
+            }
+          }}
           hitSlop={12}
           style={({ pressed }) => [
             styles.backBtn,
@@ -151,7 +172,7 @@ export default function LessonDetailScreen() {
               styles.stateText,
               { color: isDark ? '#9CA3AF' : '#6B7280' },
             ]}>
-            Loading...
+            Loading lesson...
           </Text>
         </View>
       )}
@@ -164,7 +185,7 @@ export default function LessonDetailScreen() {
               styles.stateHeading,
               { color: isDark ? '#F9FAFB' : '#111827' },
             ]}>
-            No lesson yet
+            No lesson found
           </Text>
           <Text
             style={[
@@ -174,7 +195,13 @@ export default function LessonDetailScreen() {
             This lesson is not available yet.
           </Text>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/learn/notes' as any);
+              }
+            }}
             style={[
               styles.returnBtn,
               { backgroundColor: colors.accent },
@@ -191,17 +218,39 @@ export default function LessonDetailScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.contentContainer,
-            { paddingBottom: insets.bottom + 36 },
+            { paddingBottom: insets.bottom + 40 },
           ]}>
           {/* HEADER: Title & Lesson Number */}
           <View style={styles.headerSection}>
-            <Text
-              style={[
-                styles.lessonSubheading,
-                { color: isDark ? '#9CA3AF' : '#6B7280' },
-              ]}>
-              Lesson {lesson.lessonNumber || 1}
-            </Text>
+            <View style={styles.headerMetaRow}>
+              <View
+                style={[
+                  styles.lessonPill,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(200, 90, 50, 0.16)'
+                      : 'rgba(200, 90, 50, 0.1)',
+                  },
+                ]}>
+                <Text style={[styles.lessonPillText, { color: colors.accent }]}>
+                  LESSON {lesson.lessonNumber || 1}
+                </Text>
+              </View>
+
+              {lesson.duration ? (
+                <View style={styles.durationRow}>
+                  <Clock size={12} color={isDark ? '#9CA3AF' : '#6B7280'} strokeWidth={2.2} />
+                  <Text
+                    style={[
+                      styles.durationText,
+                      { color: isDark ? '#9CA3AF' : '#6B7280' },
+                    ]}>
+                    {lesson.duration}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
             <Text
               style={[
                 styles.lessonTitle,
@@ -240,8 +289,8 @@ export default function LessonDetailScreen() {
             </View>
           )}
 
-          {/* SECTION: SUMMARY */}
-          {lesson.summary ? (
+          {/* SECTION: DESCRIPTION (Only shown if a custom description was entered) */}
+          {hasDescription && lesson.description ? (
             <View
               style={[
                 styles.card,
@@ -252,25 +301,38 @@ export default function LessonDetailScreen() {
                     : 'rgba(0, 0, 0, 0.06)',
                 },
               ]}>
-              <Text
-                style={[
-                  styles.cardHeading,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
-                ]}>
-                Summary
-              </Text>
+              <View style={styles.cardHeaderRow}>
+                <View
+                  style={[
+                    styles.cardHeaderIcon,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(200, 90, 50, 0.18)'
+                        : 'rgba(200, 90, 50, 0.1)',
+                    },
+                  ]}>
+                  <FileText size={13} color={colors.accent} strokeWidth={2.4} />
+                </View>
+                <Text
+                  style={[
+                    styles.cardHeading,
+                    { color: isDark ? '#9CA3AF' : '#6B7280' },
+                  ]}>
+                  Description
+                </Text>
+              </View>
               <Text
                 style={[
                   styles.bodyText,
                   { color: isDark ? '#E2E8F0' : '#1E293B' },
                 ]}>
-                {lesson.summary}
+                {lesson.description}
               </Text>
             </View>
           ) : null}
 
-          {/* SECTION: KEY POINTS */}
-          {keyPoints.length > 0 ? (
+          {/* SECTION: STUDY NOTES (Full Markdown content from admin panel) */}
+          {hasMarkdownContent && lesson.content ? (
             <View
               style={[
                 styles.card,
@@ -281,13 +343,65 @@ export default function LessonDetailScreen() {
                     : 'rgba(0, 0, 0, 0.06)',
                 },
               ]}>
-              <Text
-                style={[
-                  styles.cardHeading,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
-                ]}>
-                Key Points
-              </Text>
+              <View style={styles.cardHeaderRow}>
+                <View
+                  style={[
+                    styles.cardHeaderIcon,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(200, 90, 50, 0.18)'
+                        : 'rgba(200, 90, 50, 0.1)',
+                    },
+                  ]}>
+                  <BookOpen size={13} color={colors.accent} strokeWidth={2.4} />
+                </View>
+                <Text
+                  style={[
+                    styles.cardHeading,
+                    { color: isDark ? '#9CA3AF' : '#6B7280' },
+                  ]}>
+                  Study Notes
+                </Text>
+              </View>
+
+              <MarkdownContentView
+                content={lesson.content}
+                isDark={isDark}
+                colors={colors}
+              />
+            </View>
+          ) : keyPoints.length > 0 ? (
+            /* Fallback to bullet list if no full markdown document is available */
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderColor: isDark
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(0, 0, 0, 0.06)',
+                },
+              ]}>
+              <View style={styles.cardHeaderRow}>
+                <View
+                  style={[
+                    styles.cardHeaderIcon,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(200, 90, 50, 0.18)'
+                        : 'rgba(200, 90, 50, 0.1)',
+                    },
+                  ]}>
+                  <BookOpen size={13} color={colors.accent} strokeWidth={2.4} />
+                </View>
+                <Text
+                  style={[
+                    styles.cardHeading,
+                    { color: isDark ? '#9CA3AF' : '#6B7280' },
+                  ]}>
+                  Study Notes
+                </Text>
+              </View>
               <View style={styles.pointsList}>
                 {keyPoints.map((point, index) => (
                   <View key={index} style={styles.pointItem}>
@@ -387,54 +501,84 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 18,
-    paddingTop: 12,
+    paddingTop: 8,
     gap: 14,
   },
   headerSection: {
-    paddingVertical: 4,
+    paddingVertical: 6,
+    gap: 8,
+  },
+  headerMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  lessonPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  lessonPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  durationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
-  lessonSubheading: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+  durationText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   lessonTitle: {
     fontSize: 22,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
     lineHeight: 28,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 16,
-    gap: 10,
+    padding: 18,
+    gap: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 1.5 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
       },
       android: {
-        elevation: 1,
+        elevation: 1.5,
       },
       web: {
-        boxShadow: '0 1px 8px rgba(0,0,0,0.02)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
       },
     }),
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardHeaderIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardHeading: {
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
   },
   bodyText: {
     fontSize: 14.5,
-    lineHeight: 22,
+    lineHeight: 22.5,
     fontWeight: '400',
   },
   pointsList: {
@@ -453,11 +597,11 @@ const styles = StyleSheet.create({
   pointText: {
     flex: 1,
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 21.5,
     fontWeight: '400',
   },
   bottomSection: {
-    marginTop: 6,
+    marginTop: 8,
   },
   completeBtn: {
     flexDirection: 'row',

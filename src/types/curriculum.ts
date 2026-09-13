@@ -11,6 +11,8 @@ export interface Lesson {
   duration: string;
   summary: string;
   keyPoints: string[];
+  description?: string;
+  content?: string;
 }
 
 export interface Topic {

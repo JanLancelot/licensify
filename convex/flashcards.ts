@@ -214,6 +214,8 @@ export const listPublishedFlashcards = query({
 
       return {
         id: fc._id,
+        subjectId: fc.subjectId,
+        topicId: fc.topicId,
         lessonId: fc.lessonId || "general",
         subjectTitle: sub?.name || "Architecture Review",
         topicTitle: top?.name || "Core Topic",
