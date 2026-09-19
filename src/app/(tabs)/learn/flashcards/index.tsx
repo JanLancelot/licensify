@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Plus } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Plus, Sparkles, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -79,27 +79,44 @@ export default function FlashcardsHubScreen() {
 
   const { curriculum } = useLocalHierarchy();
   const { flashcards: dbFlashcards } = useLocalFlashcards();
-  const { presets: userPresets, savePreset: saveUserFlashcardPreset } = useFlashcardPresets();
+  const {
+    presets: userPresets,
+    savePreset: saveUserFlashcardPreset,
+    deletePreset,
+  } = useFlashcardPresets();
 
-  // Compute all presets (user created + default system deck from database)
-  const customPresets = React.useMemo(() => {
-    const list = [...userPresets];
-    if (dbFlashcards.length > 0) {
-      const defaultDeck: FlashcardPreset = {
-        id: 'preset-core-ale',
-        title: 'Core ALE Essential Concepts',
-        lessonCount: 6,
-        cardCount: dbFlashcards.length,
+  // Group real published flashcards from Convex by Subject (entered in Admin panel)
+  const officialDecks: FlashcardPreset[] = React.useMemo(() => {
+    if (!dbFlashcards || dbFlashcards.length === 0) return [];
+
+    const subjectMap = new Map<string, FlashcardItem[]>();
+    dbFlashcards.forEach((card) => {
+      const subjectName = card.subjectTitle || 'History of Architecture';
+      if (!subjectMap.has(subjectName)) {
+        subjectMap.set(subjectName, []);
+      }
+      subjectMap.get(subjectName)!.push(card);
+    });
+
+    const decks: FlashcardPreset[] = [];
+    subjectMap.forEach((cards, subjectName) => {
+      decks.push({
+        id: `official-${subjectName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+        title: subjectName,
+        lessonCount: new Set(cards.map((c) => c.lessonId)).size || 1,
+        cardCount: cards.length,
         isShuffled: true,
-        iconName: 'Layers',
-        createdAt: 'Auto Generated',
-        subjectNames: ['History', 'Utilities', 'Design'],
-        cards: dbFlashcards,
-      };
-      list.push(defaultDeck);
-    }
-    return list;
-  }, [dbFlashcards, userPresets]);
+        iconName: 'BookOpen',
+        createdAt: 'Curriculum Deck',
+        subjectNames: [subjectName],
+        cards,
+      });
+    });
+
+    return decks;
+  }, [dbFlashcards]);
+
+  const customPresets = userPresets;
 
   // Active Session State
   const [activeSessionTitle, setActiveSessionTitle] = useState<string | null>(null);
@@ -116,7 +133,7 @@ export default function FlashcardsHubScreen() {
   const [customTitle, setCustomTitle] = useState('');
   const [selectedIconId, setSelectedIconId] = useState('Layers');
 
-  // ── Launching Custom Deck ────────────────────────────────────────────────
+  // ── Launching Deck ────────────────────────────────────────────────
   const startCustomPresetDrill = (preset: FlashcardPreset) => {
     let drillCards = [...preset.cards];
     if (preset.isShuffled) {
@@ -133,6 +150,21 @@ export default function FlashcardsHubScreen() {
     Alert.alert(
       'Added to Quiz Sets',
       `"${preset.title}" is now available under "Your Quiz Sets" in the Practice tab.`
+    );
+  };
+
+  const handleDeletePreset = (preset: FlashcardPreset) => {
+    Alert.alert(
+      'Delete Preset',
+      `Are you sure you want to delete "${preset.title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deletePreset(preset.id),
+        },
+      ]
     );
   };
 
@@ -156,9 +188,14 @@ export default function FlashcardsHubScreen() {
       return;
     }
 
-    const cards = buildCardsForLessons(selectedLessonIds, modalIsShuffled, curriculum);
+    const cards = buildCardsForLessons(
+      selectedLessonIds,
+      modalIsShuffled,
+      curriculum,
+      dbFlashcards
+    );
     if (cards.length === 0) {
-      Alert.alert('Notice', 'No flashcards could be generated for the selected lessons.');
+      Alert.alert('Notice', 'No flashcards available for the selected lessons.');
       return;
     }
 
@@ -326,10 +363,100 @@ export default function FlashcardsHubScreen() {
             styles.contentContainer,
             { paddingBottom: insets.bottom + 80 },
           ]}>
-          {/* SECTION HEADER: YOUR FLASHCARDS (+) */}
+          {/* 1. CURRICULUM DECKS (Published in Admin) */}
           <View style={styles.sectionHeadingRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={16} color={colors.accent} strokeWidth={2.4} />
+              <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+                CURRICULUM FLASHCARDS
+              </Text>
+            </View>
+          </View>
+
+          {officialDecks.length > 0 ? (
+            <View style={styles.gridContainer}>
+              {officialDecks.map((deck) => (
+                <Pressable
+                  key={deck.id}
+                  onPress={() => startCustomPresetDrill(deck)}
+                  style={({ pressed }) => [
+                    styles.customDeckCard,
+                    {
+                      backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                      borderColor: isDark ? 'rgba(200, 90, 50, 0.25)' : 'rgba(200, 90, 50, 0.15)',
+                      borderWidth: 1,
+                      opacity: pressed ? 0.9 : 1,
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                    },
+                  ]}>
+                  {/* Top-Right Add to Quiz Icon Button */}
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleAddPresetToQuizSets(deck);
+                    }}
+                    hitSlop={8}
+                    style={({ pressed }) => [
+                      styles.cardCornerAddBtn,
+                      {
+                        backgroundColor: colors.accentMuted,
+                        opacity: pressed ? 0.7 : 1,
+                      },
+                    ]}>
+                    <Plus size={13} color={colors.accent} strokeWidth={2.8} />
+                  </Pressable>
+
+                  {/* Circular Icon */}
+                  <CustomDeckIcon iconName={deck.iconName} size={48} />
+
+                  {/* Official Pill */}
+                  <View
+                    style={[
+                      styles.officialBadge,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(200, 90, 50, 0.16)'
+                          : 'rgba(200, 90, 50, 0.1)',
+                      },
+                    ]}>
+                    <Text style={[styles.officialBadgeText, { color: colors.accent }]}>
+                      OFFICIAL DECK
+                    </Text>
+                  </View>
+
+                  {/* Deck Title */}
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.customDeckTitle,
+                      { color: isDark ? '#F9FAFB' : '#0F172A' },
+                    ]}>
+                    {deck.title}
+                  </Text>
+
+                  {/* Card Count Subtitle */}
+                  <Text style={[styles.customDeckSub, { color: colors.textSecondary }]}>
+                    {deck.cardCount} Cards
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.emptyCardBox,
+                { backgroundColor: isDark ? '#1C1F26' : '#F6F0ED' },
+              ]}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                No official flashcard decks published yet.
+              </Text>
+            </View>
+          )}
+
+          {/* 2. CUSTOM PRESETS (User Created) */}
+          <View style={[styles.sectionHeadingRow, { marginTop: 12 }]}>
             <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-              YOUR FLASHCARDS
+              MY CUSTOM DECKS
             </Text>
             <Pressable
               onPress={handleOpenAddModal}
@@ -345,7 +472,6 @@ export default function FlashcardsHubScreen() {
             </Pressable>
           </View>
 
-          {/* 2-Column Grid of Custom Decks + Dashed Add Button */}
           <View style={styles.gridContainer}>
             {customPresets.map((preset) => (
               <Pressable
@@ -359,6 +485,25 @@ export default function FlashcardsHubScreen() {
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
                 ]}>
+                {/* Top-Left Delete Preset Button */}
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleDeletePreset(preset);
+                  }}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.cardCornerDeleteBtn,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(239, 68, 68, 0.16)'
+                        : 'rgba(239, 68, 68, 0.1)',
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}>
+                  <Trash2 size={13} color="#EF4444" strokeWidth={2.4} />
+                </Pressable>
+
                 {/* Top-Right Add to Quiz Icon Button */}
                 <Pressable
                   onPress={(e) => {
@@ -416,6 +561,13 @@ export default function FlashcardsHubScreen() {
                 ]}>
                 <Plus size={24} color={colors.accent} strokeWidth={2.6} />
               </View>
+              <Text
+                style={[
+                  styles.dashedAddText,
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                ]}>
+                Create Deck
+              </Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -534,6 +686,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
+  },
+  cardCornerDeleteBtn: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  officialBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    marginTop: -2,
+    marginBottom: 2,
+  },
+  officialBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  emptyCardBox: {
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   dashedAddCard: {
     width: '48%',

@@ -1,23 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/context/ToastContext";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
-import { useToast } from "@/context/ToastContext";
+import { useMutation, useQuery } from "convex/react";
 import {
   BookOpen,
-  Plus,
   Edit2,
-  Trash2,
-  Upload,
   ExternalLink,
-  Loader2,
   Eye,
   EyeOff,
   Filter,
+  Loader2,
+  Plus,
+  Trash2,
+  Upload,
 } from "lucide-react";
-import { Modal } from "@/components/ui/Modal";
+import { marked } from "marked";
+import React, { useMemo, useState } from "react";
 
 
 
@@ -358,7 +359,7 @@ export default function MaterialsPage() {
         title={editingMaterial ? "Edit Study Material" : "Author Study Note / Reference"}
         description="Compose markdown articles or attach reference documents."
         icon={<BookOpen className="w-5 h-5" />}
-        maxWidth="3xl"
+        maxWidth="6xl"
         footer={
           <>
             <button
@@ -381,194 +382,233 @@ export default function MaterialsPage() {
         }
       >
         <form id="material-form" onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                Subject Area
-              </label>
-              <select
-                value={formSubjectId}
-                onChange={(e) => {
-                  setFormSubjectId(e.target.value as Id<"subjects">);
-                  setFormTopicId("");
-                  setFormLessonId("");
-                }}
-                required
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-              >
-                {subjects.map((s: any) => (
-                  <option key={s._id} value={s._id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                Syllabus Topic (Optional)
-              </label>
-              <select
-                value={formTopicId}
-                onChange={(e) => {
-                  setFormTopicId(e.target.value as Id<"topics">);
-                  setFormLessonId("");
-                }}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-              >
-                <option value="">-- General / Subject Level --</option>
-                {availableTopicsForForm.map((t: any) => (
-                  <option key={t._id} value={t._id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                Detailed Lesson (Optional)
-              </label>
-              <select
-                value={formLessonId}
-                onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-              >
-                <option value="">-- Topic Level --</option>
-                {(lessons || [])
-                  .filter((l: any) => l.topicId === formTopicId)
-                  .map((l: any) => (
-                    <option key={l._id} value={l._id}>
-                      {l.name}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column: Metadata & Settings */}
+            <div className="lg:col-span-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Subject Area
+                </label>
+                <select
+                  value={formSubjectId}
+                  onChange={(e) => {
+                    setFormSubjectId(e.target.value as Id<"subjects">);
+                    setFormTopicId("");
+                    setFormLessonId("");
+                  }}
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                >
+                  {subjects.map((s: any) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name}
                     </option>
                   ))}
-              </select>
-            </div>
-          </div>
+                </select>
+              </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-              Article Title
-            </label>
-            <input
-              type="text"
-              value={formTitle}
-              onChange={(e) => setFormTitle(e.target.value)}
-              placeholder="e.g., National Building Code (PD 1096) Rule VII & VIII Summary"
-              required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-            />
-          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                    Topic (Optional)
+                  </label>
+                  <select
+                    value={formTopicId}
+                    onChange={(e) => {
+                      setFormTopicId(e.target.value as Id<"topics">);
+                      setFormLessonId("");
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                  >
+                    <option value="">-- All Topics --</option>
+                    {availableTopicsForForm.map((t: any) => (
+                      <option key={t._id} value={t._id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                Format Type
-              </label>
-              <select
-                value={formType}
-                onChange={(e) => setFormType(e.target.value as any)}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
-              >
-                <option value="article">Markdown Article</option>
-                <option value="pdf">PDF Document</option>
-                <option value="image">Architectural Diagram</option>
-                <option value="document">External Syllabus Doc</option>
-              </select>
-            </div>
+                <div>
+                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                    Lesson (Optional)
+                  </label>
+                  <select
+                    value={formLessonId}
+                    onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                  >
+                    <option value="">-- All Lessons --</option>
+                    {(lessons || [])
+                      .filter((l: any) => l.topicId === formTopicId)
+                      .map((l: any) => (
+                        <option key={l._id} value={l._id}>
+                          {l.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                Publication Status
-              </label>
-              <button
-                type="button"
-                onClick={() => setFormPublished(!formPublished)}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
-                  formPublished
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                    : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
-                }`}
-              >
-                {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                <span>{formPublished ? "Live" : "Draft"}</span>
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                File Attachment (PDF / Img)
-              </label>
-              <label className="w-full py-2.5 px-3 rounded-xl bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-blueprint-500 text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors">
-                {uploadingFile ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-blueprint-500" />
-                ) : (
-                  <Upload className="w-4 h-4 text-studio-400" />
-                )}
-                <span className="truncate">
-                  {formStorageId ? "File Attached ✓" : "Upload File"}
-                </span>
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Article Title
+                </label>
                 <input
-                  type="file"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                  type="text"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  placeholder="e.g., National Building Code (PD 1096) Rule VII & VIII Summary"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
                 />
-              </label>
-            </div>
-          </div>
+              </div>
 
-          {/* Markdown Editor Pane */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
-                Markdown Note Content
-              </label>
-              <div className="flex items-center gap-1 bg-studio-100 dark:bg-studio-800 p-1 rounded-lg border border-studio-200 dark:border-studio-700 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode("write")}
-                  className={`px-2 py-0.5 rounded ${previewMode === "write" ? "bg-blueprint-600 text-white font-semibold" : "text-studio-500"}`}
-                >
-                  Write
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode("split")}
-                  className={`px-2 py-0.5 rounded ${previewMode === "split" ? "bg-blueprint-600 text-white font-semibold" : "text-studio-500"}`}
-                >
-                  Split
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewMode("preview")}
-                  className={`px-2 py-0.5 rounded ${previewMode === "preview" ? "bg-blueprint-600 text-white font-semibold" : "text-studio-500"}`}
-                >
-                  Preview
-                </button>
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Short Description (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="e.g., Comprehensive guide to Doric, Ionic, and Corinthian columns."
+                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                    Format Type
+                  </label>
+                  <select
+                    value={formType}
+                    onChange={(e) => setFormType(e.target.value as any)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                  >
+                    <option value="article">Article</option>
+                    <option value="pdf">PDF</option>
+                    <option value="image">Diagram</option>
+                    <option value="document">Document</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                    Status
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setFormPublished(!formPublished)}
+                    className={`w-full py-2.5 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                      formPublished
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                        : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
+                    }`}
+                  >
+                    {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    <span>{formPublished ? "Live" : "Draft"}</span>
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                    Attachment
+                  </label>
+                  <label className="w-full py-2.5 px-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-blueprint-500 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
+                    {uploadingFile ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-blueprint-500" />
+                    ) : (
+                      <Upload className="w-4 h-4 text-studio-400" />
+                    )}
+                    <span className="truncate">
+                      {formStorageId ? "Attached ✓" : "Upload"}
+                    </span>
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {(previewMode === "write" || previewMode === "split") && (
-                <textarea
-                  value={formContent}
-                  onChange={(e) => setFormContent(e.target.value)}
-                  placeholder="# Markdown Title&#10;&#10;Write comprehensive study materials here..."
-                  rows={8}
-                  className={`w-full p-4 font-mono text-xs rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 focus:outline-none focus:ring-2 focus:ring-blueprint-500 ${previewMode === "write" ? "md:col-span-2" : ""}`}
-                />
-              )}
-
-              {(previewMode === "preview" || previewMode === "split") && (
-                <div
-                  className={`p-4 rounded-xl bg-studio-50 dark:bg-studio-900 border border-studio-200 dark:border-studio-700 overflow-y-auto max-h-56 text-xs prose dark:prose-invert prose-headings:font-bold prose-headings:text-studio-900 dark:prose-headings:text-studio-100 ${previewMode === "preview" ? "md:col-span-2" : ""}`}
-                >
-                  <div className="whitespace-pre-wrap font-sans">
-                    {formContent || <span className="text-studio-400 italic">Preview will appear here...</span>}
-                  </div>
+            {/* Right Column: Markdown Editor & Preview */}
+            <div className="lg:col-span-7 flex flex-col min-w-0 space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
+                  Markdown Note Content
+                </label>
+                <div className="flex items-center gap-1 bg-studio-100 dark:bg-studio-800 p-1 rounded-lg border border-studio-200 dark:border-studio-700 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("write")}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${
+                      previewMode === "write"
+                        ? "bg-blueprint-600 text-white font-semibold shadow-sm"
+                        : "text-studio-500 hover:text-studio-900 dark:hover:text-studio-100"
+                    }`}
+                  >
+                    Write
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("split")}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${
+                      previewMode === "split"
+                        ? "bg-blueprint-600 text-white font-semibold shadow-sm"
+                        : "text-studio-500 hover:text-studio-900 dark:hover:text-studio-100"
+                    }`}
+                  >
+                    Split
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("preview")}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${
+                      previewMode === "preview"
+                        ? "bg-blueprint-600 text-white font-semibold shadow-sm"
+                        : "text-studio-500 hover:text-studio-900 dark:hover:text-studio-100"
+                    }`}
+                  >
+                    Preview
+                  </button>
                 </div>
-              )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+                {(previewMode === "write" || previewMode === "split") && (
+                  <textarea
+                    value={formContent}
+                    onChange={(e) => setFormContent(e.target.value)}
+                    placeholder="# Markdown Title&#10;&#10;Write comprehensive study materials here..."
+                    className={`w-full h-80 p-4 font-mono text-xs rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 focus:outline-none focus:ring-2 focus:ring-blueprint-500 resize-none ${
+                      previewMode === "write" ? "md:col-span-2" : ""
+                    }`}
+                  />
+                )}
+
+                {(previewMode === "preview" || previewMode === "split") && (
+                  <div
+                    className={`p-4 rounded-xl bg-studio-50 dark:bg-studio-900 border border-studio-200 dark:border-studio-700 overflow-y-auto h-80 text-xs markdown-preview ${
+                      previewMode === "preview" ? "md:col-span-2" : ""
+                    }`}
+                  >
+                    {formContent ? (
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: marked.parse(formContent) as string,
+                        }}
+                      />
+                    ) : (
+                      <span className="text-studio-400 italic">Preview will appear here...</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </form>

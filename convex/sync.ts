@@ -406,7 +406,7 @@ export const syncLessonProgressBatch = mutation({
       return { synced: [] };
     }
 
-    const synced = [];
+    const synced: { lessonId: string; serverId: any }[] = [];
 
     for (const p of args.progress) {
       // Find existing progress record
@@ -472,7 +472,7 @@ export const syncUserPresetsBatch = mutation({
       return { synced: [] };
     }
 
-    const synced = [];
+    const synced: { localId: string; serverId: any }[] = [];
 
     for (const p of args.presets) {
       const existing = await ctx.db

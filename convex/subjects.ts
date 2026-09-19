@@ -125,8 +125,11 @@ export const getFullCurriculum = query({
       const mappedTopics = subTopics.map((top, tIdx) => {
         const topLessons = lessons.filter((l) => l.topicId === top._id);
         const mappedLessons = topLessons.map((les, lIdx) => {
-          const mat = materials.find((m) => m.lessonId === les._id || m.topicId === top._id);
-          const summary = mat?.description || les.description || "Core syllabus competencies and architectural provisions.";
+          const mat = materials.find((m) => m.lessonId === les._id) || materials.find((m) => m.topicId === top._id);
+          const rawDesc = (mat?.description && mat.description.trim()) || (les.description && les.description.trim()) || "";
+          const description = rawDesc.length > 0 ? rawDesc : undefined;
+          const content = (mat?.content && mat.content.trim()) || undefined;
+          const summary = description || "Core syllabus competencies and architectural provisions.";
           let keyPoints: string[] = [];
           if (mat?.content) {
             const bulletLines = mat.content
@@ -156,6 +159,8 @@ export const getFullCurriculum = query({
             duration: "10 min",
             summary,
             keyPoints,
+            description,
+            content,
           };
         });
 

@@ -16,7 +16,7 @@ import {
   Target,
   User,
 } from 'lucide-react-native';
-import type { Tabs } from 'expo-router';
+import { usePathname, type Tabs } from 'expo-router';
 
 import { ThemePalette } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
@@ -167,6 +167,7 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
   const [barWidth, setBarWidth] = useState(0);
 
   const currentRoute = state.routes[state.index] as any;
+  const pathname = usePathname() || '';
   const activeRouteName = currentRoute?.name;
 
   // Find index of current route in TAB_CONFIGS
@@ -185,7 +186,14 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
   const isTabHiddenByOptions =
     (focusedDescriptor?.options?.tabBarStyle as any)?.display === 'none';
 
-  if (isNestedSubScreen || isTabHiddenByOptions) {
+  // Sub-screens that require full focus without bottom tab bar
+  const isImmersiveSubScreen =
+    pathname.includes('flashcards') ||
+    pathname.includes('notes/') ||
+    pathname.includes('quiz') ||
+    pathname.includes('session');
+
+  if (isNestedSubScreen || isTabHiddenByOptions || isImmersiveSubScreen) {
     return null;
   }
 
