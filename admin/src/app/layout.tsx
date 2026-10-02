@@ -5,7 +5,7 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
-  title: "LICENSIFY Studio — Board Exam Admin Portal",
+  title: "P App — Admin Portal",
   description: "Architecture Licensure Examination (ALE) content management dashboard & question bank studio.",
 };
 

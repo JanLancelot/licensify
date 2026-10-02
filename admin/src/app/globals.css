@@ -4,52 +4,88 @@
 
 @layer base {
   :root {
-    --background: #FBFBFC;
-    --foreground: #111827;
-    --card: #ffffff;
-    --card-foreground: #111827;
-    --border: #E5E7EB;
-    --input: #E5E7EB;
-    --ring: #C85A32;
+    color-scheme: light;
+    --background: #F7F7F2;
+    --foreground: #23271C;
+    --card: #FFFFFF;
+    --card-foreground: #23271C;
+    --border: #DEDFD4;
+    --input: #DEDFD4;
+    --ring: #6C6500;
   }
 
   .dark {
-    --background: #121316;
-    --foreground: #F9FAFB;
-    --card: #1A1C20;
-    --card-foreground: #F9FAFB;
-    --border: #272A30;
-    --input: #272A30;
-    --ring: #E07A5F;
+    color-scheme: dark;
+    --background: #171A12;
+    --foreground: #F7F7F2;
+    --card: #23271C;
+    --card-foreground: #F7F7F2;
+    --border: #414635;
+    --input: #414635;
+    --ring: #E3D200;
   }
 
   body {
-    @apply bg-studio-50 dark:bg-studio-950 text-studio-900 dark:text-studio-50 min-h-screen antialiased selection:bg-terracotta-500 selection:text-white transition-colors duration-200;
+    @apply bg-studio-50 dark:bg-studio-950 text-studio-900 dark:text-studio-50 min-h-screen antialiased font-sans selection:bg-brand-yellow selection:text-brand-olive;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  input, select, textarea {
+    accent-color: #797100;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
   }
 }
 
-/* Architectural grid subtle background pattern */
-.bg-blueprint-grid {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(200, 90, 50, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(200, 90, 50, 0.04) 1px, transparent 1px);
+@layer components {
+  .surface-panel {
+    @apply bg-white dark:bg-studio-900 border border-studio-200 dark:border-studio-800 shadow-card dark:shadow-card-dark;
+  }
+
+  .surface-modal {
+    @apply bg-white dark:bg-studio-900 border border-studio-200 dark:border-studio-700 shadow-2xl;
+  }
+
+  .btn-primary {
+    @apply bg-brand-yellow text-brand-olive hover:bg-brand-300 active:bg-brand-200 disabled:opacity-60 transition-colors;
+  }
+
+  .brand-mark {
+    @apply inline-flex shrink-0 items-center justify-center rounded-lg bg-white;
+  }
+
+  .brand-sidebar {
+    --ring: #E3D200;
+  }
+
+  .brand-banner::after {
+    content: "";
+    position: absolute;
+    top: -2rem;
+    right: -1.5rem;
+    width: 10rem;
+    height: 15rem;
+    background: #E3D200;
+    opacity: 0.09;
+    clip-path: polygon(60% 0, 100% 0, 40% 100%, 0 100%);
+    pointer-events: none;
+  }
 }
 
-.dark .bg-blueprint-grid {
-  background-image: 
-    linear-gradient(to right, rgba(224, 122, 95, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(224, 122, 95, 0.06) 1px, transparent 1px);
-}
-
-/* Glassmorphism surfaces */
-.glass-panel {
-  @apply bg-white/80 dark:bg-studio-900/80 backdrop-blur-md border border-studio-200/80 dark:border-studio-800/80 shadow-card dark:shadow-card-dark;
-}
-
-.glass-modal {
-  @apply bg-white/95 dark:bg-studio-900/95 backdrop-blur-xl border border-studio-200 dark:border-studio-700/60 shadow-2xl;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Custom sleek scrollbar */
@@ -121,13 +157,13 @@
   @apply italic;
 }
 .markdown-preview blockquote {
-  @apply border-l-4 border-blueprint-500 pl-3 italic text-studio-600 dark:text-studio-400 my-2.5;
+  @apply border-l-4 border-brand-500 pl-3 italic text-studio-600 dark:text-studio-400 my-2.5;
 }
 .markdown-preview code {
-  @apply px-1 py-0.5 rounded bg-studio-200/80 dark:bg-studio-800 font-mono text-[11px] text-blueprint-600 dark:text-blueprint-400;
+  @apply px-1 py-0.5 rounded bg-studio-200/80 dark:bg-studio-800 font-mono text-[11px] text-brand-600 dark:text-brand-400;
 }
 .markdown-preview pre {
-  @apply p-3 rounded-xl bg-studio-900 text-studio-100 font-mono text-[11px] overflow-x-auto my-2.5;
+  @apply p-3 rounded-lg bg-studio-900 text-studio-100 font-mono text-[11px] overflow-x-auto my-2.5;
 }
 .markdown-preview pre code {
   @apply p-0 bg-transparent text-studio-100;
@@ -145,5 +181,5 @@
   @apply border border-studio-200 dark:border-studio-700 p-2 text-studio-700 dark:text-studio-300;
 }
 .markdown-preview a {
-  @apply text-blueprint-600 dark:text-blueprint-400 underline hover:opacity-80;
+  @apply text-brand-600 dark:text-brand-400 underline hover:opacity-80;
 }

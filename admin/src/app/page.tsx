@@ -13,7 +13,6 @@ import {
   Users,
   PlusCircle,
   ArrowRight,
-  Sparkles,
   Loader2,
 } from "lucide-react";
 
@@ -26,8 +25,8 @@ export default function DashboardOverviewPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blueprint-500 animate-spin" />
-          <p className="text-sm text-studio-500">Loading curriculum metrics...</p>
+          <Loader2 className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-spin" />
+          <p className="text-sm text-studio-500 dark:text-studio-400">Loading curriculum metrics...</p>
         </div>
       </div>
     );
@@ -36,7 +35,7 @@ export default function DashboardOverviewPage() {
   if (stats === null) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-center p-8 glass-panel rounded-2xl border max-w-md">
+        <div className="text-center p-8 surface-panel rounded-xl border max-w-md">
           <p className="text-sm font-semibold text-studio-700 dark:text-studio-300">
             Unable to load dashboard telemetry.
           </p>
@@ -51,22 +50,21 @@ export default function DashboardOverviewPage() {
   const { totals, questionsByDifficulty, usersByRole, subjectBreakdown, recentQuestions } = stats;
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Welcome Banner */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blueprint-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      <div className="surface-panel brand-banner p-6 sm:p-7 rounded-xl border relative overflow-hidden">
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 text-xs font-semibold uppercase tracking-wider mb-3 border border-blueprint-500/20">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>LICENSIFY • ALE Studio Hub</span>
+            <div className="inline-flex items-center gap-2 text-brand-700 dark:text-brand-400 text-[10px] font-semibold uppercase tracking-[0.16em] mb-3">
+              <span className="w-1.5 h-1.5 bg-brand-yellow" aria-hidden="true" />
+              <span>Your curriculum workspace</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-studio-900 dark:text-studio-50 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-studio-900 dark:text-studio-50 tracking-tight">
               Welcome back, {user?.firstName || user?.username || "Architect"}!
             </h2>
             <p className="text-sm text-studio-600 dark:text-studio-400 mt-1 max-w-2xl">
-              Curate the Architecture Licensure Examination curriculum. Manage questions, study notes, spaced-repetition flashcards, and mock assessments in real time.
+              Build the next generation of architects. Your curriculum, content, and candidates at a glance.
             </p>
           </div>
 
@@ -74,23 +72,23 @@ export default function DashboardOverviewPage() {
           <div className="flex flex-wrap items-center gap-2.5">
             <NextLink
               href="/questions"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 active:scale-[0.98] text-white text-xs font-semibold shadow-sm shadow-blueprint-500/30 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg btn-primary active:scale-[0.98] text-xs font-semibold shadow-sm transition-all"
             >
               <PlusCircle className="w-4 h-4" />
               <span>New Question</span>
             </NextLink>
             <NextLink
               href="/curriculum"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-studio-200/80 dark:bg-studio-800 hover:bg-studio-300/80 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold transition-all border border-studio-300/50 dark:border-studio-700/50"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-studio-200/80 dark:bg-studio-800 hover:bg-studio-300/80 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold transition-all border border-studio-300/50 dark:border-studio-700/50"
             >
-              <Layers className="w-4 h-4 text-blueprint-500" />
+              <Layers className="w-4 h-4 text-brand-600 dark:text-brand-400" />
               <span>New Subject</span>
             </NextLink>
             <NextLink
               href="/materials"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-studio-200/80 dark:bg-studio-800 hover:bg-studio-300/80 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold transition-all border border-studio-300/50 dark:border-studio-700/50"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-studio-200/80 dark:bg-studio-800 hover:bg-studio-300/80 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold transition-all border border-studio-300/50 dark:border-studio-700/50"
             >
-              <BookOpen className="w-4 h-4 text-accent-emerald" />
+              <BookOpen className="w-4 h-4 text-brand-600 dark:text-brand-400" />
               <span>Add Note</span>
             </NextLink>
           </div>
@@ -98,22 +96,22 @@ export default function DashboardOverviewPage() {
       </div>
 
       {/* KPI Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Questions */}
-        <div className="glass-panel p-5 rounded-2xl border flex flex-col justify-between hover:border-blueprint-500/40 transition-colors group">
+        <div className="surface-panel p-5 rounded-xl border flex flex-col justify-between hover:border-brand-500/40 transition-colors group">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-studio-500 dark:text-studio-400">
-              Questions Bank
+              Question Bank
             </span>
-            <div className="w-9 h-9 rounded-xl bg-blueprint-500/10 flex items-center justify-center text-blueprint-500 group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
               <FileQuestion className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-studio-900 dark:text-studio-50">
+            <div className="text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight text-studio-900 dark:text-studio-50">
               {totals.questions}
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-studio-500">
+            <div className="flex items-center gap-2 mt-1 text-xs text-studio-500 dark:text-studio-400">
               <span className="text-emerald-500 font-medium">{totals.publishedQuestions} live</span>
               <span>•</span>
               <span>{totals.questions - totals.publishedQuestions} draft</span>
@@ -122,60 +120,60 @@ export default function DashboardOverviewPage() {
         </div>
 
         {/* Subjects & Topics */}
-        <div className="glass-panel p-5 rounded-2xl border flex flex-col justify-between hover:border-blueprint-500/40 transition-colors group">
+        <div className="surface-panel p-5 rounded-xl border flex flex-col justify-between hover:border-brand-500/40 transition-colors group">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-studio-500 dark:text-studio-400">
               Curriculum Areas
             </span>
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
               <Layers className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-studio-900 dark:text-studio-50">
+            <div className="text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight text-studio-900 dark:text-studio-50">
               {totals.subjects}
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-studio-500">
+            <div className="flex items-center gap-2 mt-1 text-xs text-studio-500 dark:text-studio-400">
               <span>{totals.topics} topics defined</span>
             </div>
           </div>
         </div>
 
         {/* Flashcards & Materials */}
-        <div className="glass-panel p-5 rounded-2xl border flex flex-col justify-between hover:border-blueprint-500/40 transition-colors group">
+        <div className="surface-panel p-5 rounded-xl border flex flex-col justify-between hover:border-brand-500/40 transition-colors group">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-studio-500 dark:text-studio-400">
               Flashcards / Notes
             </span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
               <GalleryVerticalEnd className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-studio-900 dark:text-studio-50">
+            <div className="text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight text-studio-900 dark:text-studio-50">
               {totals.flashcards}
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-studio-500">
+            <div className="flex items-center gap-2 mt-1 text-xs text-studio-500 dark:text-studio-400">
               <span>{totals.materials} study articles</span>
             </div>
           </div>
         </div>
 
         {/* Mock Exams & Users */}
-        <div className="glass-panel p-5 rounded-2xl border flex flex-col justify-between hover:border-blueprint-500/40 transition-colors group">
+        <div className="surface-panel p-5 rounded-xl border flex flex-col justify-between hover:border-brand-500/40 transition-colors group">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-studio-500 dark:text-studio-400">
               Mock Exams & Students
             </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+            <div className="w-9 h-9 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
               <Award className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
-            <div className="text-2xl sm:text-3xl font-black tracking-tight text-studio-900 dark:text-studio-50">
+            <div className="text-3xl sm:text-4xl font-semibold tabular-nums tracking-tight text-studio-900 dark:text-studio-50">
               {totals.quizzes}
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-studio-500">
+            <div className="flex items-center gap-2 mt-1 text-xs text-studio-500 dark:text-studio-400">
               <span>{totals.users} active candidates</span>
             </div>
           </div>
@@ -185,18 +183,18 @@ export default function DashboardOverviewPage() {
       {/* Curriculum Health & Difficulty Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Subject Breakdown List */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-3xl border flex flex-col justify-between">
+        <div className="lg:col-span-2 surface-panel p-6 rounded-xl border flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-bold text-base text-studio-900 dark:text-studio-100">
                   Curriculum Domain Balance
                 </h3>
-                <p className="text-xs text-studio-500">Questions and content distribution per ALE board subject</p>
+                <p className="text-xs text-studio-500 dark:text-studio-400">Questions and content distribution per ALE board subject</p>
               </div>
               <NextLink
                 href="/curriculum"
-                className="text-xs font-semibold text-blueprint-600 dark:text-blueprint-400 hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
               >
                 <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -213,7 +211,7 @@ export default function DashboardOverviewPage() {
                 subjectBreakdown.map((subj) => (
                   <div
                     key={subj._id}
-                    className="p-4 rounded-2xl bg-studio-100/50 dark:bg-studio-850/50 border border-studio-200/60 dark:border-studio-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    className="p-4 rounded-xl bg-studio-100/50 dark:bg-studio-850/50 border border-studio-200/60 dark:border-studio-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   >
                     <div>
                       <div className="flex items-center gap-2">
@@ -225,12 +223,12 @@ export default function DashboardOverviewPage() {
                             Live
                           </span>
                         ) : (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-studio-500/10 text-studio-500 border border-studio-500/20">
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-studio-500/10 text-studio-500 dark:text-studio-400 border border-studio-500/20">
                             Draft
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-studio-500 mt-0.5">
+                      <p className="text-xs text-studio-500 dark:text-studio-400 mt-0.5">
                         {subj.topicsCount} Topics • {subj.flashcardsCount} Flashcards • {subj.materialsCount} Notes
                       </p>
                     </div>
@@ -243,7 +241,7 @@ export default function DashboardOverviewPage() {
                       </div>
                       <NextLink
                         href={`/questions?subject=${subj._id}`}
-                        className="p-2 rounded-xl text-studio-500 hover:text-blueprint-600 hover:bg-blueprint-500/10 transition-colors"
+                        className="p-2 rounded-lg text-studio-500 dark:text-studio-400 hover:text-brand-600 hover:bg-brand-500/10 transition-colors"
                       >
                         <ArrowRight className="w-4 h-4" />
                       </NextLink>
@@ -256,12 +254,12 @@ export default function DashboardOverviewPage() {
         </div>
 
         {/* Question Difficulty & Quick Stats */}
-        <div className="glass-panel p-6 rounded-3xl border flex flex-col justify-between space-y-6">
+        <div className="surface-panel p-6 rounded-xl border flex flex-col justify-between space-y-6">
           <div>
             <h3 className="font-bold text-base text-studio-900 dark:text-studio-100 mb-1">
               Question Difficulty Mix
             </h3>
-            <p className="text-xs text-studio-500 mb-4">Balance across board exam complexity tiers</p>
+            <p className="text-xs text-studio-500 dark:text-studio-400 mb-4">Balance across board exam complexity tiers</p>
 
             <div className="space-y-3">
               <div>
@@ -281,7 +279,7 @@ export default function DashboardOverviewPage() {
 
               <div>
                 <div className="flex justify-between text-xs font-medium mb-1">
-                  <span className="text-amber-500">Medium</span>
+                  <span className="text-amber-700 dark:text-amber-400">Medium</span>
                   <span className="font-bold">{questionsByDifficulty.medium}</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-studio-200 dark:bg-studio-800 overflow-hidden">
@@ -312,14 +310,14 @@ export default function DashboardOverviewPage() {
           </div>
 
           {/* Quick Staff info */}
-          <div className="p-4 rounded-2xl bg-blueprint-500/5 border border-blueprint-500/20">
+          <div className="p-4 rounded-xl bg-brand-500/5 border border-brand-500/20">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-4 h-4 text-blueprint-500" />
+              <Users className="w-4 h-4 text-brand-600 dark:text-brand-400" />
               <span className="text-xs font-bold text-studio-900 dark:text-studio-100">
                 Staff & Candidate Access
               </span>
             </div>
-            <div className="text-xs text-studio-500 space-y-1">
+            <div className="text-xs text-studio-500 dark:text-studio-400 space-y-1">
               <p>Admins: <strong className="text-studio-800 dark:text-studio-200">{usersByRole.admin}</strong></p>
               <p>Content Managers: <strong className="text-studio-800 dark:text-studio-200">{usersByRole.content_manager}</strong></p>
               <p>Registered Students: <strong className="text-studio-800 dark:text-studio-200">{usersByRole.student}</strong></p>
@@ -329,17 +327,17 @@ export default function DashboardOverviewPage() {
       </div>
 
       {/* Recent Questions Feed */}
-      <div className="glass-panel p-6 rounded-3xl border">
+      <div className="surface-panel p-6 rounded-xl border">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-base text-studio-900 dark:text-studio-100">
               Recently Created Questions
             </h3>
-            <p className="text-xs text-studio-500">Latest additions to the ALE question pool</p>
+            <p className="text-xs text-studio-500 dark:text-studio-400">Latest additions to the ALE question pool</p>
           </div>
           <NextLink
             href="/questions"
-            className="text-xs font-semibold text-blueprint-600 dark:text-blueprint-400 hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
           >
             <span>Open Question Studio</span>
             <ArrowRight className="w-3.5 h-3.5" />

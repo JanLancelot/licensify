@@ -163,8 +163,8 @@ export default function FlashcardsPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blueprint-500 animate-spin" />
-          <p className="text-sm text-studio-500">Loading flashcard studio...</p>
+          <Loader2 className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-spin" />
+          <p className="text-sm text-studio-500 dark:text-studio-400">Loading flashcard studio...</p>
         </div>
       </div>
     );
@@ -193,7 +193,7 @@ export default function FlashcardsPage() {
         </div>
         <button
           onClick={openCreateModal}
-          className="px-4 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 active:scale-[0.98] text-white text-xs font-semibold flex items-center gap-2 shadow-sm shadow-blueprint-500/30 transition-all"
+          className="px-4 py-2.5 rounded-lg btn-primary active:scale-[0.98] text-xs font-semibold flex items-center gap-2 shadow-sm transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>New Flashcard</span>
@@ -201,9 +201,9 @@ export default function FlashcardsPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="glass-panel p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3">
+      <div className="surface-panel p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-studio-500">
+          <div className="flex items-center gap-2 text-xs font-semibold text-studio-500 dark:text-studio-400">
             <Filter className="w-4 h-4" />
             <span>Deck:</span>
           </div>
@@ -214,7 +214,7 @@ export default function FlashcardsPage() {
               setSelectedSubject(e.target.value);
               setSelectedTopic("all");
             }}
-            className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="all">All Board Subjects ({flashcards.length})</option>
             {subjects.map((s: any) => (
@@ -228,7 +228,7 @@ export default function FlashcardsPage() {
             <select
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="all">All Topics</option>
               {availableTopics.map((t: any) => (
@@ -240,24 +240,24 @@ export default function FlashcardsPage() {
           )}
         </div>
 
-        <span className="text-xs text-studio-500">
+        <span className="text-xs text-studio-500 dark:text-studio-400">
           Showing <strong className="text-studio-800 dark:text-studio-200">{filteredCards.length}</strong> flashcards
         </span>
       </div>
 
       {/* Interactive 3D Flashcards Grid */}
       {filteredCards.length === 0 ? (
-        <div className="glass-panel p-12 text-center rounded-3xl border">
+        <div className="surface-panel p-12 text-center rounded-xl border">
           <GalleryVerticalEnd className="w-12 h-12 text-studio-400 mx-auto mb-3 opacity-60" />
           <h3 className="text-base font-semibold text-studio-900 dark:text-studio-100">
             No Flashcards in this Deck
           </h3>
-          <p className="text-xs text-studio-500 mt-1 mb-4">
+          <p className="text-xs text-studio-500 dark:text-studio-400 mt-1 mb-4">
             Build active-recall decks to help examinees drill essential terms and formulas.
           </p>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 rounded-xl bg-blueprint-600 text-white text-xs font-semibold shadow-sm"
+            className="px-4 py-2 rounded-lg btn-primary text-xs font-semibold shadow-sm"
           >
             Create Flashcard
           </button>
@@ -274,15 +274,15 @@ export default function FlashcardsPage() {
                 {/* 3D Flip Card Container */}
                 <div
                   onClick={() => toggleFlip(card._id)}
-                  className={`relative w-full h-64 rounded-3xl cursor-pointer transition-transform duration-500 transform-style-3d ${
+                  className={`relative w-full h-64 rounded-xl cursor-pointer transition-transform duration-500 transform-style-3d ${
                     isFlipped ? "rotate-y-180" : ""
                   }`}
                 >
                   {/* FRONT SIDE */}
-                  <div className="absolute inset-0 w-full h-full p-6 glass-panel rounded-3xl border border-studio-200 dark:border-studio-800 backface-hidden flex flex-col justify-between shadow-card hover:shadow-glow transition-shadow">
+                  <div className="absolute inset-0 w-full h-full p-6 surface-panel rounded-xl border border-studio-200 dark:border-studio-800 backface-hidden flex flex-col justify-between shadow-card hover:shadow-md transition-shadow">
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-blueprint-600 dark:text-blueprint-400 px-2 py-0.5 rounded bg-blueprint-500/10 border border-blueprint-500/20">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 px-2 py-0.5 rounded bg-brand-500/10 border border-brand-500/20">
                           Prompt / Front
                         </span>
                         {card.isPublished ? (
@@ -298,14 +298,14 @@ export default function FlashcardsPage() {
 
                     <div className="flex items-center justify-between text-[11px] text-studio-400 pt-3 border-t border-studio-200/60 dark:border-studio-800/60">
                       <span className="truncate max-w-[160px]">{subj?.name}</span>
-                      <span className="flex items-center gap-1 text-blueprint-500 font-semibold">
+                      <span className="flex items-center gap-1 text-brand-600 dark:text-brand-400 font-semibold">
                         <RotateCw className="w-3 h-3" /> Flip Card
                       </span>
                     </div>
                   </div>
 
                   {/* BACK SIDE */}
-                  <div className="absolute inset-0 w-full h-full p-6 glass-panel rounded-3xl border border-blueprint-500/30 bg-blueprint-50/40 dark:bg-blueprint-950/30 backface-hidden rotate-y-180 flex flex-col justify-between shadow-glow">
+                  <div className="absolute inset-0 w-full h-full p-6 surface-panel rounded-xl border border-brand-500/30 bg-brand-50/40 dark:bg-brand-950/30 backface-hidden rotate-y-180 flex flex-col justify-between shadow-card">
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
@@ -320,7 +320,7 @@ export default function FlashcardsPage() {
 
                     <div className="flex items-center justify-between text-[11px] text-studio-400 pt-3 border-t border-studio-200/60 dark:border-studio-800/60">
                       <span className="truncate max-w-[160px]">{top?.name || "General"}</span>
-                      <span className="flex items-center gap-1 text-blueprint-500 font-semibold">
+                      <span className="flex items-center gap-1 text-brand-600 dark:text-brand-400 font-semibold">
                         <RotateCw className="w-3 h-3" /> Flip Back
                       </span>
                     </div>
@@ -366,7 +366,7 @@ export default function FlashcardsPage() {
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -374,7 +374,7 @@ export default function FlashcardsPage() {
               type="submit"
               form="flashcard-form"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingCard ? "Save Changes" : "Create Flashcard"}</span>
@@ -396,7 +396,7 @@ export default function FlashcardsPage() {
                   setFormLessonId("");
                 }}
                 required
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 {subjects.map((s: any) => (
                   <option key={s._id} value={s._id}>
@@ -416,7 +416,7 @@ export default function FlashcardsPage() {
                   setFormTopicId(e.target.value as Id<"topics">);
                   setFormLessonId("");
                 }}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">-- General / Subject Level --</option>
                 {availableTopicsForForm.map((t: any) => (
@@ -434,7 +434,7 @@ export default function FlashcardsPage() {
               <select
                 value={formLessonId}
                 onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">-- Topic Level --</option>
                 {(lessons || [])
@@ -458,7 +458,7 @@ export default function FlashcardsPage() {
               placeholder="e.g., Minimum width of a ramp for accessible access under BP 344?"
               rows={3}
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -472,7 +472,7 @@ export default function FlashcardsPage() {
               placeholder="e.g., 1200 mm clear width with 1:12 maximum gradient slope."
               rows={3}
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -484,7 +484,7 @@ export default function FlashcardsPage() {
               <button
                 type="button"
                 onClick={() => setFormPublished(!formPublished)}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
                   formPublished
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                     : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
@@ -499,9 +499,9 @@ export default function FlashcardsPage() {
               <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                 Attach Diagram (Optional)
               </label>
-              <label className="w-full py-2.5 px-3 rounded-xl bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-blueprint-500 text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors">
+              <label className="w-full py-2.5 px-3 rounded-lg bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-brand-500 text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-colors">
                 {uploadingImage ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-blueprint-500" />
+                  <Loader2 className="w-4 h-4 animate-spin text-brand-600 dark:text-brand-400" />
                 ) : (
                   <Upload className="w-4 h-4 text-studio-400" />
                 )}
@@ -531,7 +531,7 @@ export default function FlashcardsPage() {
             <button
               type="button"
               onClick={() => setDeleteConfirm(null)}
-              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -539,7 +539,7 @@ export default function FlashcardsPage() {
               type="button"
               onClick={handleDelete}
               disabled={saving}
-              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
+              className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
             >
               {saving ? "Deleting..." : "Delete Flashcard"}
             </button>

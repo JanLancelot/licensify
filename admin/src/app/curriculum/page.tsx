@@ -397,7 +397,7 @@ export default function CurriculumPage() {
     return (
       <div
         key={topic._id}
-        className="rounded-xl bg-white dark:bg-studio-900 border border-studio-200/80 dark:border-studio-800/80 overflow-hidden shadow-sm hover:border-blueprint-500/30 transition-colors"
+        className="rounded-lg bg-white dark:bg-studio-900 border border-studio-200/80 dark:border-studio-800/80 overflow-hidden shadow-sm hover:border-brand-500/30 transition-colors"
       >
         {/* TOPIC HEADER */}
         <div className="p-3 sm:p-3.5 flex items-center justify-between gap-3 bg-studio-100/30 dark:bg-studio-800/30">
@@ -412,7 +412,7 @@ export default function CurriculumPage() {
                 <ChevronRight className="w-3.5 h-3.5" />
               )}
             </button>
-            <span className="text-xs font-mono font-semibold text-blueprint-600 dark:text-blueprint-400 bg-blueprint-500/10 px-1.5 py-0.5 rounded">
+            <span className="text-xs font-mono font-semibold text-brand-600 dark:text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded">
               {subj.order}.{topic.order}
             </span>
             <div className="truncate">
@@ -420,7 +420,7 @@ export default function CurriculumPage() {
                 {topic.name}
               </h4>
               {topic.description && (
-                <p className="text-[11px] text-studio-500 truncate">
+                <p className="text-[11px] text-studio-500 dark:text-studio-400 truncate">
                   {topic.description}
                 </p>
               )}
@@ -431,7 +431,7 @@ export default function CurriculumPage() {
             <button
               onClick={() => openCreateLesson(subj._id, topic._id)}
               title="Add Lesson under this Topic"
-              className="px-2 py-1 rounded bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 hover:bg-blueprint-500/20 text-[11px] font-semibold flex items-center gap-1 transition-colors"
+              className="px-2 py-1 rounded bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20 text-[11px] font-semibold flex items-center gap-1 transition-colors"
             >
               <Plus className="w-3 h-3" />
               <span>Add Lesson</span>
@@ -473,7 +473,7 @@ export default function CurriculumPage() {
                   className="p-2.5 rounded-lg bg-studio-100/50 dark:bg-studio-800/50 border border-studio-200/50 dark:border-studio-700/50 flex items-center justify-between gap-3 hover:bg-studio-100 dark:hover:bg-studio-800 transition-colors"
                 >
                   <div className="flex items-center gap-2.5 overflow-hidden">
-                    <BookOpen className="w-3.5 h-3.5 text-blueprint-500 flex-shrink-0" />
+                    <BookOpen className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400 flex-shrink-0" />
                     <span className="text-[11px] font-mono font-medium text-studio-400">
                       {subj.order}.{topic.order}.{les.order}
                     </span>
@@ -487,13 +487,13 @@ export default function CurriculumPage() {
                             Live
                           </span>
                         ) : (
-                          <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-studio-500/10 text-studio-500">
+                          <span className="text-[9px] font-medium px-1.5 py-0.2 rounded bg-studio-500/10 text-studio-500 dark:text-studio-400">
                             Draft
                           </span>
                         )}
                       </div>
                       {les.description && (
-                        <p className="text-[10px] text-studio-500 truncate">
+                        <p className="text-[10px] text-studio-500 dark:text-studio-400 truncate">
                           {les.description}
                         </p>
                       )}
@@ -535,8 +535,8 @@ export default function CurriculumPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blueprint-500 animate-spin" />
-          <p className="text-sm text-studio-500">Loading 3-tier curriculum hierarchy...</p>
+          <Loader2 className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-spin" />
+          <p className="text-sm text-studio-500 dark:text-studio-400">Loading 3-tier curriculum hierarchy...</p>
         </div>
       </div>
     );
@@ -559,28 +559,28 @@ export default function CurriculumPage() {
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
             onClick={() => openCreateLesson()}
-            className="px-3.5 py-2.5 rounded-xl bg-blueprint-500/10 hover:bg-blueprint-500/20 text-blueprint-600 dark:text-blueprint-400 text-xs font-semibold flex items-center gap-1.5 transition-all border border-blueprint-500/20"
+            className="px-3.5 py-2.5 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-xs font-semibold flex items-center gap-1.5 transition-all border border-brand-500/20"
           >
             <Plus className="w-4 h-4" />
             <span>Add Lesson</span>
           </button>
           <button
             onClick={() => openCreateTopic()}
-            className="px-3.5 py-2.5 rounded-xl bg-studio-200/80 dark:bg-studio-800 hover:bg-studio-300 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold flex items-center gap-1.5 transition-all border border-studio-300/50 dark:border-studio-700/50"
+            className="px-3.5 py-2.5 rounded-lg bg-studio-200/80 dark:bg-studio-800 hover:bg-studio-300 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold flex items-center gap-1.5 transition-all border border-studio-300/50 dark:border-studio-700/50"
           >
-            <Plus className="w-4 h-4 text-blueprint-500" />
+            <Plus className="w-4 h-4 text-brand-600 dark:text-brand-400" />
             <span>Add Topic</span>
           </button>
           <button
             onClick={() => openCreateBranch()}
-            className="px-3.5 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-1.5 transition-all border border-amber-500/20"
+            className="px-3.5 py-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center gap-1.5 transition-all border border-amber-500/20"
           >
             <Plus className="w-4 h-4" />
             <span>Add Branch</span>
           </button>
           <button
             onClick={openCreateSubject}
-            className="px-4 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 active:scale-[0.98] text-white text-xs font-semibold flex items-center gap-2 shadow-sm shadow-blueprint-500/30 transition-all"
+            className="px-4 py-2.5 rounded-lg btn-primary active:scale-[0.98] text-xs font-semibold flex items-center gap-2 shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>New Subject Area</span>
@@ -591,7 +591,7 @@ export default function CurriculumPage() {
       {/* Subjects, Topics & Lessons 3-Tier Accordion */}
       <div className="space-y-4">
         {sortedSubjects.length === 0 ? (
-          <div className="text-center py-16 glass-panel rounded-2xl border">
+          <div className="text-center py-16 surface-panel rounded-xl border">
             <Layers className="w-10 h-10 text-studio-300 mx-auto mb-3" />
             <h3 className="text-sm font-semibold text-studio-700 dark:text-studio-300">
               No subjects registered in the syllabus yet.
@@ -601,7 +601,7 @@ export default function CurriculumPage() {
             </p>
             <button
               onClick={openCreateSubject}
-              className="px-4 py-2 rounded-xl bg-blueprint-600 text-white text-xs font-semibold shadow-sm"
+              className="px-4 py-2 rounded-lg btn-primary text-xs font-semibold shadow-sm"
             >
               Create Subject
             </button>
@@ -620,7 +620,7 @@ export default function CurriculumPage() {
             return (
               <div
                 key={subj._id}
-                className="glass-panel rounded-2xl border overflow-hidden transition-all"
+                className="surface-panel rounded-xl border overflow-hidden transition-all"
               >
                 {/* LEVEL 1: SUBJECT HEADER ROW */}
                 <div className="p-4 sm:p-5 flex items-center justify-between gap-4 bg-studio-100/40 dark:bg-studio-850/40">
@@ -635,7 +635,7 @@ export default function CurriculumPage() {
                         <ChevronRight className="w-4 h-4" />
                       )}
                     </button>
-                    <div className="w-7 h-7 rounded-lg bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 flex items-center justify-center font-mono font-bold text-xs">
+                    <div className="w-7 h-7 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center font-mono font-bold text-xs">
                       #{subj.order}
                     </div>
                     <div className="truncate">
@@ -648,13 +648,13 @@ export default function CurriculumPage() {
                             Live
                           </span>
                         ) : (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-studio-500/10 text-studio-500 border border-studio-500/20">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-studio-500/10 text-studio-500 dark:text-studio-400 border border-studio-500/20">
                             Draft
                           </span>
                         )}
                       </div>
                       {subj.description && (
-                        <p className="text-xs text-studio-500 truncate mt-0.5">
+                        <p className="text-xs text-studio-500 dark:text-studio-400 truncate mt-0.5">
                           {subj.description}
                         </p>
                       )}
@@ -673,7 +673,7 @@ export default function CurriculumPage() {
                     <button
                       onClick={() => openCreateTopic(subj._id)}
                       title="Add Topic under this Subject"
-                      className="px-2.5 py-1.5 rounded-lg bg-studio-200/80 dark:bg-studio-800 hover:bg-blueprint-600 hover:text-white text-studio-700 dark:text-studio-300 text-xs font-semibold flex items-center gap-1 transition-colors"
+                      className="px-2.5 py-1.5 rounded-lg bg-studio-200/80 dark:bg-studio-800 hover:bg-brand-yellow hover:text-brand-olive dark:hover:text-brand-olive text-studio-700 dark:text-studio-300 text-xs font-semibold flex items-center gap-1 transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Add Topic</span>
@@ -681,7 +681,7 @@ export default function CurriculumPage() {
                     <button
                       onClick={() => openEditSubject(subj)}
                       title="Edit Subject"
-                      className="p-1.5 rounded-lg text-studio-500 hover:text-studio-900 dark:hover:text-studio-100 hover:bg-studio-200/60 dark:hover:bg-studio-800 transition-colors"
+                      className="p-1.5 rounded-lg text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100 hover:bg-studio-200/60 dark:hover:bg-studio-800 transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -718,7 +718,7 @@ export default function CurriculumPage() {
                           return (
                             <div
                               key={br._id}
-                              className="rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 dark:border-amber-500/30 overflow-hidden shadow-sm space-y-2 p-3"
+                              className="rounded-lg bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 dark:border-amber-500/30 overflow-hidden shadow-sm space-y-2 p-3"
                             >
                               {/* BRANCH HEADER */}
                               <div className="flex items-center justify-between gap-3">
@@ -846,7 +846,7 @@ export default function CurriculumPage() {
             <button
               type="button"
               onClick={() => setSubjectModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -854,7 +854,7 @@ export default function CurriculumPage() {
               type="submit"
               form="subject-form"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingSubject ? "Save Changes" : "Create Subject"}</span>
@@ -873,7 +873,7 @@ export default function CurriculumPage() {
               onChange={(e) => setSubjName(e.target.value)}
               placeholder="e.g., 7_Theory of Architecture"
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -886,7 +886,7 @@ export default function CurriculumPage() {
               onChange={(e) => setSubjDesc(e.target.value)}
               placeholder="Overview of subject scope and syllabus content..."
               rows={3}
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -900,7 +900,7 @@ export default function CurriculumPage() {
                 min={1}
                 value={subjOrder}
                 onChange={(e) => setSubjOrder(Number(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -911,7 +911,7 @@ export default function CurriculumPage() {
               <button
                 type="button"
                 onClick={() => setSubjPublished(!subjPublished)}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
                   subjPublished
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                     : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
@@ -938,7 +938,7 @@ export default function CurriculumPage() {
             <button
               type="button"
               onClick={() => setBranchModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -946,7 +946,7 @@ export default function CurriculumPage() {
               type="submit"
               form="branch-form"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingBranch ? "Save Changes" : "Create Branch"}</span>
@@ -963,7 +963,7 @@ export default function CurriculumPage() {
               value={brSubjectId}
               onChange={(e) => setBrSubjectId(e.target.value as Id<"subjects">)}
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               <option value="" disabled>Select Subject Area...</option>
               {sortedSubjects.map((s: any) => (
@@ -984,7 +984,7 @@ export default function CurriculumPage() {
               onChange={(e) => setBrName(e.target.value)}
               placeholder="e.g., Laws and Regulations"
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
@@ -997,7 +997,7 @@ export default function CurriculumPage() {
               onChange={(e) => setBrDesc(e.target.value)}
               placeholder="Brief summary of this branch..."
               rows={2}
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
@@ -1011,7 +1011,7 @@ export default function CurriculumPage() {
                 min={1}
                 value={brOrder}
                 onChange={(e) => setBrOrder(Number(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
@@ -1022,7 +1022,7 @@ export default function CurriculumPage() {
               <button
                 type="button"
                 onClick={() => setBrPublished(!brPublished)}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
                   brPublished
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                     : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
@@ -1049,7 +1049,7 @@ export default function CurriculumPage() {
             <button
               type="button"
               onClick={() => setTopicModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -1057,7 +1057,7 @@ export default function CurriculumPage() {
               type="submit"
               form="topic-form"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingTopic ? "Save Changes" : "Create Topic"}</span>
@@ -1078,7 +1078,7 @@ export default function CurriculumPage() {
                   setTopBranchId("");
                 }}
                 required
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="" disabled>Select Subject Area...</option>
                 {sortedSubjects.map((s: any) => (
@@ -1096,7 +1096,7 @@ export default function CurriculumPage() {
               <select
                 value={topBranchId}
                 onChange={(e) => setTopBranchId(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">-- No Branch (Direct Subject Topic) --</option>
                 {(branches || [])
@@ -1120,7 +1120,7 @@ export default function CurriculumPage() {
               onChange={(e) => setTopName(e.target.value)}
               placeholder="e.g., Primary Elements & Spatial Ordering"
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -1133,7 +1133,7 @@ export default function CurriculumPage() {
               onChange={(e) => setTopDesc(e.target.value)}
               placeholder="Subtopics, key laws, formulas, or standard codes..."
               rows={3}
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -1147,7 +1147,7 @@ export default function CurriculumPage() {
                 min={1}
                 value={topOrder}
                 onChange={(e) => setTopOrder(Number(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -1158,7 +1158,7 @@ export default function CurriculumPage() {
               <button
                 type="button"
                 onClick={() => setTopPublished(!topPublished)}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
                   topPublished
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                     : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
@@ -1185,7 +1185,7 @@ export default function CurriculumPage() {
             <button
               type="button"
               onClick={() => setLessonModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -1193,7 +1193,7 @@ export default function CurriculumPage() {
               type="submit"
               form="lesson-form"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingLesson ? "Save Changes" : "Create Lesson"}</span>
@@ -1220,7 +1220,7 @@ export default function CurriculumPage() {
                   }
                 }}
                 required
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="" disabled>Select Subject Area...</option>
                 {sortedSubjects.map((s: any) => (
@@ -1239,7 +1239,7 @@ export default function CurriculumPage() {
                 value={lesTopicId}
                 onChange={(e) => setLesTopicId(e.target.value as Id<"topics">)}
                 required
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="" disabled>Select Topic...</option>
                 {topics
@@ -1263,7 +1263,7 @@ export default function CurriculumPage() {
               onChange={(e) => setLesName(e.target.value)}
               placeholder="e.g., Point, Line, Plane, & Volume in Space"
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -1276,7 +1276,7 @@ export default function CurriculumPage() {
               onChange={(e) => setLesDesc(e.target.value)}
               placeholder="Brief summary of key lesson concepts..."
               rows={3}
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -1290,7 +1290,7 @@ export default function CurriculumPage() {
                 min={1}
                 value={lesOrder}
                 onChange={(e) => setLesOrder(Number(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -1301,7 +1301,7 @@ export default function CurriculumPage() {
               <button
                 type="button"
                 onClick={() => setLesPublished(!lesPublished)}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
                   lesPublished
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                     : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
@@ -1326,7 +1326,7 @@ export default function CurriculumPage() {
             <button
               type="button"
               onClick={() => setDeleteConfirm(null)}
-              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -1334,7 +1334,7 @@ export default function CurriculumPage() {
               type="button"
               onClick={handleExecuteDelete}
               disabled={saving}
-              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
+              className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
             >
               {saving ? "Deleting..." : "Delete Permanently"}
             </button>

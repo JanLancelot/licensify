@@ -162,8 +162,8 @@ export default function QuizzesPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blueprint-500 animate-spin" />
-          <p className="text-sm text-studio-500">Loading assessments & mock exams...</p>
+          <Loader2 className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-spin" />
+          <p className="text-sm text-studio-500 dark:text-studio-400">Loading assessments & mock exams...</p>
         </div>
       </div>
     );
@@ -196,7 +196,7 @@ export default function QuizzesPage() {
         </div>
         <button
           onClick={openCreateModal}
-          className="px-4 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 active:scale-[0.98] text-white text-xs font-semibold flex items-center gap-2 shadow-sm shadow-blueprint-500/30 transition-all"
+          className="px-4 py-2.5 rounded-lg btn-primary active:scale-[0.98] text-xs font-semibold flex items-center gap-2 shadow-sm transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>New Mock Exam</span>
@@ -204,9 +204,9 @@ export default function QuizzesPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="glass-panel p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3">
+      <div className="surface-panel p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-studio-500">
+          <div className="flex items-center gap-2 text-xs font-semibold text-studio-500 dark:text-studio-400">
             <Filter className="w-4 h-4" />
             <span>Type:</span>
           </div>
@@ -214,7 +214,7 @@ export default function QuizzesPage() {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="all">All Assessments ({quizzes.length})</option>
             <option value="mock_exam">Mock Exams</option>
@@ -222,24 +222,24 @@ export default function QuizzesPage() {
           </select>
         </div>
 
-        <span className="text-xs text-studio-500">
+        <span className="text-xs text-studio-500 dark:text-studio-400">
           Showing <strong className="text-studio-800 dark:text-studio-200">{filteredQuizzes.length}</strong> items
         </span>
       </div>
 
       {/* Quizzes List */}
       {filteredQuizzes.length === 0 ? (
-        <div className="glass-panel p-12 text-center rounded-3xl border">
+        <div className="surface-panel p-12 text-center rounded-xl border">
           <Award className="w-12 h-12 text-studio-400 mx-auto mb-3 opacity-60" />
           <h3 className="text-base font-semibold text-studio-900 dark:text-studio-100">
             No Assessments Configured
           </h3>
-          <p className="text-xs text-studio-500 mt-1 mb-4">
+          <p className="text-xs text-studio-500 dark:text-studio-400 mt-1 mb-4">
             Curate mock exams for candidates to simulate real board examination conditions.
           </p>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 rounded-xl bg-blueprint-600 text-white text-xs font-semibold shadow-sm"
+            className="px-4 py-2 rounded-lg btn-primary text-xs font-semibold shadow-sm"
           >
             Create Mock Exam
           </button>
@@ -252,7 +252,7 @@ export default function QuizzesPage() {
             return (
               <div
                 key={quiz._id}
-                className="glass-panel rounded-2xl border p-5 flex flex-col justify-between hover:border-blueprint-500/40 transition-colors group"
+                className="surface-panel rounded-xl border p-5 flex flex-col justify-between hover:border-brand-500/40 transition-colors group"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
@@ -260,7 +260,7 @@ export default function QuizzesPage() {
                       className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
                         quiz.type === "mock_exam"
                           ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
-                          : "bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 border-blueprint-500/20"
+                          : "bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-500/20"
                       }`}
                     >
                       {quiz.type === "mock_exam" ? "Mock Exam" : "Practice Drill"}
@@ -291,12 +291,12 @@ export default function QuizzesPage() {
                     {quiz.title}
                   </h3>
                   {quiz.description && (
-                    <p className="text-xs text-studio-500 mt-1 line-clamp-2">
+                    <p className="text-xs text-studio-500 dark:text-studio-400 mt-1 line-clamp-2">
                       {quiz.description}
                     </p>
                   )}
 
-                  <div className="mt-4 p-3 rounded-xl bg-studio-100/60 dark:bg-studio-850/60 border border-studio-200/60 dark:border-studio-800/60 text-xs space-y-1">
+                  <div className="mt-4 p-3 rounded-lg bg-studio-100/60 dark:bg-studio-850/60 border border-studio-200/60 dark:border-studio-800/60 text-xs space-y-1">
                     <div className="flex items-center justify-between text-studio-600 dark:text-studio-400">
                       <span>Questions Pool:</span>
                       <strong className="text-studio-900 dark:text-studio-100">
@@ -343,7 +343,7 @@ export default function QuizzesPage() {
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -351,7 +351,7 @@ export default function QuizzesPage() {
               type="submit"
               form="quiz-form"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingQuiz ? "Save Changes" : "Create Exam"}</span>
@@ -371,7 +371,7 @@ export default function QuizzesPage() {
                 onChange={(e) => setFormTitle(e.target.value)}
                 placeholder="e.g., ALE Area 3 Comprehensive Mock Exam"
                 required
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -382,7 +382,7 @@ export default function QuizzesPage() {
               <select
                 value={formType}
                 onChange={(e) => setFormType(e.target.value as any)}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="mock_exam">Full Mock Exam</option>
                 <option value="practice">Custom Practice Drill</option>
@@ -402,7 +402,7 @@ export default function QuizzesPage() {
                   setFormTopicId("");
                   setFormLessonId("");
                 }}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">-- All Subjects --</option>
                 {subjects.map((s: any) => (
@@ -423,7 +423,7 @@ export default function QuizzesPage() {
                   setFormTopicId(e.target.value as Id<"topics">);
                   setFormLessonId("");
                 }}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">-- All Topics --</option>
                 {topics
@@ -443,7 +443,7 @@ export default function QuizzesPage() {
               <select
                 value={formLessonId}
                 onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">-- All Lessons --</option>
                 {(lessons || [])
@@ -466,7 +466,7 @@ export default function QuizzesPage() {
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Exam scope, rules, allowed calculator standards, and target score..."
               rows={2}
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -481,7 +481,7 @@ export default function QuizzesPage() {
                 max={480}
                 value={formTimeLimitMinutes}
                 onChange={(e) => setFormTimeLimitMinutes(Number(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -495,7 +495,7 @@ export default function QuizzesPage() {
                 max={100}
                 value={formPassingScore}
                 onChange={(e) => setFormPassingScore(Number(e.target.value))}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
@@ -506,7 +506,7 @@ export default function QuizzesPage() {
               <button
                 type="button"
                 onClick={() => setFormPublished(!formPublished)}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
                   formPublished
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                     : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
@@ -536,11 +536,11 @@ export default function QuizzesPage() {
                 value={pickerSearch}
                 onChange={(e) => setPickerSearch(e.target.value)}
                 placeholder="Search question pool..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full pl-9 pr-4 py-2 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
 
-            <div className="max-h-52 overflow-y-auto rounded-xl border border-studio-200 dark:border-studio-700 divide-y divide-studio-200 dark:divide-studio-800">
+            <div className="max-h-52 overflow-y-auto rounded-lg border border-studio-200 dark:border-studio-700 divide-y divide-studio-200 dark:divide-studio-800">
               {pickerQuestions.map((q: any) => {
                 const isSelected = formSelectedQuestionIds.includes(q._id);
                 return (
@@ -549,7 +549,7 @@ export default function QuizzesPage() {
                     onClick={() => toggleQuestionSelection(q._id)}
                     className={`p-3 flex items-center justify-between gap-3 cursor-pointer text-xs transition-colors select-none ${
                       isSelected
-                        ? "bg-blueprint-500/10 dark:bg-blueprint-900/30"
+                        ? "bg-brand-500/10 dark:bg-brand-900/30"
                         : "bg-studio-50 dark:bg-studio-900/40 hover:bg-studio-100 dark:hover:bg-studio-800"
                     }`}
                   >
@@ -558,7 +558,7 @@ export default function QuizzesPage() {
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {}}
-                        className="w-4 h-4 text-blueprint-600 rounded"
+                        className="w-4 h-4 text-brand-600 rounded"
                       />
                       <p className="font-medium text-studio-800 dark:text-studio-200 truncate">
                         {q.question}
@@ -586,7 +586,7 @@ export default function QuizzesPage() {
             <button
               type="button"
               onClick={() => setDeleteConfirm(null)}
-              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -594,7 +594,7 @@ export default function QuizzesPage() {
               type="button"
               onClick={handleDelete}
               disabled={saving}
-              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
+              className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
             >
               {saving ? "Deleting..." : "Delete Exam"}
             </button>
