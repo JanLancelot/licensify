@@ -50,17 +50,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border backdrop-blur-md animate-slide-up transition-all ${
+            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium border backdrop-blur-md animate-slide-up transition-all ${
               t.type === "success"
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 bg-white/90 dark:bg-studio-900/90"
                 : t.type === "error"
                 ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 bg-white/90 dark:bg-studio-900/90"
-                : "bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 border-blueprint-500/20 bg-white/90 dark:bg-studio-900/90"
+                : "bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-500/20 bg-white/90 dark:bg-studio-900/90"
             }`}
           >
             {t.type === "success" && <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-500" />}
             {t.type === "error" && <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-500" />}
-            {t.type === "info" && <Info className="w-5 h-5 flex-shrink-0 text-blueprint-500" />}
+            {t.type === "info" && <Info className="w-5 h-5 flex-shrink-0 text-brand-600 dark:text-brand-400" />}
             <span>{t.message}</span>
             <button
               onClick={() => removeToast(t.id)}

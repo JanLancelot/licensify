@@ -85,8 +85,8 @@ export default function UsersPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blueprint-500 animate-spin" />
-          <p className="text-sm text-studio-500">Loading user directory...</p>
+          <Loader2 className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-spin" />
+          <p className="text-sm text-studio-500 dark:text-studio-400">Loading user directory...</p>
         </div>
       </div>
     );
@@ -109,7 +109,7 @@ export default function UsersPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="glass-panel p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3">
+      <div className="surface-panel p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
           {/* Search */}
           <div className="relative flex-1 max-w-sm min-w-[200px]">
@@ -119,14 +119,14 @@ export default function UsersPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by username, email, or name..."
-              className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full pl-9 pr-4 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="all">All Roles ({users.length})</option>
             <option value="student">Candidates / Students</option>
@@ -135,16 +135,16 @@ export default function UsersPage() {
           </select>
         </div>
 
-        <span className="text-xs text-studio-500">
+        <span className="text-xs text-studio-500 dark:text-studio-400">
           Showing <strong className="text-studio-800 dark:text-studio-200">{users.length}</strong> accounts
         </span>
       </div>
 
       {/* Users Table */}
-      <div className="glass-panel rounded-3xl border overflow-hidden">
+      <div className="surface-panel rounded-xl border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-studio-100/60 dark:bg-studio-850/60 text-studio-500 uppercase tracking-wider text-[11px] font-semibold border-b border-studio-200/60 dark:border-studio-800/60">
+            <thead className="bg-studio-100/60 dark:bg-studio-850/60 text-studio-500 dark:text-studio-400 uppercase tracking-wider text-[11px] font-semibold border-b border-studio-200/60 dark:border-studio-800/60">
               <tr>
                 <th className="p-4 sm:px-6">Candidate / User</th>
                 <th className="p-4">Role</th>
@@ -170,7 +170,7 @@ export default function UsersPage() {
                     <tr key={u._id} className="hover:bg-studio-100/30 dark:hover:bg-studio-850/30 transition-colors">
                       <td className="p-4 sm:px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-blueprint-500/10 text-blueprint-500 flex items-center justify-center font-bold text-xs uppercase border border-blueprint-500/20">
+                          <div className="w-9 h-9 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold text-xs uppercase border border-brand-500/20">
                             {u.username.charAt(0)}
                           </div>
                           <div>
@@ -181,12 +181,12 @@ export default function UsersPage() {
                                   : u.username}
                               </span>
                               {isCurrent && (
-                                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blueprint-500/10 text-blueprint-500">
+                                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-brand-500/10 text-brand-600 dark:text-brand-400">
                                   You
                                 </span>
                               )}
                             </div>
-                            <p className="text-studio-500 text-[11px]">{u.email || `@${u.username}`}</p>
+                            <p className="text-studio-500 dark:text-studio-400 text-[11px]">{u.email || `@${u.username}`}</p>
                           </div>
                         </div>
                       </td>
@@ -198,7 +198,7 @@ export default function UsersPage() {
                               ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
                               : u.role === "content_manager"
                               ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
-                              : "bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 border-blueprint-500/20"
+                              : "bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-500/20"
                           }`}
                         >
                           <ShieldCheck className="w-3 h-3" />
@@ -218,11 +218,11 @@ export default function UsersPage() {
                         )}
                       </td>
 
-                      <td className="p-4 text-studio-500 text-[11px]">
+                      <td className="p-4 text-studio-500 dark:text-studio-400 text-[11px]">
                         {new Date(u.createdAt).toLocaleDateString()}
                       </td>
 
-                      <td className="p-4 text-studio-500 text-[11px]">
+                      <td className="p-4 text-studio-500 dark:text-studio-400 text-[11px]">
                         {u.lastActiveAt
                           ? new Date(u.lastActiveAt).toLocaleDateString()
                           : "Never"}
@@ -276,7 +276,7 @@ export default function UsersPage() {
             <button
               type="button"
               onClick={() => setEditingUser(null)}
-              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -284,7 +284,7 @@ export default function UsersPage() {
               type="submit"
               form="role-form"
               disabled={saving}
-              className="px-5 py-2 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Save Role</span>
@@ -294,7 +294,7 @@ export default function UsersPage() {
       >
         {editingUser && (
           <form id="role-form" onSubmit={handleSaveRole} className="space-y-4">
-            <p className="text-xs text-studio-500 mb-2">
+            <p className="text-xs text-studio-500 dark:text-studio-400 mb-2">
               Assign role privileges for <strong className="text-studio-900 dark:text-studio-100">{editingUser.username}</strong> ({editingUser.email || "No email"}):
             </p>
             <div className="space-y-2">
@@ -317,9 +317,9 @@ export default function UsersPage() {
               ].map((r) => (
                 <label
                   key={r.role}
-                  className={`p-3 rounded-2xl border flex items-start gap-3 cursor-pointer transition-all ${
+                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-all ${
                     selectedRole === r.role
-                      ? "bg-blueprint-500/10 border-blueprint-500/40 text-blueprint-600 dark:text-blueprint-400"
+                      ? "bg-brand-500/10 border-brand-500/40 text-brand-600 dark:text-brand-400"
                       : "bg-studio-100/50 dark:bg-studio-850/50 border-studio-200/60 dark:border-studio-800/60 text-studio-700 dark:text-studio-300"
                   }`}
                 >
@@ -329,13 +329,13 @@ export default function UsersPage() {
                     value={r.role}
                     checked={selectedRole === r.role}
                     onChange={() => setSelectedRole(r.role as any)}
-                    className="mt-1 text-blueprint-600"
+                    className="mt-1 text-brand-600"
                   />
                   <div>
                     <p className="font-bold text-xs text-studio-900 dark:text-studio-100">
                       {r.label}
                     </p>
-                    <p className="text-[11px] text-studio-500 mt-0.5">{r.desc}</p>
+                    <p className="text-[11px] text-studio-500 dark:text-studio-400 mt-0.5">{r.desc}</p>
                   </div>
                 </label>
               ))}

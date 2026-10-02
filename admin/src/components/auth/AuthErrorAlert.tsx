@@ -94,7 +94,7 @@ export function AuthErrorAlert({ error, onDismiss }: AuthErrorAlertProps) {
   return (
     <div
       role="alert"
-      className={`p-4 rounded-2xl border flex items-start gap-3.5 mb-5 transition-all animate-fade-in ${getColors()}`}
+      className={`p-4 rounded-xl border flex items-start gap-3.5 mb-5 transition-all animate-fade-in ${getColors()}`}
     >
       <div className="mt-0.5">{getIcon()}</div>
       <div className="flex-1 min-w-0">

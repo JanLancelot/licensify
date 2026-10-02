@@ -173,8 +173,8 @@ export default function MaterialsPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blueprint-500 animate-spin" />
-          <p className="text-sm text-studio-500">Loading study materials...</p>
+          <Loader2 className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-spin" />
+          <p className="text-sm text-studio-500 dark:text-studio-400">Loading study materials...</p>
         </div>
       </div>
     );
@@ -202,7 +202,7 @@ export default function MaterialsPage() {
         </div>
         <button
           onClick={openCreateModal}
-          className="px-4 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 active:scale-[0.98] text-white text-xs font-semibold flex items-center gap-2 shadow-sm shadow-blueprint-500/30 transition-all"
+          className="px-4 py-2.5 rounded-lg btn-primary active:scale-[0.98] text-xs font-semibold flex items-center gap-2 shadow-sm transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>New Study Note</span>
@@ -210,9 +210,9 @@ export default function MaterialsPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="glass-panel p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3">
+      <div className="surface-panel p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-studio-500">
+          <div className="flex items-center gap-2 text-xs font-semibold text-studio-500 dark:text-studio-400">
             <Filter className="w-4 h-4" />
             <span>Filter by:</span>
           </div>
@@ -220,7 +220,7 @@ export default function MaterialsPage() {
           <select
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="all">All Board Subjects ({materials.length})</option>
             {subjects.map((s: any) => (
@@ -233,7 +233,7 @@ export default function MaterialsPage() {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="all">All Formats</option>
             <option value="article">Markdown Article</option>
@@ -243,24 +243,24 @@ export default function MaterialsPage() {
           </select>
         </div>
 
-        <span className="text-xs text-studio-500">
+        <span className="text-xs text-studio-500 dark:text-studio-400">
           Showing <strong className="text-studio-800 dark:text-studio-200">{filteredMaterials.length}</strong> items
         </span>
       </div>
 
       {/* Materials Grid */}
       {filteredMaterials.length === 0 ? (
-        <div className="glass-panel p-12 text-center rounded-3xl border">
+        <div className="surface-panel p-12 text-center rounded-xl border">
           <BookOpen className="w-12 h-12 text-studio-400 mx-auto mb-3 opacity-60" />
           <h3 className="text-base font-semibold text-studio-900 dark:text-studio-100">
             No Study Materials Found
           </h3>
-          <p className="text-xs text-studio-500 mt-1 mb-4">
+          <p className="text-xs text-studio-500 dark:text-studio-400 mt-1 mb-4">
             Start writing notes or uploading syllabus documents for candidates.
           </p>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 rounded-xl bg-blueprint-600 text-white text-xs font-semibold shadow-sm"
+            className="px-4 py-2 rounded-lg btn-primary text-xs font-semibold shadow-sm"
           >
             Create First Article
           </button>
@@ -274,12 +274,12 @@ export default function MaterialsPage() {
             return (
               <div
                 key={mat._id}
-                className="glass-panel rounded-2xl border p-5 flex flex-col justify-between hover:border-blueprint-500/40 transition-colors group"
+                className="surface-panel rounded-xl border p-5 flex flex-col justify-between hover:border-brand-500/40 transition-colors group"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 border border-blueprint-500/20">
+                      <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
                         {mat.type}
                       </span>
                       {mat.isPublished ? (
@@ -287,7 +287,7 @@ export default function MaterialsPage() {
                           Live
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-studio-500/10 text-studio-500 border border-studio-500/20">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-studio-500/10 text-studio-500 dark:text-studio-400 border border-studio-500/20">
                           Draft
                         </span>
                       )}
@@ -315,14 +315,14 @@ export default function MaterialsPage() {
                     {mat.title}
                   </h3>
                   {mat.description && (
-                    <p className="text-xs text-studio-500 line-clamp-2 mt-1">
+                    <p className="text-xs text-studio-500 dark:text-studio-400 line-clamp-2 mt-1">
                       {mat.description}
                     </p>
                   )}
 
                   <div className="mt-3 text-[11px] text-studio-400 space-y-0.5">
                     <p>Subject: <strong className="text-studio-600 dark:text-studio-300">{subj?.name || "General"}</strong></p>
-                    {top && <p>Topic: <span className="text-studio-500">{top.name}</span></p>}
+                    {top && <p>Topic: <span className="text-studio-500 dark:text-studio-400">{top.name}</span></p>}
                   </div>
                 </div>
 
@@ -332,7 +332,7 @@ export default function MaterialsPage() {
                       href={mat.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blueprint-600 dark:text-blueprint-400 hover:underline flex items-center gap-1 font-semibold"
+                      className="text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 font-semibold"
                     >
                       <span>Download File</span>
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -365,7 +365,7 @@ export default function MaterialsPage() {
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -373,7 +373,7 @@ export default function MaterialsPage() {
               type="submit"
               form="material-form"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingMaterial ? "Save Changes" : "Publish Article"}</span>
@@ -397,7 +397,7 @@ export default function MaterialsPage() {
                     setFormLessonId("");
                   }}
                   required
-                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                  className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   {subjects.map((s: any) => (
                     <option key={s._id} value={s._id}>
@@ -418,7 +418,7 @@ export default function MaterialsPage() {
                       setFormTopicId(e.target.value as Id<"topics">);
                       setFormLessonId("");
                     }}
-                    className="w-full px-3 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                    className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="">-- All Topics --</option>
                     {availableTopicsForForm.map((t: any) => (
@@ -436,7 +436,7 @@ export default function MaterialsPage() {
                   <select
                     value={formLessonId}
                     onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                    className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="">-- All Lessons --</option>
                     {(lessons || [])
@@ -460,7 +460,7 @@ export default function MaterialsPage() {
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="e.g., National Building Code (PD 1096) Rule VII & VIII Summary"
                   required
-                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                  className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
@@ -473,7 +473,7 @@ export default function MaterialsPage() {
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="e.g., Comprehensive guide to Doric, Ionic, and Corinthian columns."
-                  className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                  className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
@@ -485,7 +485,7 @@ export default function MaterialsPage() {
                   <select
                     value={formType}
                     onChange={(e) => setFormType(e.target.value as any)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                    className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="article">Article</option>
                     <option value="pdf">PDF</option>
@@ -501,7 +501,7 @@ export default function MaterialsPage() {
                   <button
                     type="button"
                     onClick={() => setFormPublished(!formPublished)}
-                    className={`w-full py-2.5 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                    className={`w-full py-2.5 px-3 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
                       formPublished
                         ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                         : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
@@ -516,9 +516,9 @@ export default function MaterialsPage() {
                   <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                     Attachment
                   </label>
-                  <label className="w-full py-2.5 px-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-blueprint-500 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
+                  <label className="w-full py-2.5 px-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-brand-500 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
                     {uploadingFile ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-blueprint-500" />
+                      <Loader2 className="w-4 h-4 animate-spin text-brand-600 dark:text-brand-400" />
                     ) : (
                       <Upload className="w-4 h-4 text-studio-400" />
                     )}
@@ -548,8 +548,8 @@ export default function MaterialsPage() {
                     onClick={() => setPreviewMode("write")}
                     className={`px-2.5 py-1 rounded-md transition-colors ${
                       previewMode === "write"
-                        ? "bg-blueprint-600 text-white font-semibold shadow-sm"
-                        : "text-studio-500 hover:text-studio-900 dark:hover:text-studio-100"
+                        ? "btn-primary font-semibold shadow-sm"
+                        : "text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100"
                     }`}
                   >
                     Write
@@ -559,8 +559,8 @@ export default function MaterialsPage() {
                     onClick={() => setPreviewMode("split")}
                     className={`px-2.5 py-1 rounded-md transition-colors ${
                       previewMode === "split"
-                        ? "bg-blueprint-600 text-white font-semibold shadow-sm"
-                        : "text-studio-500 hover:text-studio-900 dark:hover:text-studio-100"
+                        ? "btn-primary font-semibold shadow-sm"
+                        : "text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100"
                     }`}
                   >
                     Split
@@ -570,8 +570,8 @@ export default function MaterialsPage() {
                     onClick={() => setPreviewMode("preview")}
                     className={`px-2.5 py-1 rounded-md transition-colors ${
                       previewMode === "preview"
-                        ? "bg-blueprint-600 text-white font-semibold shadow-sm"
-                        : "text-studio-500 hover:text-studio-900 dark:hover:text-studio-100"
+                        ? "btn-primary font-semibold shadow-sm"
+                        : "text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100"
                     }`}
                   >
                     Preview
@@ -585,7 +585,7 @@ export default function MaterialsPage() {
                     value={formContent}
                     onChange={(e) => setFormContent(e.target.value)}
                     placeholder="# Markdown Title&#10;&#10;Write comprehensive study materials here..."
-                    className={`w-full h-80 p-4 font-mono text-xs rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 focus:outline-none focus:ring-2 focus:ring-blueprint-500 resize-none ${
+                    className={`w-full h-80 p-4 font-mono text-xs rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none ${
                       previewMode === "write" ? "md:col-span-2" : ""
                     }`}
                   />
@@ -593,7 +593,7 @@ export default function MaterialsPage() {
 
                 {(previewMode === "preview" || previewMode === "split") && (
                   <div
-                    className={`p-4 rounded-xl bg-studio-50 dark:bg-studio-900 border border-studio-200 dark:border-studio-700 overflow-y-auto h-80 text-xs markdown-preview ${
+                    className={`p-4 rounded-lg bg-studio-50 dark:bg-studio-900 border border-studio-200 dark:border-studio-700 overflow-y-auto h-80 text-xs markdown-preview ${
                       previewMode === "preview" ? "md:col-span-2" : ""
                     }`}
                   >
@@ -625,7 +625,7 @@ export default function MaterialsPage() {
             <button
               type="button"
               onClick={() => setDeleteConfirm(null)}
-              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -633,7 +633,7 @@ export default function MaterialsPage() {
               type="button"
               onClick={handleDelete}
               disabled={saving}
-              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
+              className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
             >
               {saving ? "Deleting..." : "Delete Permanently"}
             </button>

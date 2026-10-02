@@ -304,8 +304,8 @@ export default function QuestionsPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blueprint-500 animate-spin" />
-          <p className="text-sm text-studio-500">Loading question bank...</p>
+          <Loader2 className="w-8 h-8 text-brand-600 dark:text-brand-400 animate-spin" />
+          <p className="text-sm text-studio-500 dark:text-studio-400">Loading question bank...</p>
         </div>
       </div>
     );
@@ -329,14 +329,14 @@ export default function QuestionsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setBulkModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-studio-200/80 dark:bg-studio-800 hover:bg-studio-300/80 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold flex items-center gap-2 transition-all border border-studio-300/50 dark:border-studio-700/50"
+            className="px-4 py-2.5 rounded-lg bg-studio-200/80 dark:bg-studio-800 hover:bg-studio-300/80 dark:hover:bg-studio-700 text-studio-900 dark:text-studio-100 text-xs font-semibold flex items-center gap-2 transition-all border border-studio-300/50 dark:border-studio-700/50"
           >
-            <Upload className="w-4 h-4 text-blueprint-500" />
+            <Upload className="w-4 h-4 text-brand-600 dark:text-brand-400" />
             <span>Bulk JSON / CSV Import</span>
           </button>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 active:scale-[0.98] text-white text-xs font-semibold flex items-center gap-2 shadow-sm shadow-blueprint-500/30 transition-all"
+            className="px-4 py-2.5 rounded-lg btn-primary active:scale-[0.98] text-xs font-semibold flex items-center gap-2 shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>New Question</span>
@@ -345,7 +345,7 @@ export default function QuestionsPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="glass-panel p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3">
+      <div className="surface-panel p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
           {/* Search Input */}
           <div className="relative flex-1 max-w-sm min-w-[200px]">
@@ -355,7 +355,7 @@ export default function QuestionsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search question prompts, options, or explanations..."
-              className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full pl-9 pr-4 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -365,7 +365,7 @@ export default function QuestionsPage() {
               setSelectedSubject(e.target.value);
               setSelectedTopic("all");
             }}
-            className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="all">All Subjects</option>
             {subjects.map((s: any) => (
@@ -379,7 +379,7 @@ export default function QuestionsPage() {
             <select
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="all">All Topics</option>
               {availableTopics.map((t: any) => (
@@ -393,7 +393,7 @@ export default function QuestionsPage() {
           <select
             value={selectedDifficulty}
             onChange={(e) => setSelectedDifficulty(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+            className="px-3 py-1.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="all">All Difficulties</option>
             <option value="easy">Easy</option>
@@ -402,24 +402,24 @@ export default function QuestionsPage() {
           </select>
         </div>
 
-        <span className="text-xs text-studio-500">
+        <span className="text-xs text-studio-500 dark:text-studio-400">
           Showing <strong className="text-studio-800 dark:text-studio-200">{questions.length}</strong> questions
         </span>
       </div>
 
       {/* Question Cards List */}
       {questions.length === 0 ? (
-        <div className="glass-panel p-12 text-center rounded-3xl border">
+        <div className="surface-panel p-12 text-center rounded-xl border">
           <FileQuestion className="w-12 h-12 text-studio-400 mx-auto mb-3 opacity-60" />
           <h3 className="text-base font-semibold text-studio-900 dark:text-studio-100">
             No Questions Match Filters
           </h3>
-          <p className="text-xs text-studio-500 mt-1 mb-4">
+          <p className="text-xs text-studio-500 dark:text-studio-400 mt-1 mb-4">
             Create new architectural drill questions or import from CSV.
           </p>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 rounded-xl bg-blueprint-600 text-white text-xs font-semibold shadow-sm"
+            className="px-4 py-2 rounded-lg btn-primary text-xs font-semibold shadow-sm"
           >
             Create Question
           </button>
@@ -433,12 +433,12 @@ export default function QuestionsPage() {
             return (
               <div
                 key={q._id}
-                className="glass-panel rounded-2xl border p-5 hover:border-blueprint-500/40 transition-colors"
+                className="surface-panel rounded-xl border p-5 hover:border-brand-500/40 transition-colors"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="space-y-2.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-blueprint-600 dark:text-blueprint-400">
+                      <span className="text-xs font-mono font-bold text-brand-600 dark:text-brand-400">
                         Q{idx + 1}
                       </span>
                       <span
@@ -457,7 +457,7 @@ export default function QuestionsPage() {
                           Live
                         </span>
                       ) : (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-studio-500/10 text-studio-500 border border-studio-500/20">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-studio-500/10 text-studio-500 dark:text-studio-400 border border-studio-500/20">
                           Draft
                         </span>
                       )}
@@ -479,7 +479,7 @@ export default function QuestionsPage() {
                         return (
                           <div
                             key={c.id}
-                            className={`p-2.5 rounded-xl border text-xs flex items-center gap-2.5 transition-colors ${
+                            className={`p-2.5 rounded-lg border text-xs flex items-center gap-2.5 transition-colors ${
                               isCorrect
                                 ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold"
                                 : "bg-studio-100/50 dark:bg-studio-850/50 border-studio-200/60 dark:border-studio-800/60 text-studio-700 dark:text-studio-300"
@@ -505,8 +505,8 @@ export default function QuestionsPage() {
 
                     {/* Explanation */}
                     {q.explanation && (
-                      <div className="p-3 rounded-xl bg-blueprint-500/5 border border-blueprint-500/20 text-xs text-studio-600 dark:text-studio-400 mt-2">
-                        <strong className="text-blueprint-600 dark:text-blueprint-400">Explanation / Reference: </strong>
+                      <div className="p-3 rounded-lg bg-brand-500/5 border border-brand-500/20 text-xs text-studio-600 dark:text-studio-400 mt-2">
+                        <strong className="text-brand-600 dark:text-brand-400">Explanation / Reference: </strong>
                         {q.explanation}
                       </div>
                     )}
@@ -515,7 +515,7 @@ export default function QuestionsPage() {
                   <div className="flex items-center gap-1 sm:self-start">
                     <button
                       onClick={() => openEditModal(q)}
-                      className="p-1.5 rounded-lg text-studio-500 hover:text-studio-900 dark:hover:text-studio-100 hover:bg-studio-100 dark:hover:bg-studio-800 transition-colors"
+                      className="p-1.5 rounded-lg text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100 hover:bg-studio-100 dark:hover:bg-studio-800 transition-colors"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -546,7 +546,7 @@ export default function QuestionsPage() {
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -554,7 +554,7 @@ export default function QuestionsPage() {
               type="submit"
               form="question-form"
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingQuestion ? "Save Changes" : "Create Question"}</span>
@@ -576,7 +576,7 @@ export default function QuestionsPage() {
                   setFormLessonId("");
                 }}
                 required
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 {subjects.map((s) => (
                   <option key={s._id} value={s._id}>
@@ -596,7 +596,7 @@ export default function QuestionsPage() {
                   setFormTopicId(e.target.value as Id<"topics">);
                   setFormLessonId("");
                 }}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">-- General / Subject Level --</option>
                 {availableTopicsForForm.map((t) => (
@@ -614,7 +614,7 @@ export default function QuestionsPage() {
               <select
                 value={formLessonId}
                 onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="">-- Topic Level --</option>
                 {(lessons || [])
@@ -638,20 +638,20 @@ export default function QuestionsPage() {
               placeholder="State the problem, architectural standard, or board exam question..."
               rows={3}
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           {/* Multiple Choice Options Builder */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
               <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
                 Answer Choices (Select radio button for Correct Answer)
               </label>
               <button
                 type="button"
                 onClick={addChoice}
-                className="text-xs font-semibold text-blueprint-600 dark:text-blueprint-400 hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 shrink-0 whitespace-nowrap"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Choice Option</span>
@@ -669,7 +669,7 @@ export default function QuestionsPage() {
                         name="correctChoice"
                         checked={formCorrectId === choice.id}
                         onChange={() => setFormCorrectId(choice.id)}
-                        className="w-4 h-4 text-blueprint-600 focus:ring-blueprint-500"
+                        className="w-4 h-4 text-brand-600 focus:ring-brand-500"
                       />
                       <span className="w-6 h-6 rounded-lg bg-studio-200 dark:bg-studio-700 font-bold text-xs flex items-center justify-center uppercase">
                         {choiceLabel}
@@ -681,7 +681,7 @@ export default function QuestionsPage() {
                       onChange={(e) => handleChoiceTextChange(choice.id, e.target.value)}
                       placeholder={`Option ${choiceLabel} text...`}
                       required
-                      className="flex-1 px-4 py-2 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                      className="flex-1 min-w-0 px-4 py-2 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                     {formChoices.length > 2 && (
                       <button
@@ -707,7 +707,7 @@ export default function QuestionsPage() {
               onChange={(e) => setFormExplanation(e.target.value)}
               placeholder="Explain why this choice is correct (e.g., BP 344 Rule II, Sec 3)..."
               rows={2}
-              className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -719,7 +719,7 @@ export default function QuestionsPage() {
               <select
                 value={formDifficulty}
                 onChange={(e) => setFormDifficulty(e.target.value as any)}
-                className="w-full px-4 py-2.5 rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
                 <option value="easy">Easy (Definitions & Basic Terms)</option>
                 <option value="medium">Medium (Code Clauses & Application)</option>
@@ -734,7 +734,7 @@ export default function QuestionsPage() {
               <button
                 type="button"
                 onClick={() => setFormPublished(!formPublished)}
-                className={`w-full py-2.5 px-4 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
+                className={`w-full py-2.5 px-4 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
                   formPublished
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                     : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
@@ -761,7 +761,7 @@ export default function QuestionsPage() {
             <button
               type="button"
               onClick={() => setBulkModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -769,7 +769,7 @@ export default function QuestionsPage() {
               type="button"
               onClick={handleExecuteBulkImport}
               disabled={saving || bulkParsedItems.length === 0}
-              className="px-5 py-2.5 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Commit {bulkParsedItems.length} Questions to Database</span>
@@ -779,7 +779,7 @@ export default function QuestionsPage() {
       >
         <div className="space-y-4">
           {bulkError && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
+            <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>{bulkError}</span>
             </div>
@@ -807,7 +807,7 @@ export default function QuestionsPage() {
   }
 ]`}
               rows={8}
-              className="w-full p-4 font-mono text-xs rounded-xl bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 focus:outline-none focus:ring-2 focus:ring-blueprint-500"
+              className="w-full p-4 font-mono text-xs rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -815,7 +815,7 @@ export default function QuestionsPage() {
             <button
               type="button"
               onClick={handleParseBulkData}
-              className="px-4 py-2 rounded-xl bg-studio-200 dark:bg-studio-800 hover:bg-studio-300 dark:hover:bg-studio-700 text-xs font-semibold text-studio-800 dark:text-studio-200 transition-colors"
+              className="px-4 py-2 rounded-lg bg-studio-200 dark:bg-studio-800 hover:bg-studio-300 dark:hover:bg-studio-700 text-xs font-semibold text-studio-800 dark:text-studio-200 transition-colors"
             >
               Validate & Parse
             </button>
@@ -830,14 +830,14 @@ export default function QuestionsPage() {
 
           {/* Preview parsed items table */}
           {bulkParsedItems.length > 0 && (
-            <div className="max-h-56 overflow-y-auto rounded-xl border border-studio-200 dark:border-studio-700 divide-y divide-studio-200 dark:divide-studio-800 text-xs">
+            <div className="max-h-56 overflow-y-auto rounded-lg border border-studio-200 dark:border-studio-700 divide-y divide-studio-200 dark:divide-studio-800 text-xs">
               {bulkParsedItems.map((item, idx) => (
                 <div key={idx} className="p-3 bg-studio-50 dark:bg-studio-900/50 flex items-center justify-between gap-3">
                   <div className="truncate">
                     <p className="font-semibold text-studio-900 dark:text-studio-100 truncate">
                       {idx + 1}. {item.question}
                     </p>
-                    <p className="text-[11px] text-studio-500">
+                    <p className="text-[11px] text-studio-500 dark:text-studio-400">
                       {item.choices.length} choices • Correct: <strong>{item.correctChoiceId.toUpperCase()}</strong> • {item.difficulty}
                     </p>
                   </div>
@@ -859,7 +859,7 @@ export default function QuestionsPage() {
             <button
               type="button"
               onClick={() => setDeleteConfirm(null)}
-              className="px-4 py-2 rounded-xl text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
+              className="px-4 py-2 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
             >
               Cancel
             </button>
@@ -867,7 +867,7 @@ export default function QuestionsPage() {
               type="button"
               onClick={handleDelete}
               disabled={saving}
-              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
+              className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm disabled:opacity-60"
             >
               {saving ? "Deleting..." : "Delete Question"}
             </button>
@@ -883,5 +883,4 @@ export default function QuestionsPage() {
     </div>
   );
 }
-
 

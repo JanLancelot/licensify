@@ -84,13 +84,13 @@ export function Modal({
       }}
     >
       <div
-        className={`glass-modal ${maxWidthClass} w-full max-h-[90vh] sm:max-h-[85vh] rounded-3xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-700/80 relative z-[101]`}
+        className={`surface-modal ${maxWidthClass} w-full max-h-[90vh] sm:max-h-[85vh] rounded-xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-700/80 relative z-[101]`}
       >
         {/* Pinned Header */}
         <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/70 dark:bg-studio-900/70">
           <div className="flex items-center gap-3">
             {icon && (
-              <div className="w-9 h-9 rounded-xl bg-blueprint-500/10 text-blueprint-600 dark:text-blueprint-400 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
                 {icon}
               </div>
             )}
@@ -112,7 +112,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 p-1.5 rounded-xl hover:bg-studio-100 dark:hover:bg-studio-800 transition-colors"
+            className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 p-1.5 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

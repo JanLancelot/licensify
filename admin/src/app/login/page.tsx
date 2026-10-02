@@ -5,7 +5,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { Compass, KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, Lock } from "lucide-react";
+import { KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, Lock } from "lucide-react";
+import { BrandMark } from "@/components/brand/BrandMark";
 import { AuthErrorAlert, AuthErrorInfo, parseAuthError } from "@/components/auth/AuthErrorAlert";
 
 export default function LoginPage() {
@@ -69,15 +70,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-studio-50 dark:bg-studio-950 bg-blueprint-grid">
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-10 bg-studio-50 dark:bg-studio-950">
       <div className="w-full max-w-md">
         {/* Brand Banner */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blueprint-600 to-blueprint-400 text-white shadow-glow mb-4">
-            <Compass className="w-8 h-8" />
-          </div>
+          <BrandMark className="h-20 w-20 mx-auto mb-5 border border-studio-200" />
+          <p className="text-[10px] uppercase tracking-[0.24em] font-semibold text-brand-700 dark:text-brand-400 mb-2">Architecture • Licensure • Excellence</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-studio-900 dark:text-studio-50 tracking-tight">
-            LICENSIFY Studio
+            P App
           </h1>
           <p className="text-sm text-studio-500 dark:text-studio-400 mt-1.5">
             Architecture Licensure Exam (ALE) Admin Portal
@@ -85,10 +85,10 @@ export default function LoginPage() {
         </div>
 
         {/* Auth Card */}
-        <div className="glass-modal rounded-3xl p-6 sm:p-8">
+        <div className="surface-panel brand-banner relative overflow-hidden rounded-xl p-6 sm:p-8">
           <div className="flex items-center justify-between gap-2 mb-6 pb-4 border-b border-studio-200 dark:border-studio-800">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-blueprint-500" />
+              <ShieldCheck className="w-5 h-5 text-brand-600 dark:text-brand-400" />
               <h2 className="font-semibold text-base text-studio-900 dark:text-studio-100">
                 Staff Authentication
               </h2>
@@ -101,9 +101,9 @@ export default function LoginPage() {
           {/* Dedicated Error Component */}
           <AuthErrorAlert error={authError} onDismiss={() => setAuthError(null)} />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="relative z-10 space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              <label htmlFor="staff-email" className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                 Staff Email Address
               </label>
               <div className="relative">
@@ -111,22 +111,23 @@ export default function LoginPage() {
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
+                  id="staff-email"
                   type="email"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
                     if (authError) setAuthError(null);
                   }}
-                  placeholder="admin@licensify.app"
+                  placeholder="you@example.com"
                   required
                   autoComplete="email"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:focus:ring-brand-400 transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+              <label htmlFor="staff-password" className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -134,6 +135,7 @@ export default function LoginPage() {
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <input
+                  id="staff-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => {
@@ -143,10 +145,11 @@ export default function LoginPage() {
                   placeholder="••••••••••••"
                   required
                   autoComplete="current-password"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-blueprint-500 dark:focus:ring-blueprint-400 transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-lg bg-studio-100/70 dark:bg-studio-800/70 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:focus:ring-brand-400 transition-all"
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-studio-400 hover:text-studio-600 dark:hover:text-studio-200"
                 >
@@ -158,7 +161,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3 px-4 rounded-xl bg-blueprint-600 hover:bg-blueprint-700 active:scale-[0.99] text-white text-sm font-semibold shadow-md shadow-blueprint-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+              className="w-full mt-2 py-3 px-4 rounded-lg btn-primary active:scale-[0.99] text-sm font-semibold shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-60"
             >
               {loading ? (
                 <>
@@ -168,7 +171,7 @@ export default function LoginPage() {
               ) : (
                 <>
                   <Lock className="w-4 h-4" />
-                  <span>Authenticate & Enter Studio</span>
+                  <span>Sign in to P App</span>
                 </>
               )}
             </button>
@@ -177,10 +180,10 @@ export default function LoginPage() {
 
         {/* Security Notice */}
         <div className="text-center mt-6 space-y-1">
-          <p className="text-xs text-studio-400 dark:text-studio-500">
+          <p className="text-xs text-studio-500 dark:text-studio-400">
             Internal administrative portal for authorized reviewers and faculty only.
           </p>
-          <p className="text-[11px] text-studio-500 dark:text-studio-600">
+          <p className="text-[11px] text-studio-500 dark:text-studio-400">
             To request reviewer access, contact your Lead Administrator.
           </p>
         </div>
