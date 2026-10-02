@@ -354,6 +354,19 @@ export default defineSchema({
   // ---------------------------------------------------------------------------
   // 5. SYSTEM
   // ---------------------------------------------------------------------------
+  announcements: defineTable({
+    title: v.string(),
+    body: v.string(),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    createdBy: v.id("users"),
+    updatedBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    publishedAt: v.optional(v.number()),
+  })
+    .index("by_updatedAt", ["updatedAt"])
+    .index("by_status_and_publishedAt", ["status", "publishedAt"]),
+
   notifications: defineTable({
     userId: v.id("users"),
 

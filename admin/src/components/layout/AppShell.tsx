@@ -10,7 +10,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { BrandMark } from "@/components/brand/BrandMark";
 import {
   LayoutDashboard, Layers, FileQuestion, BookOpen, GalleryVerticalEnd,
-  Award, Users, Sun, Moon, LogOut, Menu, X, ChevronRight, Shield,
+  Award, Users, Megaphone, Sun, Moon, LogOut, Menu, X, ChevronRight, Shield,
 } from "lucide-react";
 
 interface NavItem {
@@ -21,6 +21,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { name: "Overview", href: "/", icon: LayoutDashboard },
+  { name: "Announcements", href: "/announcements", icon: Megaphone },
   { name: "Curriculum", href: "/curriculum", icon: Layers },
   { name: "Question Bank", href: "/questions", icon: FileQuestion },
   { name: "Mock Exams", href: "/quizzes", icon: Award },
