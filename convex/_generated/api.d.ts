@@ -14,6 +14,7 @@ import type * as _helpers_crypto from "../_helpers/crypto.js";
 import type * as _seed_assessments from "../_seed/assessments.js";
 import type * as _seed_curriculum from "../_seed/curriculum.js";
 import type * as admin from "../admin.js";
+import type * as announcements from "../announcements.js";
 import type * as attempts from "../attempts.js";
 import type * as auth from "../auth.js";
 import type * as branches from "../branches.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   "_seed/assessments": typeof _seed_assessments;
   "_seed/curriculum": typeof _seed_curriculum;
   admin: typeof admin;
+  announcements: typeof announcements;
   attempts: typeof attempts;
   auth: typeof auth;
   branches: typeof branches;
