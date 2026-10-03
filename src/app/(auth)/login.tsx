@@ -105,7 +105,7 @@ export default function LoginScreen() {
             <Text style={[styles.brandName, { color: colors.accent }]}>P App</Text>
             <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Sign in to continue your ALE preparation.
+              Sign in to continue where you left off.
             </Text>
           </View>
 
