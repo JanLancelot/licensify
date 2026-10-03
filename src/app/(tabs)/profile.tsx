@@ -1380,20 +1380,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     gap: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-      },
-    }),
   },
   achieveIconCircle: {
     width: 44,
@@ -1422,20 +1408,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-      },
-    }),
   },
   themeSelectorRow: {
     flexDirection: 'row',
