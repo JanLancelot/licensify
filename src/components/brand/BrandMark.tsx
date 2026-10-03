@@ -22,15 +22,15 @@ export function BrandMark({ style, size = 64 }: BrandMarkProps) {
 
 const styles = StyleSheet.create({
   brandMark: {
-    backgroundColor: '#FFFFFF',
+    // backgroundColor: '#FFFFFF',
+    // borderRadius: 12,
+    // borderWidth: 1,
+    // borderColor: 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   image: {
-    width: '80%',
-    height: '80%',
+    width: '100%',
+    height: '100%',
   },
 });
