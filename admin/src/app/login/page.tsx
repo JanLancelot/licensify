@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery } from "convex/react";
-import { api } from "@convex/_generated/api";
-import { useRouter } from "next/navigation";
-import { KeyRound, Mail, Eye, EyeOff, Loader2, ShieldCheck, Lock } from "lucide-react";
-import { BrandMark } from "@/components/brand/BrandMark";
 import { AuthErrorAlert, AuthErrorInfo, parseAuthError } from "@/components/auth/AuthErrorAlert";
+import { BrandMark } from "@/components/brand/BrandMark";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { api } from "@convex/_generated/api";
+import { useConvexAuth, useQuery } from "convex/react";
+import { Eye, EyeOff, KeyRound, Loader2, Lock, Mail, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();

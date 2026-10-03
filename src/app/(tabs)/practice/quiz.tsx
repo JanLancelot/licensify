@@ -334,7 +334,7 @@ export default function PracticeQuizScreen() {
           style={({ pressed }) => [
             styles.backBtn,
             {
-              backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+              backgroundColor: isDark ? '#23262F' : '#F3F4F6',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>
@@ -415,7 +415,9 @@ export default function PracticeQuizScreen() {
             style={[
               styles.resultCard,
               {
-                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
               },
             ]}>
             {/* Award Gradient Icon */}
@@ -537,7 +539,9 @@ export default function PracticeQuizScreen() {
               style={[
                 styles.questionBox,
                 {
-                  backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                 },
               ]}>
               <Text style={[styles.questionText, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
@@ -553,7 +557,7 @@ export default function PracticeQuizScreen() {
 
                 let optBg: string = isDark ? '#23262F' : '#FFFFFF';
                 let optBorder: string = 'transparent';
-                let pillBg: string = isDark ? '#1C1F26' : '#F0EBE8';
+                let pillBg: string = isDark ? '#1C1F26' : '#F3F4F6';
                 let pillTextColor: string = colors.textSecondary;
 
                 if (isAnswerSubmitted) {
@@ -636,7 +640,7 @@ export default function PracticeQuizScreen() {
                 style={[
                   styles.explanationBox,
                   {
-                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                     borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                   },
                 ]}>

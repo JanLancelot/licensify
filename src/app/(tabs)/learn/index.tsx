@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -437,20 +436,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 6,
-      },
-      web: {
-        boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-      },
-    }),
   },
   circleCenterContent: {
     alignItems: 'center',

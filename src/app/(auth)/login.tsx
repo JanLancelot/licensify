@@ -1,28 +1,29 @@
-import React, { useState } from 'react';
+import { formatAuthError } from '@/utils/errorUtils';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as Linking from 'expo-linking';
+import { Link } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { AlertCircle, Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react-native';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Modal,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthActions } from '@convex-dev/auth/react';
-import { Link } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import { makeRedirectUri } from 'expo-auth-session';
-import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react-native';
-import { formatAuthError } from '@/utils/errorUtils';
 
-import { useAppTheme } from '@/context/theme-context';
-import { Radius } from '@/constants/theme';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { GoogleLogo } from '@/components/ui/GoogleLogo';
+import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -30,12 +31,17 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { signIn } = useAuthActions();
   const theme = useAppTheme();
-  const { colors } = theme;
+  const { colors, isDark } = theme;
+
+  const brandYellow = '#E3D200';
+  const brandOlive = '#393500';
+  const brandAccent = isDark ? '#E3D200' : '#797100';
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -68,7 +74,7 @@ export default function LoginScreen() {
 
       const redirectTo = makeRedirectUri();
       const { redirect } = await signIn('google', { redirectTo });
-      
+
       if (redirect) {
         const result = await WebBrowser.openAuthSessionAsync(redirect.toString(), redirectTo);
         if (result.type === 'success') {
@@ -97,16 +103,14 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}>
         <View style={styles.content}>
-          
+
           {/* Header */}
           <View style={styles.header}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
-              <LogIn size={30} color={colors.accent} />
-            </View>
-            <Text style={[styles.brandName, { color: colors.accent }]}>LICENSIFY</Text>
+            <BrandMark size={88} style={{ marginBottom: 16 }} />
+            <Text style={[styles.brandName, { color: brandAccent }]}>P App</Text>
             <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Sign in to continue your ALE preparation.
+              Sign in to continue where you left off.
             </Text>
           </View>
 
@@ -122,8 +126,20 @@ export default function LoginScreen() {
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.text }]}>Email Address</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.backgroundElement,
+                    borderColor: focusedField === 'email' ? brandAccent : colors.border,
+                    borderWidth: focusedField === 'email' ? 1.5 : 1,
+                  },
+                ]}>
+                <Mail
+                  size={18}
+                  color={focusedField === 'email' ? brandAccent : colors.textSecondary}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
                   placeholder="you@example.com"
@@ -132,6 +148,8 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   value={email}
                   onChangeText={setEmail}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
                   editable={!isLoading}
                 />
               </View>
@@ -139,8 +157,20 @@ export default function LoginScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: colors.backgroundElement,
+                    borderColor: focusedField === 'password' ? brandAccent : colors.border,
+                    borderWidth: focusedField === 'password' ? 1.5 : 1,
+                  },
+                ]}>
+                <Lock
+                  size={18}
+                  color={focusedField === 'password' ? brandAccent : colors.textSecondary}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
                   placeholder="Enter your password"
@@ -148,6 +178,8 @@ export default function LoginScreen() {
                   secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
                   editable={!isLoading}
                 />
                 <Pressable
@@ -155,9 +187,9 @@ export default function LoginScreen() {
                   hitSlop={8}
                   style={styles.eyeBtn}>
                   {showPassword ? (
-                    <EyeOff size={18} color={colors.textSecondary} />
+                    <EyeOff size={18} color={focusedField === 'password' ? brandAccent : colors.textSecondary} />
                   ) : (
-                    <Eye size={18} color={colors.textSecondary} />
+                    <Eye size={18} color={focusedField === 'password' ? brandAccent : colors.textSecondary} />
                   )}
                 </Pressable>
               </View>
@@ -169,11 +201,11 @@ export default function LoginScreen() {
               style={({ pressed }) => [
                 styles.submitButton,
                 {
-                  backgroundColor: colors.accent,
-                  opacity: pressed || isLoading ? 0.7 : 1,
+                  backgroundColor: brandYellow,
+                  opacity: pressed || isLoading ? 0.75 : 1,
                 },
               ]}>
-              <Text style={styles.submitButtonText}>Sign In</Text>
+              <Text style={[styles.submitButtonText, { color: brandOlive }]}>Sign In</Text>
             </Pressable>
 
             <Pressable
@@ -195,7 +227,7 @@ export default function LoginScreen() {
 
             <Link href={"/forgot-password" as any} asChild>
               <Pressable style={{ alignItems: 'center', marginTop: 8 }}>
-                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Forgot Password?</Text>
+                <Text style={{ color: brandAccent, fontSize: 14, fontWeight: '600' }}>Forgot Password?</Text>
               </Pressable>
             </Link>
           </View>
@@ -206,8 +238,8 @@ export default function LoginScreen() {
               Don{"'"}t have an account?{' '}
             </Text>
             <Link href={"/(auth)/register" as any} asChild>
-              <Pressable>
-                <Text style={[styles.linkText, { color: colors.accent }]}>Sign Up</Text>
+              <Pressable hitSlop={8}>
+                <Text style={[styles.linkText, { color: brandAccent }]}>Sign Up</Text>
               </Pressable>
             </Link>
           </View>
@@ -235,9 +267,9 @@ export default function LoginScreen() {
             <View
               style={[
                 styles.signingInIconCircle,
-                { backgroundColor: colors.accentMuted },
+                { backgroundColor: isDark ? 'rgba(227, 210, 0, 0.15)' : 'rgba(227, 210, 0, 0.25)' },
               ]}>
-              <LogIn size={26} color={colors.accent} strokeWidth={2.2} />
+              <LogIn size={26} color={brandAccent} strokeWidth={2.2} />
             </View>
 
             <View style={styles.signingInTextCol}>
@@ -249,7 +281,7 @@ export default function LoginScreen() {
               </Text>
             </View>
 
-            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 2 }} />
+            <ActivityIndicator size="small" color={brandAccent} style={{ marginTop: 2 }} />
           </Animated.View>
         </View>
       </Modal>

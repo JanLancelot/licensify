@@ -1135,7 +1135,7 @@ export default function ExamSessionScreen() {
           style={({ pressed }) => [
             styles.headerBtn,
             {
-              backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+              backgroundColor: isDark ? '#23262F' : '#F3F4F6',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>
@@ -1166,7 +1166,7 @@ export default function ExamSessionScreen() {
             style={({ pressed }) => [
               styles.headerBtn,
               {
-                backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                 opacity: pressed ? 0.7 : 1,
               },
             ]}>
@@ -1374,7 +1374,7 @@ export default function ExamSessionScreen() {
               style={({ pressed }) => [
                 styles.viewQuestionsBtn,
                 {
-                  backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                  backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
                   opacity: pressed ? 0.8 : 1,
                 },
@@ -1775,7 +1775,7 @@ export default function ExamSessionScreen() {
                 onPress={() => setIsSubmitConfirmVisible(false)}
                 style={[
                   styles.cancelBtn,
-                  { backgroundColor: isDark ? '#23262F' : '#F6F0ED' },
+                  { backgroundColor: isDark ? '#23262F' : '#F3F4F6' },
                 ]}>
                 <Text style={[styles.cancelBtnText, { color: colors.text }]}>
                   Keep Reviewing

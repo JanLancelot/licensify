@@ -64,7 +64,7 @@ export function LessonDetailModal({
             style={({ pressed }) => [
               styles.modalCloseBtn,
               {
-                backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                 opacity: pressed ? 0.6 : 1,
               },
             ]}>
@@ -140,7 +140,9 @@ export function LessonDetailModal({
             style={[
               styles.modalCard,
               {
-                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
               },
             ]}>
             <Text style={[styles.modalCardLabel, { color: colors.accent }]}>
@@ -156,7 +158,9 @@ export function LessonDetailModal({
             style={[
               styles.modalCard,
               {
-                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
               },
             ]}>
             <Text style={[styles.modalCardLabel, { color: colors.accent }]}>

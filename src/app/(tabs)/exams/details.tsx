@@ -137,7 +137,7 @@ export default function ExamDetailsScreen() {
           style={({ pressed }) => [
             styles.backButton,
             {
-              backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+              backgroundColor: isDark ? '#23262F' : '#F3F4F6',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>
@@ -162,7 +162,9 @@ export default function ExamDetailsScreen() {
           style={[
             styles.heroCard,
             {
-              backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+              backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             },
           ]}>
           <ExamDetailGradientIcon
@@ -228,7 +230,9 @@ export default function ExamDetailsScreen() {
             style={[
               styles.guidelineCard,
               {
-                backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
               },
             ]}>
             <View style={styles.ruleItem}>

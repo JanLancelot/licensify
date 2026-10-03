@@ -149,7 +149,7 @@ export function QuizLauncherModal({
                             ? colors.accent
                             : isDark
                               ? '#1C1F26'
-                              : '#F6F0ED',
+                              : '#F3F4F6',
                           borderColor: isSelected
                             ? colors.accent
                             : isDark
@@ -198,7 +198,7 @@ export function QuizLauncherModal({
                             ? colors.accent
                             : isDark
                               ? '#1C1F26'
-                              : '#F6F0ED',
+                              : '#F3F4F6',
                           borderColor: isSelected
                             ? colors.accent
                             : isDark

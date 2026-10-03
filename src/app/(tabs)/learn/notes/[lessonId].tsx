@@ -9,7 +9,6 @@ import {
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -145,7 +144,7 @@ export default function LessonDetailScreen() {
           style={({ pressed }) => [
             styles.backBtn,
             {
-              backgroundColor: isDark ? '#23262F' : '#F4EFEB',
+              backgroundColor: isDark ? '#23262F' : '#F3F4F6',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>
@@ -227,9 +226,7 @@ export default function LessonDetailScreen() {
                 style={[
                   styles.lessonPill,
                   {
-                    backgroundColor: isDark
-                      ? 'rgba(200, 90, 50, 0.16)'
-                      : 'rgba(200, 90, 50, 0.1)',
+                    backgroundColor: colors.accentMuted,
                   },
                 ]}>
                 <Text style={[styles.lessonPillText, { color: colors.accent }]}>
@@ -306,9 +303,7 @@ export default function LessonDetailScreen() {
                   style={[
                     styles.cardHeaderIcon,
                     {
-                      backgroundColor: isDark
-                        ? 'rgba(200, 90, 50, 0.18)'
-                        : 'rgba(200, 90, 50, 0.1)',
+                      backgroundColor: colors.accentMuted,
                     },
                   ]}>
                   <FileText size={13} color={colors.accent} strokeWidth={2.4} />
@@ -348,9 +343,7 @@ export default function LessonDetailScreen() {
                   style={[
                     styles.cardHeaderIcon,
                     {
-                      backgroundColor: isDark
-                        ? 'rgba(200, 90, 50, 0.18)'
-                        : 'rgba(200, 90, 50, 0.1)',
+                      backgroundColor: colors.accentMuted,
                     },
                   ]}>
                   <BookOpen size={13} color={colors.accent} strokeWidth={2.4} />
@@ -387,9 +380,7 @@ export default function LessonDetailScreen() {
                   style={[
                     styles.cardHeaderIcon,
                     {
-                      backgroundColor: isDark
-                        ? 'rgba(200, 90, 50, 0.18)'
-                        : 'rgba(200, 90, 50, 0.1)',
+                      backgroundColor: colors.accentMuted,
                     },
                   ]}>
                   <BookOpen size={13} color={colors.accent} strokeWidth={2.4} />
@@ -543,20 +534,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 18,
     gap: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 1.5 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 1.5,
-      },
-      web: {
-        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-      },
-    }),
   },
   cardHeaderRow: {
     flexDirection: 'row',

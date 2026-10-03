@@ -7,7 +7,6 @@ import {
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -255,7 +254,7 @@ export default function ExamsSelectionScreen() {
               style={({ pressed }) => [
                 styles.addCircleBtn,
                 {
-                  backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                  backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}>
@@ -277,7 +276,9 @@ export default function ExamsSelectionScreen() {
                   style={({ pressed }) => [
                     styles.bentoCard,
                     {
-                      backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                      borderWidth: 1,
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                       opacity: pressed ? 0.9 : 1,
                       transform: [{ scale: pressed ? 0.98 : 1 }],
                     },
@@ -343,7 +344,7 @@ export default function ExamsSelectionScreen() {
                 style={[
                   styles.dashedIconCircle,
                   {
-                    backgroundColor: isDark ? '#23262F' : '#F0EBE8',
+                    backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                   },
                 ]}>
                 <Plus size={24} color={colors.accent} strokeWidth={2.6} />
@@ -558,20 +559,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     position: 'relative',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-      },
-    }),
   },
   cardDeleteBtn: {
     position: 'absolute',
@@ -622,20 +609,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingVertical: 18,
     paddingHorizontal: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-      },
-    }),
   },
   setNumberCol: {
     width: 58,

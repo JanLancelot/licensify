@@ -68,7 +68,9 @@ export function FlashcardStudyView({
         style={({ pressed }) => [
           styles.flashcardBox,
           {
-            backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+            backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             opacity: pressed ? 0.95 : 1,
           },
         ]}>
@@ -81,7 +83,7 @@ export function FlashcardStudyView({
                   ? colors.accent
                   : isDark
                     ? '#23262F'
-                    : '#FFFFFF',
+                    : '#F3F4F6',
               },
             ]}>
             <Text
@@ -133,7 +135,7 @@ export function FlashcardStudyView({
                 ? '#EF4444'
                 : isDark
                   ? '#23262F'
-                  : '#F6F0ED',
+                  : '#F3F4F6',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>
@@ -150,7 +152,7 @@ export function FlashcardStudyView({
           style={({ pressed }) => [
             styles.navBtn,
             {
-              backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+              backgroundColor: isDark ? '#23262F' : '#F3F4F6',
               opacity: studyIndex === 0 ? 0.35 : pressed ? 0.7 : 1,
             },
           ]}>
@@ -184,7 +186,7 @@ export function FlashcardStudyView({
                 ? '#F59E0B'
                 : isDark
                   ? '#23262F'
-                  : '#F6F0ED',
+                  : '#F3F4F6',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>

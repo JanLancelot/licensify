@@ -244,10 +244,10 @@ export function ExamRemindersModal({
                       style={[
                         styles.subjectChip,
                         {
-                          backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                          backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                           borderColor: isDark
-                            ? 'rgba(255, 255, 255, 0.06)'
-                            : 'rgba(0, 0, 0, 0.05)',
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : 'rgba(0, 0, 0, 0.06)',
                         },
                       ]}>
                       <Text
@@ -301,7 +301,7 @@ export function ExamRemindersModal({
                         style={[
                           styles.reminderDot,
                           {
-                            backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                            backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                           },
                         ]}>
                         <IconComp

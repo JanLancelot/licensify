@@ -122,7 +122,7 @@ export default function NotesScreen() {
           style={({ pressed }) => [
             styles.backBtn,
             {
-              backgroundColor: isDark ? '#23262F' : '#F4EFEB',
+              backgroundColor: isDark ? '#23262F' : '#F3F4F6',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>
@@ -303,20 +303,7 @@ const styles = StyleSheet.create({
   subjectCardBox: {
     borderRadius: 18,
     borderWidth: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-      },
-    }),
+    overflow: 'hidden',
   },
   subjectHeader: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
+import { formatAuthError } from '@/utils/errorUtils';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Link, router } from 'expo-router';
-import { AlertCircle, Lock, Mail, User, UserPlus, KeyRound, Eye, EyeOff } from 'lucide-react-native';
-import { formatAuthError } from '@/utils/errorUtils';
+import { AlertCircle, Eye, EyeOff, KeyRound, Lock, Mail, User, UserPlus } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,6 +18,7 @@ import {
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BrandMark } from '@/components/brand/BrandMark';
 import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
 
@@ -27,6 +28,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [step, setStep] = useState<1 | 2>(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +36,11 @@ export default function RegisterScreen() {
 
   const { signIn } = useAuthActions();
   const theme = useAppTheme();
-  const { colors } = theme;
+  const { colors, isDark } = theme;
+
+  const brandYellow = '#E3D200';
+  const brandOlive = '#393500';
+  const brandAccent = isDark ? '#E3D200' : '#797100';
 
   const handleRegister = async () => {
     if (!firstName || !lastName || !email || !password) {
@@ -94,15 +100,13 @@ export default function RegisterScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
-              {step === 1 ? <UserPlus size={32} color={colors.accent} /> : <KeyRound size={32} color={colors.accent} />}
-            </View>
+            <BrandMark size={76} style={{ marginBottom: 16 }} />
             <Text style={[styles.title, { color: colors.text }]}>
               {step === 1 ? 'Create Account' : 'Verify Email'}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {step === 1 
-                ? 'Join LICENSIFY to track your ALE progress.' 
+              {step === 1
+                ? 'Join P App to track your study progress.'
                 : 'Enter the 6-digit code sent to your email.'}
             </Text>
           </View>
@@ -121,14 +125,28 @@ export default function RegisterScreen() {
               <View style={styles.nameRow}>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={[styles.label, { color: colors.text }]}>First Name</Text>
-                  <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                    <User size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      {
+                        backgroundColor: colors.backgroundElement,
+                        borderColor: focusedField === 'firstName' ? brandAccent : colors.border,
+                        borderWidth: focusedField === 'firstName' ? 1.5 : 1,
+                      },
+                    ]}>
+                    <User
+                      size={18}
+                      color={focusedField === 'firstName' ? brandAccent : colors.textSecondary}
+                      style={styles.inputIcon}
+                    />
                     <TextInput
                       style={[styles.input, { color: colors.text }]}
                       placeholder="Jane"
                       placeholderTextColor={colors.textSecondary}
                       value={firstName}
                       onChangeText={setFirstName}
+                      onFocus={() => setFocusedField('firstName')}
+                      onBlur={() => setFocusedField(null)}
                       editable={!isLoading}
                     />
                   </View>
@@ -136,13 +154,23 @@ export default function RegisterScreen() {
 
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={[styles.label, { color: colors.text }]}>Last Name</Text>
-                  <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      {
+                        backgroundColor: colors.backgroundElement,
+                        borderColor: focusedField === 'lastName' ? brandAccent : colors.border,
+                        borderWidth: focusedField === 'lastName' ? 1.5 : 1,
+                      },
+                    ]}>
                     <TextInput
                       style={[styles.input, { color: colors.text, paddingLeft: 12 }]}
                       placeholder="Doe"
                       placeholderTextColor={colors.textSecondary}
                       value={lastName}
                       onChangeText={setLastName}
+                      onFocus={() => setFocusedField('lastName')}
+                      onBlur={() => setFocusedField(null)}
                       editable={!isLoading}
                     />
                   </View>
@@ -151,8 +179,20 @@ export default function RegisterScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>Email Address</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                  <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: colors.backgroundElement,
+                      borderColor: focusedField === 'email' ? brandAccent : colors.border,
+                      borderWidth: focusedField === 'email' ? 1.5 : 1,
+                    },
+                  ]}>
+                  <Mail
+                    size={18}
+                    color={focusedField === 'email' ? brandAccent : colors.textSecondary}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={[styles.input, { color: colors.text }]}
                     placeholder="you@example.com"
@@ -161,6 +201,8 @@ export default function RegisterScreen() {
                     autoCapitalize="none"
                     value={email}
                     onChangeText={setEmail}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
                     editable={!isLoading}
                   />
                 </View>
@@ -168,8 +210,20 @@ export default function RegisterScreen() {
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>Password</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                  <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: colors.backgroundElement,
+                      borderColor: focusedField === 'password' ? brandAccent : colors.border,
+                      borderWidth: focusedField === 'password' ? 1.5 : 1,
+                    },
+                  ]}>
+                  <Lock
+                    size={18}
+                    color={focusedField === 'password' ? brandAccent : colors.textSecondary}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={[styles.input, { color: colors.text }]}
                     placeholder="Create a password"
@@ -177,6 +231,8 @@ export default function RegisterScreen() {
                     secureTextEntry={!showPassword}
                     value={password}
                     onChangeText={setPassword}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
                     editable={!isLoading}
                   />
                   <Pressable
@@ -184,9 +240,9 @@ export default function RegisterScreen() {
                     hitSlop={8}
                     style={styles.eyeBtn}>
                     {showPassword ? (
-                      <EyeOff size={18} color={colors.textSecondary} />
+                      <EyeOff size={18} color={focusedField === 'password' ? brandAccent : colors.textSecondary} />
                     ) : (
-                      <Eye size={18} color={colors.textSecondary} />
+                      <Eye size={18} color={focusedField === 'password' ? brandAccent : colors.textSecondary} />
                     )}
                   </Pressable>
                 </View>
@@ -198,19 +254,31 @@ export default function RegisterScreen() {
                 style={({ pressed }) => [
                   styles.submitButton,
                   {
-                    backgroundColor: colors.accent,
-                    opacity: pressed || isLoading ? 0.7 : 1,
+                    backgroundColor: brandYellow,
+                    opacity: pressed || isLoading ? 0.75 : 1,
                   },
                 ]}>
-                <Text style={styles.submitButtonText}>Sign Up</Text>
+                <Text style={[styles.submitButtonText, { color: brandOlive }]}>Sign Up</Text>
               </Pressable>
             </View>
           ) : (
             <View style={styles.form}>
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>Verification Code</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-                  <KeyRound size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: colors.backgroundElement,
+                      borderColor: focusedField === 'code' ? brandAccent : colors.border,
+                      borderWidth: focusedField === 'code' ? 1.5 : 1,
+                    },
+                  ]}>
+                  <KeyRound
+                    size={18}
+                    color={focusedField === 'code' ? brandAccent : colors.textSecondary}
+                    style={styles.inputIcon}
+                  />
                   <TextInput
                     style={[styles.input, { color: colors.text }]}
                     placeholder="6-digit code"
@@ -218,6 +286,8 @@ export default function RegisterScreen() {
                     keyboardType="number-pad"
                     value={code}
                     onChangeText={setCode}
+                    onFocus={() => setFocusedField('code')}
+                    onBlur={() => setFocusedField(null)}
                     editable={!isLoading}
                   />
                 </View>
@@ -229,11 +299,11 @@ export default function RegisterScreen() {
                 style={({ pressed }) => [
                   styles.submitButton,
                   {
-                    backgroundColor: colors.accent,
-                    opacity: pressed || isLoading ? 0.7 : 1,
+                    backgroundColor: brandYellow,
+                    opacity: pressed || isLoading ? 0.75 : 1,
                   },
                 ]}>
-                <Text style={styles.submitButtonText}>Verify & Complete Setup</Text>
+                <Text style={[styles.submitButtonText, { color: brandOlive }]}>Verify & Complete Setup</Text>
               </Pressable>
             </View>
           )}
@@ -244,8 +314,8 @@ export default function RegisterScreen() {
               Already have an account?{' '}
             </Text>
             <Link href={"/(auth)/login" as any} asChild>
-              <Pressable>
-                <Text style={[styles.linkText, { color: colors.accent }]}>Sign In</Text>
+              <Pressable hitSlop={8}>
+                <Text style={[styles.linkText, { color: brandAccent }]}>Sign In</Text>
               </Pressable>
             </Link>
           </View>
@@ -273,9 +343,9 @@ export default function RegisterScreen() {
             <View
               style={[
                 styles.signingInIconCircle,
-                { backgroundColor: colors.accentMuted },
+                { backgroundColor: isDark ? 'rgba(227, 210, 0, 0.15)' : 'rgba(227, 210, 0, 0.25)' },
               ]}>
-              <UserPlus size={26} color={colors.accent} strokeWidth={2.2} />
+              <UserPlus size={26} color={brandAccent} strokeWidth={2.2} />
             </View>
 
             <View style={styles.signingInTextCol}>
@@ -289,7 +359,7 @@ export default function RegisterScreen() {
               </Text>
             </View>
 
-            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 2 }} />
+            <ActivityIndicator size="small" color={brandAccent} style={{ marginTop: 2 }} />
           </Animated.View>
         </View>
       </Modal>
@@ -312,14 +382,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 40,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 9999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
   },
   title: {
     fontSize: 28,
@@ -366,7 +428,6 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
     borderRadius: Radius.md,
     paddingHorizontal: 16,
     height: 52,
@@ -387,7 +448,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   submitButtonText: {
-    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
   },

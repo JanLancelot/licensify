@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   LayoutChangeEvent,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -130,13 +129,12 @@ function CenterHomeButton({
                 ? colors.accent
                 : isDark
                   ? '#23262F'
-                  : '#F6F0ED',
+                  : '#F3F4F6',
               borderColor: isFocused
                 ? colors.accent
                 : isDark
                   ? '#303440'
-                  : '#EBE3DE',
-              shadowColor: isFocused ? colors.accent : '#000000',
+                  : '#E5E7EB',
             },
           ]}>
           <Home
@@ -223,7 +221,6 @@ export function ArchitectTabBar({ state, descriptors, navigation }: ArchitectTab
           backgroundColor: colors.tabBarBackground,
           borderTopColor: colors.tabBarBorder,
           paddingBottom: Math.max(insets.bottom, 8),
-          shadowColor: isDark ? '#000000' : '#111827',
         },
       ]}>
       <View onLayout={handleBarLayout} style={styles.barContainer}>
@@ -305,19 +302,6 @@ const styles = StyleSheet.create({
     right: 0,
     width: '100%',
     borderTopWidth: 1,
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 -2px 16px rgba(0, 0, 0, 0.05)',
-      },
-    }),
   },
   barContainer: {
     flexDirection: 'row',
@@ -372,19 +356,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    ...Platform.select({
-      ios: {
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.16,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 6,
-      },
-      web: {
-        boxShadow: '0 3px 12px rgba(0, 0, 0, 0.12)',
-      },
-    }),
   },
   centerLabel: {
     fontSize: 10,
