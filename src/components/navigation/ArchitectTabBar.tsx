@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   LayoutChangeEvent,
-  Platform,
   Pressable,
   StyleSheet,
   Text,

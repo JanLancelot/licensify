@@ -86,7 +86,7 @@ export function WhatsNewCard() {
               styles.announcementBadgeText,
               { color: colors.accent },
             ]}>
-            WHAT'S NEW
+            {"WHAT'S NEW"}
           </Text>
         </View>
 
