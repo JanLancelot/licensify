@@ -1,103 +1,37 @@
-import { useQuery } from 'convex/react';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { Image as ExpoImage } from 'expo-image';
-import * as SecureStore from 'expo-secure-store';
-import {
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  Flame,
-  Landmark,
-  User,
-  X,
-} from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
+import { useQuery } from 'convex/react';
+import { BookOpen, Landmark } from 'lucide-react-native';
 
-import { Radius } from '@/constants/theme';
 import { useAppTheme } from '@/context/theme-context';
 import {
-  trackLessonInteraction,
   useLessonProgress,
   useLocalAttempts,
   useLocalHierarchy,
   useLocalStats,
 } from '@/hooks/useLocalData';
-import Animated, {
-  FadeInDown,
-  FadeOutUp,
-  LinearTransition,
-} from 'react-native-reanimated';
+import {
+  ConfidenceItem,
+  ConfidenceRateSection,
+  ContinueItem,
+  ContinueLearningSection,
+  HomeHeroCard,
+  WhatsNewCard,
+} from '@/components/home';
 import { api } from '../../../convex/_generated/api';
-
-interface ConfidenceItem {
-  id: string;
-  lessonName: string;
-  topicName?: string;
-  confidencePercent: number;
-}
 
 export default function HomeScreen() {
   const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const router = useRouter();
 
   const userProfile = useQuery(api.users.getCurrentUserProfile);
   const { stats, refetch } = useLocalStats();
   const { curriculum } = useLocalHierarchy();
-  const { completedLessonIds, lessonTimestamps, refetch: refetchProgress } = useLessonProgress();
+  const { completedLessonIds, lessonTimestamps, refetch: refetchProgress } =
+    useLessonProgress();
   const { attempts, refetch: refetchAttempts } = useLocalAttempts();
-
-  const [showAllLessons, setShowAllLessons] = useState(false);
-  const [isAnnouncementVisible, setIsAnnouncementVisible] = useState(true);
-
-  // Check persisted dismissal status
-  useEffect(() => {
-    const checkDismissed = async () => {
-      try {
-        if (Platform.OS === 'web') {
-          if (typeof window !== 'undefined' && window.localStorage) {
-            const dismissed = window.localStorage.getItem('@app_whats_new_dismissed_v1');
-            if (dismissed === 'true') {
-              setIsAnnouncementVisible(false);
-            }
-          }
-          return;
-        }
-        const dismissed = await SecureStore.getItemAsync('app_whats_new_dismissed_v1');
-        if (dismissed === 'true') {
-          setIsAnnouncementVisible(false);
-        }
-      } catch {
-        // Fallback gracefully
-      }
-    };
-    checkDismissed();
-  }, []);
-
-  const handleDismissAnnouncement = async () => {
-    setIsAnnouncementVisible(false);
-    try {
-      if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.setItem('@app_whats_new_dismissed_v1', 'true');
-        }
-        return;
-      }
-      await SecureStore.setItemAsync('app_whats_new_dismissed_v1', 'true');
-    } catch {
-      // Fallback gracefully
-    }
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -108,21 +42,21 @@ export default function HomeScreen() {
   );
 
   const userName =
-    userProfile?.firstName ||
-    userProfile?.username ||
-    'User';
-
+    userProfile?.firstName || userProfile?.username || 'User';
   const displayAvatarUri = (userProfile as any)?.profileImageUrl || null;
 
   const streakDays = stats?.streakDays ?? 0;
-  const milestoneTarget = streakDays >= 10 ? (Math.floor(streakDays / 10) + 1) * 10 : 10;
-  const streakProgressPercent = Math.min(100, Math.max(0, Math.round((streakDays / milestoneTarget) * 100)));
+  const milestoneTarget =
+    streakDays >= 10 ? (Math.floor(streakDays / 10) + 1) * 10 : 10;
+  const streakProgressPercent = Math.min(
+    100,
+    Math.max(0, Math.round((streakDays / milestoneTarget) * 100))
+  );
 
   // Active Continue Learning subjects/lessons matching real SQLite progress
-  const continueItems = useMemo(() => {
+  const continueItems: ContinueItem[] = useMemo(() => {
     if (!curriculum || curriculum.length === 0) return [];
 
-    // Calculate real progress for each subject
     const subjectsWithProgress = curriculum.map((sub, sIdx) => {
       const allLessonsWithTopic = sub.topics.flatMap((t) =>
         t.lessons.map((l) => ({
@@ -133,10 +67,12 @@ export default function HomeScreen() {
       const allLessonIds = allLessonsWithTopic.map((l) => l.id);
       const allTopicIds = sub.topics.map((t) => t.id);
       const total = allLessonIds.length;
-      const done = allLessonIds.filter((id) => completedLessonIds.has(id)).length;
+      const done = allLessonIds.filter((id) =>
+        completedLessonIds.has(id)
+      ).length;
       const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-      // Find the next incomplete lesson to focus when continuing
+      // Find next incomplete lesson to focus when continuing
       const nextLesson =
         allLessonsWithTopic.find((l) => !completedLessonIds.has(l.id)) ||
         allLessonsWithTopic[0];
@@ -173,7 +109,9 @@ export default function HomeScreen() {
     });
 
     // Only include subjects with progress (> 0) that are not yet 100% completed (done < total)
-    const inProgress = subjectsWithProgress.filter((s) => s.done > 0 && s.done < s.total);
+    const inProgress = subjectsWithProgress.filter(
+      (s) => s.done > 0 && s.done < s.total
+    );
 
     // Sort by latest clicked/completed at the top (highest timestamp first)
     inProgress.sort((a, b) => b.lastActiveTimestamp - a.lastActiveTimestamp);
@@ -204,34 +142,44 @@ export default function HomeScreen() {
       }
     }
 
-    const generalAvgScore = generalPracticeScores.length > 0
-      ? Math.round(generalPracticeScores.reduce((a, b) => a + b, 0) / generalPracticeScores.length)
-      : (stats?.averageScore && stats.averageScore > 0 ? stats.averageScore : null);
+    const generalAvgScore =
+      generalPracticeScores.length > 0
+        ? Math.round(
+            generalPracticeScores.reduce((a, b) => a + b, 0) /
+              generalPracticeScores.length
+          )
+        : stats?.averageScore && stats.averageScore > 0
+          ? stats.averageScore
+          : null;
 
     for (const sub of curriculum) {
-      // Direct subject match or name match
       let subScores = subjectScores.get(sub.id) || [];
       if (subScores.length === 0) {
-        // Also check if any attempt matches by title keyword
         for (const [key, scores] of subjectScores.entries()) {
-          if (sub.title.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(sub.title.toLowerCase())) {
+          if (
+            sub.title.toLowerCase().includes(key.toLowerCase()) ||
+            key.toLowerCase().includes(sub.title.toLowerCase())
+          ) {
             subScores = scores;
             break;
           }
         }
       }
 
-      const directAvgScore = subScores.length > 0
-        ? Math.round(subScores.reduce((a, b) => a + b, 0) / subScores.length)
-        : null;
+      const directAvgScore =
+        subScores.length > 0
+          ? Math.round(subScores.reduce((a, b) => a + b, 0) / subScores.length)
+          : null;
 
-      // Use direct subject drill score if available, otherwise use overall practice accuracy
-      const effectiveScore = directAvgScore !== null ? directAvgScore : generalAvgScore;
+      const effectiveScore =
+        directAvgScore !== null ? directAvgScore : generalAvgScore;
 
       for (const topic of sub.topics) {
         const topicLessonIds = topic.lessons.map((l) => l.id);
         const total = topicLessonIds.length;
-        const done = topicLessonIds.filter((id) => completedLessonIds.has(id)).length;
+        const done = topicLessonIds.filter((id) =>
+          completedLessonIds.has(id)
+        ).length;
 
         let confidencePercent = 0;
         let lastActiveTimestamp = 0;
@@ -239,8 +187,10 @@ export default function HomeScreen() {
         if (total > 0 && done > 0) {
           const completionPct = Math.round((done / total) * 100);
           if (effectiveScore !== null && effectiveScore > 0) {
-            // Weighted blend of lesson completion & quiz accuracy
-            confidencePercent = Math.min(100, Math.round(completionPct * 0.5 + effectiveScore * 0.5));
+            confidencePercent = Math.min(
+              100,
+              Math.round(completionPct * 0.5 + effectiveScore * 0.5)
+            );
           } else {
             confidencePercent = completionPct;
           }
@@ -258,7 +208,6 @@ export default function HomeScreen() {
           }
         }
 
-        // Only include topics with progress (> 0%)
         if (confidencePercent > 0) {
           collected.push({
             id: topic.id,
@@ -271,15 +220,12 @@ export default function HomeScreen() {
       }
     }
 
-    // Sort by recent clicked progress at the top (descending timestamp)
     collected.sort((a, b) => b.lastActiveTimestamp - a.lastActiveTimestamp);
 
-    return collected.slice(0, 10).map(({ lastActiveTimestamp, ...item }) => item);
+    return collected
+      .slice(0, 10)
+      .map(({ lastActiveTimestamp, ...item }) => item);
   }, [curriculum, completedLessonIds, lessonTimestamps, attempts, stats]);
-
-  const displayedLessons = useMemo(() => {
-    return showAllLessons ? confidenceLessons : confidenceLessons.slice(0, 5);
-  }, [confidenceLessons, showAllLessons]);
 
   const greetingTime = useMemo(() => {
     const hour = new Date().getHours();
@@ -310,583 +256,22 @@ export default function HomeScreen() {
           styles.contentContainer,
           { paddingBottom: insets.bottom + 100 },
         ]}>
-        {/* ================================================================= */}
-        {/* 1. MAIN HERO BLOCK (Circular Avatar on Left, Motivation & Centered Fire on Right) */}
-        {/* ================================================================= */}
-        <View
-          style={[
-            styles.mainHeroCard,
-            {
-              backgroundColor: isDark ? colors.backgroundElement : '#FFFFFF',
-              borderColor: isDark
-                ? 'rgba(255, 255, 255, 0.08)'
-                : 'rgba(0, 0, 0, 0.06)',
-            },
-          ]}>
-          {/* Left: Large User Profile Circular Avatar */}
-          <Pressable
-            onPress={() => router.push('/(tabs)/profile' as any)}
-            style={({ pressed }) => [
-              styles.heroAvatarBox,
-              {
-                backgroundColor: colors.accentMuted,
-                borderColor: colors.accentBorder,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}>
-            {displayAvatarUri ? (
-              <ExpoImage
-                source={{ uri: displayAvatarUri }}
-                style={styles.heroAvatarImage}
-                contentFit="cover"
-                transition={200}
-              />
-            ) : (
-              <User size={46} color={colors.accent} strokeWidth={2.3} />
-            )}
-          </Pressable>
+        {/* 1. Main Hero Block */}
+        <HomeHeroCard
+          displayAvatarUri={displayAvatarUri}
+          streakDays={streakDays}
+          milestoneTarget={milestoneTarget}
+          streakProgressPercent={streakProgressPercent}
+        />
 
-          {/* Right Column: Centered Flame, 3 DAYS, and 20% Milestone Progress */}
-          <View style={styles.heroRightColumn}>
-            {/* Flame & 3 DAYS centered along the progress bar */}
-            <View style={styles.heroStreakCenteredBox}>
-              <Flame size={50} color="#F59E0B" fill="#F59E0B" />
-              <Text
-                style={[
-                  styles.heroStreakText,
-                  { color: isDark ? '#FBBF24' : '#D97706' },
-                ]}>
-                {streakDays} {streakDays === 1 ? 'DAY' : 'DAYS'}
-              </Text>
-            </View>
+        {/* 2. What's New / Announcement Card */}
+        <WhatsNewCard />
 
-            {/* Bottom: Dynamic Streak Progress & Milestone Voucher Caption */}
-            <View style={styles.heroBottomProgressArea}>
-              {/* Progress Bar Track */}
-              <View
-                style={[
-                  styles.heroProgressTrack,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.10)'
-                      : 'rgba(0, 0, 0, 0.06)',
-                  },
-                ]}>
-                <View
-                  style={[
-                    styles.heroProgressFill,
-                    {
-                      width: `${streakProgressPercent}%`,
-                      backgroundColor: colors.accent,
-                    },
-                  ]}
-                />
-              </View>
+        {/* 3. Confidence Rate Section */}
+        <ConfidenceRateSection confidenceLessons={confidenceLessons} />
 
-              {/* Caption directly under the bar */}
-              <Text
-                style={[
-                  styles.heroMilestoneVoucherText,
-                  { color: colors.textSecondary },
-                ]}>
-                {streakDays >= milestoneTarget
-                  ? 'MILESTONE ACHIEVED! DISCOUNT VOUCHER UNLOCKED'
-                  : `COMPLETE ${milestoneTarget} DAYS TO GET DISCOUNT VOUCHER`}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ================================================================= */}
-        {/* WHAT'S NEW / ANNOUNCEMENT PLACEHOLDER                             */}
-        {/* ================================================================= */}
-        {isAnnouncementVisible && (
-          <Animated.View
-            entering={FadeInDown.duration(300)}
-            exiting={FadeOutUp.duration(200)}
-            layout={LinearTransition.springify()}
-            style={[
-              styles.announcementCard,
-              {
-                backgroundColor: isDark ? colors.backgroundElement : '#FFFFFF',
-                borderColor: isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(0, 0, 0, 0.06)',
-              },
-            ]}>
-            {/* Top Header Row: Badge & Dismiss (X) Button */}
-            <View style={styles.announcementTopRow}>
-              <View
-                style={[
-                  styles.announcementBadge,
-                  {
-                    backgroundColor: colors.accentMuted,
-                    borderColor: colors.accentBorder,
-                  },
-                ]}>
-                <Text
-                  style={[
-                    styles.announcementBadgeText,
-                    { color: colors.accent },
-                  ]}>
-                  WHAT'S NEW
-                </Text>
-              </View>
-
-              <Pressable
-                onPress={handleDismissAnnouncement}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={({ pressed }) => [
-                  styles.announcementCloseBtn,
-                  {
-                    backgroundColor: isDark
-                      ? 'rgba(255, 255, 255, 0.06)'
-                      : 'rgba(0, 0, 0, 0.04)',
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}>
-                <X size={15} color={colors.textSecondary} strokeWidth={2.4} />
-              </Pressable>
-            </View>
-
-            {/* Content Area with Multiple Update Sections */}
-            <View style={styles.announcementBody}>
-              {/* Section 1 */}
-              <View style={styles.announcementSection}>
-                <Text
-                  style={[
-                    styles.announcementSectionTitle,
-                    { color: isDark ? '#F9FAFB' : '#0F172A' },
-                  ]}>
-                  UI & Experience Redesign
-                </Text>
-                <View style={styles.announcementBulletList}>
-                  <View style={styles.announcementBulletRow}>
-                    <View
-                      style={[
-                        styles.announcementBulletDot,
-                        { backgroundColor: colors.accent },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.announcementBulletText,
-                        { color: colors.textSecondary },
-                      ]}>
-                      Smoother page navigation transitions with zero screen flickering
-                    </Text>
-                  </View>
-                  <View style={styles.announcementBulletRow}>
-                    <View
-                      style={[
-                        styles.announcementBulletDot,
-                        { backgroundColor: colors.accent },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.announcementBulletText,
-                        { color: colors.textSecondary },
-                      ]}>
-                      Refined dark & light themes with harmonized accent color palettes
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Section 2 */}
-              <View style={styles.announcementSection}>
-                <Text
-                  style={[
-                    styles.announcementSectionTitle,
-                    { color: isDark ? '#F9FAFB' : '#0F172A' },
-                  ]}>
-                  Study Modules & Materials
-                </Text>
-                <View style={styles.announcementBulletList}>
-                  <View style={styles.announcementBulletRow}>
-                    <View
-                      style={[
-                        styles.announcementBulletDot,
-                        { backgroundColor: colors.accent },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.announcementBulletText,
-                        { color: colors.textSecondary },
-                      ]}>
-                      Updated comprehensive syllabus lesson notes with auto-saving progress
-                    </Text>
-                  </View>
-                  <View style={styles.announcementBulletRow}>
-                    <View
-                      style={[
-                        styles.announcementBulletDot,
-                        { backgroundColor: colors.accent },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.announcementBulletText,
-                        { color: colors.textSecondary },
-                      ]}>
-                      Smart flashcard decks with active recall and mastery tracking
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* Section 3 */}
-              <View style={styles.announcementSection}>
-                <Text
-                  style={[
-                    styles.announcementSectionTitle,
-                    { color: isDark ? '#F9FAFB' : '#0F172A' },
-                  ]}>
-                  Performance & Reliability
-                </Text>
-                <View style={styles.announcementBulletList}>
-                  <View style={styles.announcementBulletRow}>
-                    <View
-                      style={[
-                        styles.announcementBulletDot,
-                        { backgroundColor: colors.accent },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.announcementBulletText,
-                        { color: colors.textSecondary },
-                      ]}>
-                      Faster offline caching and instant board exam drills loading
-                    </Text>
-                  </View>
-                  <View style={styles.announcementBulletRow}>
-                    <View
-                      style={[
-                        styles.announcementBulletDot,
-                        { backgroundColor: colors.accent },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.announcementBulletText,
-                        { color: colors.textSecondary },
-                      ]}>
-                      Enhanced cloud synchronization with automatic retry support
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Bottom Actions Row */}
-            <View style={styles.announcementFooter}>
-              <Pressable
-                onPress={handleDismissAnnouncement}
-                style={({ pressed }) => [
-                  styles.announcementActionBtn,
-                  {
-                    backgroundColor: colors.accent,
-                    opacity: pressed ? 0.9 : 1,
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  },
-                ]}>
-                <Text style={styles.announcementActionBtnText}>Got it</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleDismissAnnouncement}
-                style={({ pressed }) => [
-                  styles.announcementDismissBtn,
-                  {
-                    opacity: pressed ? 0.6 : 1,
-                  },
-                ]}>
-                <Text
-                  style={[
-                    styles.announcementDismissText,
-                    { color: colors.textSecondary },
-                  ]}>
-                  Dismiss
-                </Text>
-              </Pressable>
-            </View>
-          </Animated.View>
-        )}
-
-        {/* ================================================================= */}
-        {/* 2. CONFIDENCE RATE SECTION                                        */}
-        {/* ================================================================= */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Confidence Rate
-            </Text>
-          </View>
-
-          <View
-            style={[
-              styles.confidenceChartCard,
-              {
-                backgroundColor: isDark ? colors.backgroundElement : '#FFFFFF',
-                borderColor: isDark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(0, 0, 0, 0.06)',
-              },
-            ]}>
-            <View style={styles.confidenceChartWrapper}>
-              {/* Rows Area with Bounded Vertical Axis Line */}
-              <View style={styles.chartContentArea}>
-                {/* Continuous Vertical Axis Line strictly bounded to the rows */}
-                {displayedLessons.length > 0 && (
-                  <View
-                    style={[
-                      styles.chartVerticalAxis,
-                      {
-                        backgroundColor: isDark
-                          ? 'rgba(255, 255, 255, 0.35)'
-                          : '#111827',
-                      },
-                    ]}
-                  />
-                )}
-
-                {/* Rows */}
-                <Animated.View
-                  layout={LinearTransition.duration(250)}
-                  style={styles.chartRowsContainer}>
-                  {displayedLessons.length === 0 ? (
-                    <View style={{ paddingVertical: 24, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', textAlign: 'center', lineHeight: 18 }}>
-                        No progress yet. Study lessons or take quizzes to see your confidence rate!
-                      </Text>
-                    </View>
-                  ) : (
-                    displayedLessons.map((item, index) => {
-                      // Bar width ratio relative to 68% max container width so % fits on right
-                      const barWidthPercent = Math.max(3, Math.min(100, item.confidencePercent)) * 0.68;
-
-                      return (
-                        <Animated.View
-                          key={item.id}
-                          entering={FadeInDown.duration(200).delay(index >= 5 ? (index - 5) * 35 : 0)}
-                          exiting={FadeOutUp.duration(160)}
-                          layout={LinearTransition.duration(240)}
-                          style={styles.chartRow}>
-                          {/* Left Column: Actual Lesson Name */}
-                          <View style={styles.chartLeftLabelBox}>
-                            <Text
-                              numberOfLines={1}
-                              ellipsizeMode="tail"
-                              style={[
-                                styles.chartLessonText,
-                                { color: colors.text },
-                              ]}>
-                              {item.lessonName}
-                            </Text>
-                          </View>
-
-                          {/* Right Area: Horizontal Bar sprouting directly from vertical line + % at the tip */}
-                          <View style={styles.chartRightBarArea}>
-                            <View
-                              style={[
-                                styles.chartHorizontalBar,
-                                {
-                                  width: `${barWidthPercent}%`,
-                                  backgroundColor: colors.accent,
-                                },
-                              ]}
-                            />
-                            <Text
-                              style={[
-                                styles.chartPercentLabel,
-                                { color: colors.accent },
-                              ]}>
-                              {item.confidencePercent}%
-                            </Text>
-                          </View>
-                        </Animated.View>
-                      );
-                    })
-                  )}
-                </Animated.View>
-              </View>
-
-              {/* Show More / Show Less Toggle Button (Up to 10) - Outside Axis Boundary */}
-              {confidenceLessons.length > 5 && (
-                <Pressable
-                  onPress={() => setShowAllLessons((prev) => !prev)}
-                  style={({ pressed }) => [
-                    styles.toggleLessonsBtn,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(255, 255, 255, 0.06)'
-                        : 'rgba(0, 0, 0, 0.03)',
-                      borderColor: isDark
-                        ? 'rgba(255, 255, 255, 0.08)'
-                        : 'rgba(0, 0, 0, 0.06)',
-                      opacity: pressed ? 0.75 : 1,
-                    },
-                  ]}>
-                  <Text
-                    style={[styles.toggleLessonsBtnText, { color: colors.accent }]}>
-                    {showAllLessons ? 'Show Less' : 'Show More'}
-                  </Text>
-                  {showAllLessons ? (
-                    <ChevronUp size={14} color={colors.accent} strokeWidth={2.4} />
-                  ) : (
-                    <ChevronDown size={14} color={colors.accent} strokeWidth={2.4} />
-                  )}
-                </Pressable>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* ================================================================= */}
-        {/* 3. CONTINUE LEARNING SECTION (Only show if there is progress)     */}
-        {/* ================================================================= */}
-        {continueItems.length > 0 && (
-          <View style={styles.sectionContainer}>
-            {/* Section Header Row with Vertical Accent Bar */}
-            <View style={styles.continueSectionHeader}>
-              <View
-                style={[
-                  styles.continueHeaderAccentBar,
-                  { backgroundColor: colors.accent },
-                ]}
-              />
-              <Text style={[styles.continueSectionTitle, { color: colors.text }]}>
-                CONTINUE LEARNING
-              </Text>
-            </View>
-
-            {/* List of Continue Learning Cards */}
-            <View style={styles.continueCardsList}>
-              {continueItems.map((item) => {
-                const IconComp = item.icon;
-
-                return (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => {
-                      trackLessonInteraction(item.id);
-                      if (item.nextTopicId) trackLessonInteraction(item.nextTopicId);
-                      if (item.nextLessonId) trackLessonInteraction(item.nextLessonId);
-                      router.push({
-                        pathname: '/(tabs)/learn/notes' as any,
-                        params: {
-                          subjectId: item.id,
-                          topicId: item.nextTopicId,
-                          lessonId: item.nextLessonId,
-                        },
-                      });
-                    }}
-                    style={({ pressed }) => [
-                      styles.continueLearningCard,
-                      {
-                        backgroundColor: isDark
-                          ? colors.backgroundElement
-                          : '#FFFFFF',
-                        borderColor: isDark
-                          ? 'rgba(255, 255, 255, 0.08)'
-                          : 'rgba(0, 0, 0, 0.06)',
-                        opacity: pressed ? 0.92 : 1,
-                        transform: [{ scale: pressed ? 0.99 : 1 }],
-                      },
-                    ]}>
-                    {/* Left: Soft Tinted Circular Icon Container */}
-                    <View
-                      style={[
-                        styles.circularIconWrap,
-                        {
-                          backgroundColor: colors.accentMuted,
-                          borderColor: colors.accentBorder,
-                        },
-                      ]}>
-                      <IconComp
-                        size={22}
-                        color={colors.accent}
-                        strokeWidth={2.2}
-                      />
-                    </View>
-
-                    {/* Middle: Title & % on header row, Progress track below */}
-                    <View style={styles.continueCardContent}>
-                      <View style={styles.continueCardHeaderRow}>
-                        <Text
-                          style={[
-                            styles.continueSubjectTitle,
-                            { color: colors.text },
-                          ]}>
-                          {item.title}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.continuePercentBadge,
-                            { color: colors.accent },
-                          ]}>
-                          {item.percent}%
-                        </Text>
-                      </View>
-
-                      {/* Progress Track */}
-                      <View
-                        style={[
-                          styles.continueProgressTrack,
-                          {
-                            backgroundColor: isDark
-                              ? 'rgba(255, 255, 255, 0.10)'
-                              : 'rgba(239, 241, 245, 1)',
-                          },
-                        ]}>
-                        <View
-                          style={[
-                            styles.continueProgressFill,
-                            {
-                              width: `${item.percent}%`,
-                              backgroundColor: colors.accent,
-                            },
-                          ]}
-                        />
-                      </View>
-                    </View>
-
-                    {/* Right Divider & Circular Chevron Action Button */}
-                    <View
-                      style={[
-                        styles.continueRightDivider,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255, 255, 255, 0.08)'
-                            : 'rgba(0, 0, 0, 0.06)',
-                        },
-                      ]}
-                    />
-
-                    <View
-                      style={[
-                        styles.chevronCircleWrap,
-                        {
-                          backgroundColor: isDark
-                            ? 'rgba(255, 255, 255, 0.06)'
-                            : '#F8FAFC',
-                        },
-                      ]}>
-                      <ChevronRight
-                        size={18}
-                        color={colors.text}
-                        strokeWidth={2.4}
-                      />
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
+        {/* 4. Continue Learning Section */}
+        <ContinueLearningSection continueItems={continueItems} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -913,338 +298,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     gap: 20,
-  },
-
-  /* ======================================================================= */
-  /* 1. Main Hero Block                                                      */
-  /* ======================================================================= */
-  mainHeroCard: {
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  heroAvatarBox: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  heroAvatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 45,
-  },
-  heroRightColumn: {
-    flex: 1,
-    gap: 10,
-    justifyContent: 'center',
-  },
-  heroStreakCenteredBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    alignSelf: 'center',
-  },
-  heroStreakText: {
-    fontSize: 14.5,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-  },
-  heroBottomProgressArea: {
-    gap: 5,
-    width: '100%',
-  },
-  heroProgressTrack: {
-    height: 6,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  heroProgressFill: {
-    height: '100%',
-    borderRadius: Radius.full,
-  },
-  heroMilestoneVoucherText: {
-    fontSize: 8.8,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-    textAlign: 'center',
-  },
-
-  /* ======================================================================= */
-  /* 2. Confidence Rate Section                                              */
-  /* ======================================================================= */
-  sectionContainer: {
-    gap: 12,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  confidenceChartCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-  },
-  confidenceChartWrapper: {
-    gap: 4,
-  },
-  chartContentArea: {
-    position: 'relative',
-  },
-  chartVerticalAxis: {
-    position: 'absolute',
-    left: 130,
-    top: 2,
-    bottom: 2,
-    width: 2,
-    borderRadius: 1,
-    zIndex: 1,
-  },
-  chartRowsContainer: {
-    gap: 16,
-  },
-  chartRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 28,
-    paddingVertical: 2,
-  },
-  chartLeftLabelBox: {
-    width: 130,
-    paddingRight: 10,
-    justifyContent: 'center',
-  },
-  chartLessonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-    lineHeight: 15,
-  },
-  chartRightBarArea: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  chartHorizontalBar: {
-    height: 4.5,
-    borderRadius: 2.5,
-  },
-  chartPercentLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  toggleLessonsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 14,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    alignSelf: 'center',
-    gap: 5,
-  },
-  toggleLessonsBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  /* ======================================================================= */
-  /* 3. Continue Learning Section                                            */
-  /* ======================================================================= */
-  continueSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 4,
-  },
-  continueHeaderAccentBar: {
-    width: 4,
-    height: 18,
-    borderRadius: 2,
-  },
-  continueSectionTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  continueCardsList: {
-    gap: 12,
-  },
-  continueLearningCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 22,
-    borderWidth: 1,
-    gap: 14,
-  },
-  circularIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  continueCardContent: {
-    flex: 1,
-    gap: 8,
-  },
-  continueCardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  continueSubjectTitle: {
-    fontSize: 13.5,
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    flex: 1,
-  },
-  continuePercentBadge: {
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  continueProgressTrack: {
-    height: 7,
-    borderRadius: 3.5,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  continueProgressFill: {
-    height: '100%',
-    borderRadius: 3.5,
-  },
-  continueRightDivider: {
-    width: 1,
-    height: 32,
-    marginHorizontal: 2,
-  },
-  chevronCircleWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* ======================================================================= */
-  /* What's New Announcement Card                                            */
-  /* ======================================================================= */
-  announcementCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 16,
-    gap: 12,
-  },
-  announcementTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  announcementBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4.5,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-  },
-  announcementBadgeText: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-  },
-  announcementCloseBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  announcementBody: {
-    gap: 12,
-  },
-  announcementSection: {
-    gap: 6,
-  },
-  announcementSectionTitle: {
-    fontSize: 13.5,
-    fontWeight: '800',
-    letterSpacing: -0.1,
-  },
-  announcementBulletList: {
-    gap: 6,
-  },
-  announcementBulletRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  announcementBulletDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    marginTop: 6,
-  },
-  announcementBulletText: {
-    flex: 1,
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '500',
-  },
-  announcementFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 4,
-  },
-  announcementActionBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  announcementActionBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-  },
-  announcementDismissBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  announcementDismissText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
 });
