@@ -1,28 +1,29 @@
-import React, { useState } from 'react';
+import { formatAuthError } from '@/utils/errorUtils';
+import { useAuthActions } from '@convex-dev/auth/react';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as Linking from 'expo-linking';
+import { Link } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { AlertCircle, Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react-native';
+import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Modal,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthActions } from '@convex-dev/auth/react';
-import { Link } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import { makeRedirectUri } from 'expo-auth-session';
-import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react-native';
-import { formatAuthError } from '@/utils/errorUtils';
 
-import { useAppTheme } from '@/context/theme-context';
-import { Radius } from '@/constants/theme';
+import { BrandMark } from '@/components/brand/BrandMark';
 import { GoogleLogo } from '@/components/ui/GoogleLogo';
+import { Radius } from '@/constants/theme';
+import { useAppTheme } from '@/context/theme-context';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -68,7 +69,7 @@ export default function LoginScreen() {
 
       const redirectTo = makeRedirectUri();
       const { redirect } = await signIn('google', { redirectTo });
-      
+
       if (redirect) {
         const result = await WebBrowser.openAuthSessionAsync(redirect.toString(), redirectTo);
         if (result.type === 'success') {
@@ -97,13 +98,11 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}>
         <View style={styles.content}>
-          
+
           {/* Header */}
           <View style={styles.header}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.accentMuted }]}>
-              <LogIn size={30} color={colors.accent} />
-            </View>
-            <Text style={[styles.brandName, { color: colors.accent }]}>LICENSIFY</Text>
+            <BrandMark size={80} style={{ marginBottom: 16 }} />
+            <Text style={[styles.brandName, { color: colors.accent }]}>P App</Text>
             <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Sign in to continue your ALE preparation.

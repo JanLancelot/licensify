@@ -1,7 +1,7 @@
+import { formatAuthError } from '@/utils/errorUtils';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { Link, router } from 'expo-router';
-import { AlertCircle, Lock, Mail, User, UserPlus, KeyRound, Eye, EyeOff } from 'lucide-react-native';
-import { formatAuthError } from '@/utils/errorUtils';
+import { AlertCircle, Eye, EyeOff, KeyRound, Lock, Mail, User, UserPlus } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -101,8 +101,8 @@ export default function RegisterScreen() {
               {step === 1 ? 'Create Account' : 'Verify Email'}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {step === 1 
-                ? 'Join LICENSIFY to track your ALE progress.' 
+              {step === 1
+                ? 'Join LICENSIFY to track your ALE progress.'
                 : 'Enter the 6-digit code sent to your email.'}
             </Text>
           </View>
