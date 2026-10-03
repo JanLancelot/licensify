@@ -189,10 +189,10 @@ export function AddQuizFromFlashcardsModal({
                       style={({ pressed }) => [
                         styles.bentoCard,
                         {
-                          backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                          backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                           borderColor: isDark
-                            ? 'rgba(255, 255, 255, 0.06)'
-                            : 'rgba(0, 0, 0, 0.04)',
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : 'rgba(0, 0, 0, 0.06)',
                           opacity: pressed ? 0.85 : 1,
                           transform: [{ scale: pressed ? 0.97 : 1 }],
                         },
@@ -256,7 +256,7 @@ export function AddQuizFromFlashcardsModal({
                   style={[
                     styles.emptyIconBadge,
                     {
-                      backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                      backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                     },
                   ]}>
                   <Layers size={26} color={colors.accent} strokeWidth={2} />

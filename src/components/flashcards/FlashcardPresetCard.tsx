@@ -28,7 +28,9 @@ export function FlashcardPresetCard({
       style={[
         styles.presetCard,
         {
-          backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+          backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
         },
       ]}>
       {/* Top Badges & Actions */}
@@ -50,7 +52,7 @@ export function FlashcardPresetCard({
             style={[
               styles.presetPill,
               {
-                backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                backgroundColor: isDark ? '#23262F' : '#F3F4F6',
               },
             ]}>
             <Text style={[styles.presetPillText, { color: colors.textSecondary }]}>
@@ -63,7 +65,7 @@ export function FlashcardPresetCard({
               style={[
                 styles.presetPill,
                 {
-                  backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                  backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                 },
               ]}>
               <Shuffle size={10} color={colors.textSecondary} />
@@ -96,7 +98,7 @@ export function FlashcardPresetCard({
             style={({ pressed }) => [
               styles.iconBtn,
               {
-                backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                 opacity: pressed ? 0.6 : 1,
               },
             ]}>
@@ -109,7 +111,7 @@ export function FlashcardPresetCard({
             style={({ pressed }) => [
               styles.iconBtn,
               {
-                backgroundColor: isDark ? '#23262F' : '#FFFFFF',
+                backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                 opacity: pressed ? 0.6 : 1,
               },
             ]}>

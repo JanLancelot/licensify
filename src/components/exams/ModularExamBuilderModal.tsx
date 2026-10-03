@@ -349,7 +349,7 @@ export function ModularExamBuilderModal({
                 style={[
                   styles.bentoPreviewCard,
                   {
-                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
                     borderColor: isDark
                       ? 'rgba(255, 255, 255, 0.08)'
                       : 'rgba(0, 0, 0, 0.06)',
@@ -372,7 +372,7 @@ export function ModularExamBuilderModal({
                         styles.iconEditBadge,
                         {
                           backgroundColor: isDark ? '#374151' : '#E5E7EB',
-                          borderColor: isDark ? '#1C1F26' : '#F6F0ED',
+                          borderColor: isDark ? '#1C1F26' : '#FFFFFF',
                         },
                       ]}>
                       <Edit2
@@ -453,7 +453,7 @@ export function ModularExamBuilderModal({
                                 ? colors.accent
                                 : isDark
                                   ? '#23262F'
-                                  : '#F6F0ED',
+                                  : '#F3F4F6',
                               borderColor: isSelected
                                 ? colors.accent
                                 : isDark
@@ -499,7 +499,7 @@ export function ModularExamBuilderModal({
                                 ? colors.accent
                                 : isDark
                                   ? '#23262F'
-                                  : '#F6F0ED',
+                                  : '#F3F4F6',
                               borderColor: isSelected
                                 ? colors.accent
                                 : isDark
@@ -758,7 +758,7 @@ export function ModularExamBuilderModal({
                           ? colors.accentMuted
                           : isDark
                             ? '#23262F'
-                            : '#F6F0ED',
+                            : '#F3F4F6',
                         opacity: pressed ? 0.75 : 1,
                         transform: [{ scale: isSelected ? 1.08 : pressed ? 0.94 : 1 }],
                       },

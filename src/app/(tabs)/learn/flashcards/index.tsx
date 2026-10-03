@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowLeft, BookOpen, Plus, Sparkles, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Plus, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -317,7 +317,7 @@ export default function FlashcardsHubScreen() {
           style={({ pressed }) => [
             styles.backBtn,
             {
-              backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+              backgroundColor: isDark ? '#23262F' : '#F3F4F6',
               opacity: pressed ? 0.7 : 1,
             },
           ]}>
@@ -365,12 +365,9 @@ export default function FlashcardsHubScreen() {
           ]}>
           {/* 1. CURRICULUM DECKS (Published in Admin) */}
           <View style={styles.sectionHeadingRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={16} color={colors.accent} strokeWidth={2.4} />
-              <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
-                CURRICULUM FLASHCARDS
-              </Text>
-            </View>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#F9FAFB' : '#0F172A' }]}>
+              CURRICULUM FLASHCARDS
+            </Text>
           </View>
 
           {officialDecks.length > 0 ? (
@@ -382,8 +379,8 @@ export default function FlashcardsHubScreen() {
                   style={({ pressed }) => [
                     styles.customDeckCard,
                     {
-                      backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
-                      borderColor: isDark ? 'rgba(200, 90, 50, 0.25)' : 'rgba(200, 90, 50, 0.15)',
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                       borderWidth: 1,
                       opacity: pressed ? 0.9 : 1,
                       transform: [{ scale: pressed ? 0.98 : 1 }],
@@ -414,9 +411,7 @@ export default function FlashcardsHubScreen() {
                     style={[
                       styles.officialBadge,
                       {
-                        backgroundColor: isDark
-                          ? 'rgba(200, 90, 50, 0.16)'
-                          : 'rgba(200, 90, 50, 0.1)',
+                        backgroundColor: colors.accentMuted,
                       },
                     ]}>
                     <Text style={[styles.officialBadgeText, { color: colors.accent }]}>
@@ -445,7 +440,11 @@ export default function FlashcardsHubScreen() {
             <View
               style={[
                 styles.emptyCardBox,
-                { backgroundColor: isDark ? '#1C1F26' : '#F6F0ED' },
+                {
+                  backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                },
               ]}>
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 No official flashcard decks published yet.
@@ -464,7 +463,7 @@ export default function FlashcardsHubScreen() {
               style={({ pressed }) => [
                 styles.addCircleBtn,
                 {
-                  backgroundColor: isDark ? '#23262F' : '#F6F0ED',
+                  backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}>
@@ -480,7 +479,9 @@ export default function FlashcardsHubScreen() {
                 style={({ pressed }) => [
                   styles.customDeckCard,
                   {
-                    backgroundColor: isDark ? '#1C1F26' : '#F6F0ED',
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                    borderWidth: 1,
                     opacity: pressed ? 0.9 : 1,
                     transform: [{ scale: pressed ? 0.98 : 1 }],
                   },
@@ -556,7 +557,7 @@ export default function FlashcardsHubScreen() {
                 style={[
                   styles.dashedIconCircle,
                   {
-                    backgroundColor: isDark ? '#23262F' : '#F0EBE8',
+                    backgroundColor: isDark ? '#23262F' : '#F3F4F6',
                   },
                 ]}>
                 <Plus size={24} color={colors.accent} strokeWidth={2.6} />

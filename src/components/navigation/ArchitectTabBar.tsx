@@ -130,12 +130,12 @@ function CenterHomeButton({
                 ? colors.accent
                 : isDark
                   ? '#23262F'
-                  : '#F6F0ED',
+                  : '#F3F4F6',
               borderColor: isFocused
                 ? colors.accent
                 : isDark
                   ? '#303440'
-                  : '#EBE3DE',
+                  : '#E5E7EB',
               shadowColor: isFocused ? colors.accent : '#000000',
             },
           ]}>
