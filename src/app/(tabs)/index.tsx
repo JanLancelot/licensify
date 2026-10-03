@@ -1,5 +1,6 @@
 import { useQuery } from 'convex/react';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { Image as ExpoImage } from 'expo-image';
 import {
   BookOpen,
   ChevronDown,
@@ -67,6 +68,8 @@ export default function HomeScreen() {
     userProfile?.firstName ||
     userProfile?.username ||
     'User';
+
+  const displayAvatarUri = (userProfile as any)?.profileImageUrl || null;
 
   const streakDays = stats?.streakDays ?? 0;
   const milestoneTarget = streakDays >= 10 ? (Math.floor(streakDays / 10) + 1) * 10 : 10;
@@ -288,7 +291,16 @@ export default function HomeScreen() {
                 opacity: pressed ? 0.85 : 1,
               },
             ]}>
-            <User size={46} color={colors.accent} strokeWidth={2.3} />
+            {displayAvatarUri ? (
+              <ExpoImage
+                source={{ uri: displayAvatarUri }}
+                style={styles.heroAvatarImage}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <User size={46} color={colors.accent} strokeWidth={2.3} />
+            )}
           </Pressable>
 
           {/* Right Column: Centered Flame, 3 DAYS, and 20% Milestone Progress */}
@@ -659,6 +671,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  heroAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 45,
   },
   heroRightColumn: {
     flex: 1,
