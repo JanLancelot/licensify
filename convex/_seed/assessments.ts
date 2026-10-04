@@ -546,7 +546,7 @@ export const seedMockAssessmentsAndMaterials = internalMutation({
     // -------------------------------------------------------------------------
     const rawAchievementsData = [
       {
-        title: "[Seed] Code Master",
+        title: "Code Master",
         category: "Rule 7 & 8",
         description: "Complete 5 developmental control calculation drills with 80%+ accuracy.",
         iconName: "Trophy",
@@ -558,7 +558,7 @@ export const seedMockAssessmentsAndMaterials = internalMutation({
         order: 1,
       },
       {
-        title: "[Seed] Rapid Recall",
+        title: "Rapid Recall",
         category: "Flashcard Drills",
         description: "Review and complete 5 custom or premade flashcard decks.",
         iconName: "Zap",
@@ -570,9 +570,9 @@ export const seedMockAssessmentsAndMaterials = internalMutation({
         order: 2,
       },
       {
-        title: "[Seed] 14-Day Streak",
+        title: "14-Day Streak",
         category: "Consistency",
-        description: "Log into Licensify and practice questions for 14 consecutive days.",
+        description: "Log into The P App and practice questions for 14 consecutive days.",
         iconName: "Flame",
         bg: "#FFEDD5",
         darkBg: "rgba(249, 115, 22, 0.2)",
@@ -582,7 +582,7 @@ export const seedMockAssessmentsAndMaterials = internalMutation({
         order: 3,
       },
       {
-        title: "[Seed] Area 1 Specialist",
+        title: "Area 1 Specialist",
         category: "Mock Exam",
         description: "Score 75% or higher on the Area 1 Comprehensive Mock Simulation.",
         iconName: "Star",
@@ -594,7 +594,7 @@ export const seedMockAssessmentsAndMaterials = internalMutation({
         order: 4,
       },
       {
-        title: "[Seed] Perfectionist",
+        title: "Perfectionist",
         category: "100% Score",
         description: "Achieve a perfect 100% score on any practice drill session.",
         iconName: "Award",

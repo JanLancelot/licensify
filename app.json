@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "LICENSIFY",
-    "slug": "licensify",
+    "name": "The P App",
+    "slug": "the-p-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "licensify",
+    "scheme": "thepapp",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.licensify.app"
+      "bundleIdentifier": "com.thepapp.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.licensify.app"
+      "package": "com.thepapp.app"
     },
     "web": {
       "output": "static",
@@ -39,8 +39,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Licensify to access your photos to select a profile picture.",
-          "cameraPermission": "Allow Licensify to access your camera to take a profile picture."
+          "photosPermission": "Allow The P App to access your photos to select a profile picture.",
+          "cameraPermission": "Allow The P App to access your camera to take a profile picture."
         }
       ]
     ],
