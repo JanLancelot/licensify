@@ -9,6 +9,7 @@ import {
   Camera,
   Check,
   ChevronRight,
+  FileText,
   Flame,
   HelpCircle,
   Image as ImageIcon,
@@ -17,6 +18,8 @@ import {
   Mail,
   Moon,
   Palette,
+  Send,
+  Shield,
   Smartphone,
   Star,
   Sun,
@@ -110,6 +113,8 @@ export default function ProfileScreen() {
   // Modals state
   const [isEditProfileVisible, setIsEditProfileVisible] = useState(false);
   const [isSeeAllAchievementsVisible, setIsSeeAllAchievementsVisible] = useState(false);
+  const [isLegalModalVisible, setIsLegalModalVisible] = useState(false);
+  const [isHelpModalVisible, setIsHelpModalVisible] = useState(false);
   const [editNameInput, setEditNameInput] = useState('');
   const [editEmailInput, setEditEmailInput] = useState('');
 
@@ -207,22 +212,39 @@ export default function ProfileScreen() {
     }
   };
 
+  const uriToBlob = (imageUri: string): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = function () {
+        resolve(xhr.response);
+      };
+      xhr.onerror = function () {
+        reject(new Error('Failed to read image as blob'));
+      };
+      xhr.responseType = 'blob';
+      xhr.open('GET', imageUri, true);
+      xhr.send(null);
+    });
+  };
+
   const uploadProfilePhoto = async (uri: string) => {
     setLocalAvatarUri(uri);
     setIsUploadingPhoto(true);
     try {
       const uploadUrl = await generateUploadUrlMutation();
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const blob = await uriToBlob(uri);
+
+      const mimeType = blob.type && blob.type !== '' ? blob.type : 'image/jpeg';
 
       const uploadRes = await fetch(uploadUrl, {
         method: 'POST',
-        headers: { 'Content-Type': blob.type || 'image/jpeg' },
+        headers: { 'Content-Type': mimeType },
         body: blob,
       });
 
       if (!uploadRes.ok) {
-        throw new Error(`Upload failed with status ${uploadRes.status}`);
+        const errorText = await uploadRes.text().catch(() => '');
+        throw new Error(`Upload failed with status ${uploadRes.status}${errorText ? `: ${errorText}` : ''}`);
       }
 
       const { storageId } = await uploadRes.json();
@@ -302,8 +324,13 @@ export default function ProfileScreen() {
         iconColor = '#DB2777';
       }
 
+      const cleanTitle = (ach.title || '').replace(/^\[(Seed|Mock)\]\s*/i, '');
+      const cleanDesc = (ach.description || '').replace(/^\[(Seed|Mock)\]\s*/i, '').replace(/Licensify/gi, 'The P App');
+
       return {
         ...ach,
+        title: cleanTitle,
+        description: cleanDesc,
         icon: Icon,
         bg,
         darkBg,
@@ -735,7 +762,7 @@ export default function ProfileScreen() {
             ]}>
             {/* Legal Information */}
             <Pressable
-              onPress={() => Alert.alert('Legal Information', 'Architecture Licensure Exam Prep Terms & Privacy Policy.')}
+              onPress={() => setIsLegalModalVisible(true)}
               style={({ pressed }) => [
                 styles.navItemRow,
                 { opacity: pressed ? 0.7 : 1 },
@@ -757,7 +784,7 @@ export default function ProfileScreen() {
 
             {/* Help and Support */}
             <Pressable
-              onPress={() => Alert.alert('Help & Support', 'Reach us anytime at support@boardexamprep.com')}
+              onPress={() => setIsHelpModalVisible(true)}
               style={({ pressed }) => [
                 styles.navItemRow,
                 { opacity: pressed ? 0.7 : 1 },
@@ -1124,6 +1151,195 @@ export default function ProfileScreen() {
                   );
                 }))}
               </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* LEGAL INFORMATION MODAL */}
+      <Modal visible={isLegalModalVisible} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View
+            style={[
+              styles.legalModalBox,
+              { backgroundColor: isDark ? '#1C1F26' : '#FFFFFF' },
+            ]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View
+                  style={[
+                    styles.legalIconBadge,
+                    { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#EDE9FE' },
+                  ]}>
+                  <Shield size={18} color="#7C3AED" strokeWidth={2.4} />
+                </View>
+                <Text style={[styles.modalTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                  Legal & Privacy
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setIsLegalModalVisible(false)}
+                hitSlop={8}
+                style={styles.modalCloseBtn}>
+                <X size={18} color={isDark ? '#9CA3AF' : '#4B5563'} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ gap: 14, paddingBottom: 16 }}>
+              {/* Card 1: Terms of Service */}
+              <View
+                style={[
+                  styles.legalCard,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#E5E7EB',
+                  },
+                ]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <FileText size={16} color={colors.accent} strokeWidth={2.3} />
+                  <Text style={[styles.legalCardTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Terms of Service
+                  </Text>
+                </View>
+                <Text style={[styles.legalCardBody, { color: colors.textSecondary }]}>
+                  By using The P App, you agree to utilize all practice quizzes, syllabus reviews, flashcards, and notes solely for personal examination study and preparation.
+                </Text>
+              </View>
+
+              {/* Card 2: Privacy Policy */}
+              <View
+                style={[
+                  styles.legalCard,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#E5E7EB',
+                  },
+                ]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Shield size={16} color={colors.accent} strokeWidth={2.3} />
+                  <Text style={[styles.legalCardTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Privacy Policy
+                  </Text>
+                </View>
+                <Text style={[styles.legalCardBody, { color: colors.textSecondary }]}>
+                  Your study records, quiz scores, custom avatars, and theme settings are safely protected and encrypted. We respect candidate confidentiality and never sell study telemetry to third parties.
+                </Text>
+              </View>
+
+              {/* Card 3: Copyright & Licensing */}
+              <View
+                style={[
+                  styles.legalCard,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#E5E7EB',
+                  },
+                ]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Info size={16} color={colors.accent} strokeWidth={2.3} />
+                  <Text style={[styles.legalCardTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Curriculum & Copyright
+                  </Text>
+                </View>
+                <Text style={[styles.legalCardBody, { color: colors.textSecondary }]}>
+                  Architectural references, National Building Code summaries, and review items are curated for board examinees. All rights reserved. Version 1.0.0.
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={() => setIsLegalModalVisible(false)}
+                style={[styles.modalActionPrimaryBtn, { backgroundColor: colors.accent }]}>
+                <Text style={styles.modalActionPrimaryBtnText}>I Understand</Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* HELP AND SUPPORT MODAL */}
+      <Modal visible={isHelpModalVisible} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View
+            style={[
+              styles.legalModalBox,
+              { backgroundColor: isDark ? '#1C1F26' : '#FFFFFF' },
+            ]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View
+                  style={[
+                    styles.legalIconBadge,
+                    { backgroundColor: isDark ? 'rgba(2, 132, 199, 0.2)' : '#E0F2FE' },
+                  ]}>
+                  <HelpCircle size={18} color="#0284C7" strokeWidth={2.4} />
+                </View>
+                <Text style={[styles.modalTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                  Help & Support
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setIsHelpModalVisible(false)}
+                hitSlop={8}
+                style={styles.modalCloseBtn}>
+                <X size={18} color={isDark ? '#9CA3AF' : '#4B5563'} strokeWidth={2.4} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ gap: 14, paddingBottom: 16 }}>
+              {/* Direct Contact Card */}
+              <View
+                style={[
+                  styles.legalCard,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#E5E7EB',
+                  },
+                ]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Mail size={16} color="#0284C7" strokeWidth={2.3} />
+                  <Text style={[styles.legalCardTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Official Email Support
+                  </Text>
+                </View>
+                <Text style={[styles.legalCardBody, { color: colors.textSecondary }]}>
+                  Need assistance with your study account, encountered an errata in practice questions, or have inquiries? Reach our academic review team directly at:
+                </Text>
+                <Text style={[styles.supportEmailHighlight, { color: colors.accent }]}>
+                  support@boardexamprep.com
+                </Text>
+              </View>
+
+              {/* Study & App Guidance Card */}
+              <View
+                style={[
+                  styles.legalCard,
+                  {
+                    backgroundColor: isDark ? '#23262F' : '#F9FAFB',
+                    borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#E5E7EB',
+                  },
+                ]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Info size={16} color="#0284C7" strokeWidth={2.3} />
+                  <Text style={[styles.legalCardTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
+                    Offline Study & Sync
+                  </Text>
+                </View>
+                <Text style={[styles.legalCardBody, { color: colors.textSecondary }]}>
+                  All quizzes, flashcards, and notes are available offline. Your progress automatically syncs whenever your device connects to the internet.
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={() => setIsHelpModalVisible(false)}
+                style={[styles.modalActionPrimaryBtn, { backgroundColor: colors.accent }]}>
+                <Text style={styles.modalActionPrimaryBtnText}>Close</Text>
+              </Pressable>
             </ScrollView>
           </View>
         </View>
@@ -1592,6 +1808,75 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '500',
     textAlign: 'left',
+  },
+  legalModalBox: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 22,
+    gap: 16,
+  },
+  legalIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  legalCard: {
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 6,
+  },
+  legalCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  legalCardBody: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  supportEmailHighlight: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  helpTextArea: {
+    minHeight: 74,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13.5,
+    fontWeight: '500',
+    textAlignVertical: 'top',
+  },
+  feedbackSuccessBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  feedbackSuccessText: {
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
+  },
+  modalActionPrimaryBtn: {
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  modalActionPrimaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14.5,
+    fontWeight: '700',
   },
   loadingOverlay: {
     flex: 1,

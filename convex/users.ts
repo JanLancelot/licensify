@@ -449,11 +449,16 @@ export const getUserAchievementsOnline = query({
         ? "Unlocked"
         : `${Math.min(currentVal, ach.targetValue)}/${ach.targetValue} Done`;
 
+      const cleanTitle = ach.title.replace(/^\[(Seed|Mock)\]\s*/i, "");
+      const cleanDesc = ach.description
+        ? ach.description.replace(/^\[(Seed|Mock)\]\s*/i, "").replace(/Licensify/gi, "The P App")
+        : "";
+
       return {
         id: ach._id,
-        title: ach.title,
+        title: cleanTitle,
         category: ach.category,
-        description: ach.description,
+        description: cleanDesc,
         iconName: ach.iconName,
         bg: ach.bg,
         darkBg: ach.darkBg,

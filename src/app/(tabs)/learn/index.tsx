@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,20 +22,198 @@ import Svg, {
 
 import { useAppTheme } from '@/context/theme-context';
 
+/* Theme Color Palette Map for 3D Orb Backgrounds & Icons */
+interface OrbThemePalette {
+  topGrad: [string, string, string, string];
+  rimColor: string;
+  bookGrad: [string, string, string];
+  bookShadow: string;
+  flashcardTop: [string, string, string];
+  flashcardMid: [string, string, string];
+  flashcardBot: [string, string, string];
+  flashcardShadow: string;
+}
+
+const ORB_THEME_PALETTES: Record<
+  string,
+  { light: OrbThemePalette; dark: OrbThemePalette }
+> = {
+  red: {
+    light: {
+      topGrad: ['#FFFFFF', '#FFF1F3', '#FFE4E8', '#FECDD6'],
+      rimColor: '#FDA4AF',
+      bookGrad: ['#FDA4AF', '#F43F5E', '#BE123C'],
+      bookShadow: 'rgba(190, 18, 60, 0.22)',
+      flashcardTop: ['#FECDD6', '#FB7185', '#E11D48'],
+      flashcardMid: ['#FFF1F3', '#FDA4AF', '#F43F5E'],
+      flashcardBot: ['#FFF1F3', '#FB7185', '#E11D48'],
+      flashcardShadow: 'rgba(225, 29, 72, 0.22)',
+    },
+    dark: {
+      topGrad: ['#3F1720', '#2E1016', '#220A10', '#18060A'],
+      rimColor: '#5C1D2B',
+      bookGrad: ['#FDA4AF', '#F43F5E', '#BE123C'],
+      bookShadow: 'rgba(225, 29, 72, 0.28)',
+      flashcardTop: ['#FECDD6', '#FB7185', '#E11D48'],
+      flashcardMid: ['#FFF1F3', '#FDA4AF', '#F43F5E'],
+      flashcardBot: ['#FFF1F3', '#FB7185', '#E11D48'],
+      flashcardShadow: 'rgba(225, 29, 72, 0.32)',
+    },
+  },
+  terracotta: {
+    light: {
+      topGrad: ['#FFFFFF', '#FFF3EB', '#FEE2D4', '#FDCBB7'],
+      rimColor: '#FFD7C5',
+      bookGrad: ['#FFA68B', '#F16841', '#C9441D'],
+      bookShadow: 'rgba(180, 60, 30, 0.22)',
+      flashcardTop: ['#FDE68A', '#FBBF24', '#E67E0A'],
+      flashcardMid: ['#FFF4D0', '#FCD34D', '#F59E0B'],
+      flashcardBot: ['#FFF4D0', '#FBBF24', '#D97706'],
+      flashcardShadow: 'rgba(217, 119, 6, 0.24)',
+    },
+    dark: {
+      topGrad: ['#38221B', '#2C1812', '#1E0E0A', '#160905'],
+      rimColor: '#593226',
+      bookGrad: ['#FFA68B', '#F16841', '#C9441D'],
+      bookShadow: 'rgba(200, 90, 50, 0.28)',
+      flashcardTop: ['#FDE68A', '#FBBF24', '#E67E0A'],
+      flashcardMid: ['#FFF4D0', '#FCD34D', '#F59E0B'],
+      flashcardBot: ['#FFF4D0', '#FBBF24', '#D97706'],
+      flashcardShadow: 'rgba(217, 119, 6, 0.32)',
+    },
+  },
+  amber: {
+    light: {
+      topGrad: ['#FFFFFD', '#FFFBEB', '#FEF3C7', '#FDE68A'],
+      rimColor: '#FDE68A',
+      bookGrad: ['#FCD34D', '#F59E0B', '#B45309'],
+      bookShadow: 'rgba(180, 83, 9, 0.22)',
+      flashcardTop: ['#FEF08A', '#FACC15', '#CA8A04'],
+      flashcardMid: ['#FEF9C3', '#FDE047', '#EAB308'],
+      flashcardBot: ['#FEF9C3', '#FACC15', '#CA8A04'],
+      flashcardShadow: 'rgba(202, 138, 4, 0.24)',
+    },
+    dark: {
+      topGrad: ['#3B2E15', '#2E220D', '#201607', '#170E03'],
+      rimColor: '#59441D',
+      bookGrad: ['#FCD34D', '#F59E0B', '#B45309'],
+      bookShadow: 'rgba(217, 119, 6, 0.28)',
+      flashcardTop: ['#FEF08A', '#FACC15', '#CA8A04'],
+      flashcardMid: ['#FEF9C3', '#FDE047', '#EAB308'],
+      flashcardBot: ['#FEF9C3', '#FACC15', '#CA8A04'],
+      flashcardShadow: 'rgba(202, 138, 4, 0.32)',
+    },
+  },
+  green: {
+    light: {
+      topGrad: ['#FFFFFF', '#ECFDF5', '#D1FAE5', '#A7F3D0'],
+      rimColor: '#A7F3D0',
+      bookGrad: ['#6EE7B7', '#10B981', '#047857'],
+      bookShadow: 'rgba(4, 120, 87, 0.22)',
+      flashcardTop: ['#A7F3D0', '#34D399', '#059669'],
+      flashcardMid: ['#ECFDF5', '#6EE7B7', '#10B981'],
+      flashcardBot: ['#ECFDF5', '#34D399', '#047857'],
+      flashcardShadow: 'rgba(5, 150, 105, 0.24)',
+    },
+    dark: {
+      topGrad: ['#123226', '#0C241B', '#071812', '#04100C'],
+      rimColor: '#1A4D3B',
+      bookGrad: ['#6EE7B7', '#10B981', '#047857'],
+      bookShadow: 'rgba(16, 185, 129, 0.28)',
+      flashcardTop: ['#A7F3D0', '#34D399', '#059669'],
+      flashcardMid: ['#ECFDF5', '#6EE7B7', '#10B981'],
+      flashcardBot: ['#ECFDF5', '#34D399', '#047857'],
+      flashcardShadow: 'rgba(16, 185, 129, 0.32)',
+    },
+  },
+  blue: {
+    light: {
+      topGrad: ['#FFFFFF', '#EFF6FF', '#DBEAFE', '#BFDBFE'],
+      rimColor: '#BFDBFE',
+      bookGrad: ['#93C5FD', '#3B82F6', '#1D4ED8'],
+      bookShadow: 'rgba(29, 78, 216, 0.22)',
+      flashcardTop: ['#BFDBFE', '#60A5FA', '#2563EB'],
+      flashcardMid: ['#EFF6FF', '#93C5FD', '#3B82F6'],
+      flashcardBot: ['#EFF6FF', '#60A5FA', '#1D4ED8'],
+      flashcardShadow: 'rgba(37, 99, 235, 0.24)',
+    },
+    dark: {
+      topGrad: ['#14243B', '#0D1A2C', '#081220', '#040B16'],
+      rimColor: '#1E385C',
+      bookGrad: ['#93C5FD', '#3B82F6', '#1D4ED8'],
+      bookShadow: 'rgba(37, 99, 235, 0.28)',
+      flashcardTop: ['#BFDBFE', '#60A5FA', '#2563EB'],
+      flashcardMid: ['#EFF6FF', '#93C5FD', '#3B82F6'],
+      flashcardBot: ['#EFF6FF', '#60A5FA', '#1D4ED8'],
+      flashcardShadow: 'rgba(37, 99, 235, 0.32)',
+    },
+  },
+  indigo: {
+    light: {
+      topGrad: ['#FFFFFF', '#EEF2FF', '#E0E7FF', '#C7D2FE'],
+      rimColor: '#C7D2FE',
+      bookGrad: ['#A5B4FC', '#6366F1', '#4338CA'],
+      bookShadow: 'rgba(67, 56, 202, 0.22)',
+      flashcardTop: ['#C7D2FE', '#818CF8', '#4F46E5'],
+      flashcardMid: ['#EEF2FF', '#A5B4FC', '#6366F1'],
+      flashcardBot: ['#EEF2FF', '#818CF8', '#4338CA'],
+      flashcardShadow: 'rgba(79, 70, 229, 0.24)',
+    },
+    dark: {
+      topGrad: ['#1E1E3D', '#15152C', '#0E0E20', '#080816'],
+      rimColor: '#2C2D5C',
+      bookGrad: ['#A5B4FC', '#6366F1', '#4338CA'],
+      bookShadow: 'rgba(79, 70, 229, 0.28)',
+      flashcardTop: ['#C7D2FE', '#818CF8', '#4F46E5'],
+      flashcardMid: ['#EEF2FF', '#A5B4FC', '#6366F1'],
+      flashcardBot: ['#EEF2FF', '#818CF8', '#4338CA'],
+      flashcardShadow: 'rgba(79, 70, 229, 0.32)',
+    },
+  },
+  violet: {
+    light: {
+      topGrad: ['#FFFFFF', '#F5F3FF', '#EDE9FE', '#DDD6FE'],
+      rimColor: '#DDD6FE',
+      bookGrad: ['#C4B5FD', '#8B5CF6', '#6D28D9'],
+      bookShadow: 'rgba(109, 40, 217, 0.22)',
+      flashcardTop: ['#DDD6FE', '#A78BFA', '#7C3AED'],
+      flashcardMid: ['#F5F3FF', '#C4B5FD', '#8B5CF6'],
+      flashcardBot: ['#F5F3FF', '#A78BFA', '#6D28D9'],
+      flashcardShadow: 'rgba(124, 58, 237, 0.24)',
+    },
+    dark: {
+      topGrad: ['#28183D', '#1C102C', '#130A20', '#0C0616'],
+      rimColor: '#3F245E',
+      bookGrad: ['#C4B5FD', '#8B5CF6', '#6D28D9'],
+      bookShadow: 'rgba(124, 58, 237, 0.28)',
+      flashcardTop: ['#DDD6FE', '#A78BFA', '#7C3AED'],
+      flashcardMid: ['#F5F3FF', '#C4B5FD', '#8B5CF6'],
+      flashcardBot: ['#F5F3FF', '#A78BFA', '#6D28D9'],
+      flashcardShadow: 'rgba(124, 58, 237, 0.32)',
+    },
+  },
+};
+
 /* 1. 3D Glossy Open Book Vector Icon with Drop Shadow */
-function Glowing3DBookIcon({ size = 118 }: { size?: number }) {
+function Glowing3DBookIcon({
+  size = 118,
+  palette,
+}: {
+  size?: number;
+  palette: OrbThemePalette;
+}) {
   return (
     <Svg width={size} height={size} viewBox="0 0 80 80" fill="none">
       <Defs>
         <LinearGradient id="bookLeft3D" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#FFA68B" />
-          <Stop offset="40%" stopColor="#F16841" />
-          <Stop offset="100%" stopColor="#C9441D" />
+          <Stop offset="0%" stopColor={palette.bookGrad[0]} />
+          <Stop offset="40%" stopColor={palette.bookGrad[1]} />
+          <Stop offset="100%" stopColor={palette.bookGrad[2]} />
         </LinearGradient>
         <LinearGradient id="bookRight3D" x1="100%" y1="0%" x2="0%" y2="100%">
-          <Stop offset="0%" stopColor="#FFA68B" />
-          <Stop offset="40%" stopColor="#F16841" />
-          <Stop offset="100%" stopColor="#C9441D" />
+          <Stop offset="0%" stopColor={palette.bookGrad[0]} />
+          <Stop offset="40%" stopColor={palette.bookGrad[1]} />
+          <Stop offset="100%" stopColor={palette.bookGrad[2]} />
         </LinearGradient>
         <LinearGradient id="bookShine" x1="0%" y1="0%" x2="0%" y2="100%">
           <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.45" />
@@ -48,7 +227,7 @@ function Glowing3DBookIcon({ size = 118 }: { size?: number }) {
         cy="66"
         rx="28"
         ry="5.5"
-        fill="rgba(180, 60, 30, 0.22)"
+        fill={palette.bookShadow}
       />
 
       {/* Left Page */}
@@ -119,24 +298,30 @@ function Glowing3DBookIcon({ size = 118 }: { size?: number }) {
 }
 
 /* 2. 3D Glossy Stacked Flashcards Vector Icon with Depth */
-function Glowing3DFlashcardsIcon({ size = 118 }: { size?: number }) {
+function Glowing3DFlashcardsIcon({
+  size = 118,
+  palette,
+}: {
+  size?: number;
+  palette: OrbThemePalette;
+}) {
   return (
     <Svg width={size} height={size} viewBox="0 0 80 80" fill="none">
       <Defs>
         <LinearGradient id="topCard3D" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#FDE68A" />
-          <Stop offset="40%" stopColor="#FBBF24" />
-          <Stop offset="100%" stopColor="#E67E0A" />
+          <Stop offset="0%" stopColor={palette.flashcardTop[0]} />
+          <Stop offset="40%" stopColor={palette.flashcardTop[1]} />
+          <Stop offset="100%" stopColor={palette.flashcardTop[2]} />
         </LinearGradient>
         <LinearGradient id="midCard3D" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#FFF4D0" stopOpacity="0.95" />
-          <Stop offset="50%" stopColor="#FCD34D" stopOpacity="0.9" />
-          <Stop offset="100%" stopColor="#F59E0B" stopOpacity="0.85" />
+          <Stop offset="0%" stopColor={palette.flashcardMid[0]} stopOpacity="0.95" />
+          <Stop offset="50%" stopColor={palette.flashcardMid[1]} stopOpacity="0.9" />
+          <Stop offset="100%" stopColor={palette.flashcardMid[2]} stopOpacity="0.85" />
         </LinearGradient>
         <LinearGradient id="botCard3D" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#FFF4D0" stopOpacity="0.8" />
-          <Stop offset="50%" stopColor="#FBBF24" stopOpacity="0.75" />
-          <Stop offset="100%" stopColor="#D97706" stopOpacity="0.7" />
+          <Stop offset="0%" stopColor={palette.flashcardBot[0]} stopOpacity="0.8" />
+          <Stop offset="50%" stopColor={palette.flashcardBot[1]} stopOpacity="0.75" />
+          <Stop offset="100%" stopColor={palette.flashcardBot[2]} stopOpacity="0.7" />
         </LinearGradient>
       </Defs>
 
@@ -146,7 +331,7 @@ function Glowing3DFlashcardsIcon({ size = 118 }: { size?: number }) {
         cy="68"
         rx="27"
         ry="5.5"
-        fill="rgba(217, 119, 6, 0.24)"
+        fill={palette.flashcardShadow}
       />
 
       {/* Bottom Layer Card */}
@@ -199,33 +384,21 @@ function GlowingOrbBackground({
   size,
   isDark,
   themeType,
+  palette,
 }: {
   size: number;
   isDark: boolean;
   themeType: 'notes' | 'flashcards';
+  palette: OrbThemePalette;
 }) {
   if (size <= 0) return null;
 
   const half = size / 2;
-  const isNotes = themeType === 'notes';
 
   // Gradient definitions tailored for 3D sphere/orb depth
   const gradId = `orb_${themeType}_${isDark ? 'dark' : 'light'}`;
-  const rimColor = isNotes
-    ? isDark
-      ? '#593226'
-      : '#FFD7C5'
-    : isDark
-      ? '#59441D'
-      : '#FDE4A4';
-
-  const stopColors = isNotes
-    ? isDark
-      ? ['#38221B', '#2C1812', '#1E0E0A', '#160905']
-      : ['#FFFFFF', '#FFF3EB', '#FEE2D4', '#FDCBB7']
-    : isDark
-      ? ['#3B2E15', '#2E220D', '#201607', '#170E03']
-      : ['#FFFFFD', '#FFF8E4', '#FEEDB9', '#FDD892'];
+  const rimColor = palette.rimColor;
+  const stopColors = palette.topGrad;
 
   return (
     <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
@@ -313,6 +486,8 @@ function LearnCircularButton({
   size,
   iconComponent,
   themeType,
+  textColor,
+  palette,
   isDark,
   onPress,
 }: {
@@ -320,6 +495,8 @@ function LearnCircularButton({
   size: number;
   iconComponent: React.ReactNode;
   themeType: 'notes' | 'flashcards';
+  textColor: string;
+  palette: OrbThemePalette;
   isDark: boolean;
   onPress: () => void;
 }) {
@@ -341,6 +518,7 @@ function LearnCircularButton({
         size={size}
         isDark={isDark}
         themeType={themeType}
+        palette={palette}
       />
 
       {/* Centered Content */}
@@ -348,9 +526,16 @@ function LearnCircularButton({
         <View style={styles.iconCenterBox}>{iconComponent}</View>
 
         <Text
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
           style={[
             styles.cardTitle,
-            { color: isDark ? '#FFFFFF' : '#141D2E' },
+            {
+              fontSize: Math.min(Math.max(size * 0.075, 17), 22),
+              lineHeight: Math.min(Math.max(size * 0.09, 21), 26),
+              color: textColor,
+            },
           ]}>
           {title}
         </Text>
@@ -360,10 +545,17 @@ function LearnCircularButton({
 }
 
 export default function LearnScreen() {
-  const { colors, isDark } = useAppTheme();
+  const { colors, isDark, accentTheme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width } = useWindowDimensions();
+
+  // Active theme palette for orb circle backgrounds and icons
+  const activePaletteConfig =
+    ORB_THEME_PALETTES[accentTheme] || ORB_THEME_PALETTES.terracotta;
+  const currentOrbPalette = isDark
+    ? activePaletteConfig.dark
+    : activePaletteConfig.light;
 
   // Balanced circle diameter (~285px)
   const circleSize = Math.min(Math.max(width * 0.74, 270), 290);
@@ -389,8 +581,12 @@ export default function LearnScreen() {
         <LearnCircularButton
           title={'Comprehensive\nNotes'}
           size={circleSize}
-          iconComponent={<Glowing3DBookIcon size={iconSize} />}
+          iconComponent={
+            <Glowing3DBookIcon size={iconSize} palette={currentOrbPalette} />
+          }
           themeType="notes"
+          textColor={colors.text}
+          palette={currentOrbPalette}
           isDark={isDark}
           onPress={() => router.push('/(tabs)/learn/notes' as any)}
         />
@@ -399,8 +595,12 @@ export default function LearnScreen() {
         <LearnCircularButton
           title="Flashcards"
           size={circleSize}
-          iconComponent={<Glowing3DFlashcardsIcon size={iconSize} />}
+          iconComponent={
+            <Glowing3DFlashcardsIcon size={iconSize} palette={currentOrbPalette} />
+          }
           themeType="flashcards"
+          textColor={colors.text}
+          palette={currentOrbPalette}
           isDark={isDark}
           onPress={() => router.push('/(tabs)/learn/flashcards' as any)}
         />
@@ -442,6 +642,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     zIndex: 2,
+    maxWidth: '85%',
   },
   iconCenterBox: {
     alignItems: 'center',
@@ -449,12 +650,19 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   cardTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    letterSpacing: -0.4,
-    lineHeight: 28,
+    letterSpacing: -0.3,
+    lineHeight: 24,
     textAlign: 'center',
-    maxWidth: '90%',
+    maxWidth: '100%',
+    ...(Platform.OS === 'web'
+      ? ({
+          whiteSpace: 'pre-line',
+          wordBreak: 'normal',
+          overflowWrap: 'normal',
+        } as any)
+      : {}),
   },
 });
 
