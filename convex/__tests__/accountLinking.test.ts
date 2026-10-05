@@ -59,3 +59,22 @@ test("password sign-up leaves the email unverified", async () => {
   expect(user?.role).toBe("student");
   expect(user?.emailVerificationTime).toBeUndefined();
 });
+
+test("an identity is never resolved to a user by email claim alone", async () => {
+  const t = setup();
+  await t.run(async (ctx) => {
+    const now = Date.now();
+    await ctx.db.insert("users", {
+      userId: "real-admin-subject",
+      email: "owner@example.com",
+      username: "owner",
+      role: "admin",
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+  });
+
+  const impostor = t.withIdentity({ subject: "other-subject", email: "owner@example.com" });
+  expect(await impostor.query(api.users.getRole)).toBeNull();
+});
