@@ -84,7 +84,16 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         firstName?: string;
         lastName?: string;
         isActive?: boolean;
+        emailVerified?: boolean;
       };
+
+      // OAuth providers and email OTP prove the caller controls the address;
+      // password sign-up does not.
+      const providerVerifiesEmail =
+        profile.emailVerified === true ||
+        args.provider.type === "oauth" ||
+        args.provider.type === "oidc" ||
+        args.provider.type === "email";
 
       // 1. Existing user logging in
       if (args.existingUserId) {
@@ -105,6 +114,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           lastActiveAt: now,
           updatedAt: now,
           ...(profile.email && !existingUser.email && { email: profile.email }),
+          ...(providerVerifiesEmail &&
+            profile.email === existingUser.email &&
+            existingUser.emailVerificationTime === undefined && { emailVerificationTime: now }),
           ...(existingUser.userId === undefined && { userId: String(args.existingUserId) }),
         });
 
@@ -121,6 +133,15 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         if (existingByEmail.isActive === false) {
           throw new ConvexError(
             "Unauthorized: Account is suspended or inactive."
+          );
+        }
+        // Only link a new sign-in method to an existing user when both sides have
+        // proven ownership of the address. Otherwise an attacker could register a
+        // password for someone else's email and take over their account, or plant
+        // an account that a later Google sign-in would silently join.
+        if (!providerVerifiesEmail || existingByEmail.emailVerificationTime === undefined) {
+          throw new ConvexError(
+            "An account with this email already exists. Sign in with the method you used originally."
           );
         }
         await ctx.db.patch(existingByEmail._id, {
@@ -140,6 +161,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         lastName: profile.lastName,
         role: "student",
         isActive: true,
+        ...(providerVerifiesEmail && { emailVerificationTime: now }),
         createdAt: now,
         updatedAt: now,
         lastActiveAt: now,
