@@ -8,6 +8,8 @@ Deploy the additive Convex schema and functions before releasing the admin front
 
 Staff (active admins and content managers) can save drafts, preview, publish, unpublish, archive drafts, and restore archived content by editing and saving it as a draft. Published records must be unpublished before editing. Unpublishing immediately removes content from the reader queries. Saving a draft never publishes or sends a notification.
 
+Staff can permanently delete a draft, published, or archived announcement after confirming its title and the irreversible action. Deleting published content immediately removes it from reader queries; detail queries return `null`. Archive remains the reversible alternative. The staff-only `api.announcements.remove({ id, expectedUpdatedAt })` mutation rejects stale confirmations, unauthorized users, and already-deleted records.
+
 Titles are plain text (1–120 trimmed characters); messages are plain text (1–5,000 trimmed characters). Preserve line breaks and render as text, not HTML. All mutations enforce authorization and check `expectedUpdatedAt` to reject stale edits and stale publish previews. Reopen an editor/preview after a conflict.
 
 ## Reader API

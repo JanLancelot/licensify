@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { useMutation, usePaginatedQuery } from "convex/react";
-import { Megaphone, Plus, Eye, Loader2 } from "lucide-react";
+import { ConvexError } from "convex/values";
+import { Megaphone, Plus, Eye, Loader2, Pencil, Archive, Send, EyeOff, RotateCcw, Trash2 } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import type { Doc } from "@convex/_generated/dataModel";
 import { Modal } from "@/components/ui/Modal";
@@ -11,6 +12,8 @@ import { useToast } from "@/context/ToastContext";
 type Announcement = Doc<"announcements">;
 const fieldClass = "w-full rounded-lg border border-studio-200 dark:border-studio-700 bg-studio-50 dark:bg-studio-800 px-3 py-2.5 text-sm";
 const secondaryClass = "rounded-lg border border-studio-200 dark:border-studio-700 px-3 py-2 text-sm font-medium hover:bg-studio-100 dark:hover:bg-studio-800 disabled:opacity-50";
+
+const iconClass = "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-studio-200 dark:border-studio-700 hover:bg-studio-100 dark:hover:bg-studio-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50";
 
 function AnnouncementPreview({ title, body }: { title: string; body: string }) {
   return (
@@ -26,9 +29,11 @@ export default function AnnouncementsPage() {
   const { results, status, loadMore } = usePaginatedQuery(api.announcements.listAdmin, {}, { initialNumItems: 20 });
   const saveDraft = useMutation(api.announcements.saveDraft);
   const setStatus = useMutation(api.announcements.setStatus);
+  const remove = useMutation(api.announcements.remove);
   const toast = useToast();
   const [editor, setEditor] = useState<{ original: Announcement | null; title: string; body: string } | null>(null);
   const [preview, setPreview] = useState<Announcement | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Announcement | null>(null);
   const [editorPreview, setEditorPreview] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -37,15 +42,17 @@ export default function AnnouncementsPage() {
     setError(""); setEditorPreview(false);
     setEditor({ original: row, title: row?.title ?? "", body: row?.body ?? "" });
   };
-  const run = async (operation: () => Promise<unknown>, message: string) => {
+  const run = async (operation: () => Promise<unknown>, message: string, fallback = "Unable to save. Please try again.") => {
     if (pending) return;
     setPending(true); setError("");
     try {
       await operation();
-      setEditor(null); setPreview(null);
+      setEditor(null); setPreview(null); setDeleteTarget(null);
       toast.success(message);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save. Please try again.");
+      setError(err instanceof ConvexError && typeof err.data === "string"
+        ? err.data
+        : fallback);
     } finally { setPending(false); }
   };
   const changeStatus = (row: Announcement, next: Announcement["status"]) => run(
@@ -66,7 +73,7 @@ export default function AnnouncementsPage() {
           <Plus className="h-4 w-4" /> Create announcement
         </button>
       </div>
-      {!editor && !preview && errorAlert}
+      {!editor && !preview && !deleteTarget && errorAlert}
       {status === "LoadingFirstPage" ? (
         <div role="status" className="flex items-center justify-center gap-2 py-16 text-studio-500 dark:text-studio-400"><Loader2 className="h-5 w-5 animate-spin" />Loading announcements…</div>
       ) : results.length === 0 ? (
@@ -88,16 +95,17 @@ export default function AnnouncementsPage() {
                 <p className="text-xs text-studio-500 dark:text-studio-400">Updated {new Date(row.updatedAt).toLocaleString()}</p>
               </div>
               <div className="flex flex-wrap gap-2 shrink-0">
-                <button className={secondaryClass} disabled={pending} onClick={() => { setError(""); setPreview(row); }}>Preview</button>
+                <button aria-label="Preview" title="Preview" className={iconClass} disabled={pending} onClick={() => { setError(""); setPreview(row); }}><Eye aria-hidden="true" className="h-4 w-4" /></button>
                 {row.status === "published" ? (
-                  <button className={secondaryClass} disabled={pending} onClick={() => changeStatus(row, "draft")}>Unpublish</button>
+                  <button aria-label="Unpublish" title="Unpublish" className={iconClass} disabled={pending} onClick={() => changeStatus(row, "draft")}><EyeOff aria-hidden="true" className="h-4 w-4" /></button>
                 ) : <>
-                  <button className={secondaryClass} disabled={pending} onClick={() => openEditor(row)}>{row.status === "archived" ? "Restore & edit" : "Edit"}</button>
+                  <button aria-label={row.status === "archived" ? "Restore & edit" : "Edit"} title={row.status === "archived" ? "Restore & edit" : "Edit"} className={iconClass} disabled={pending} onClick={() => openEditor(row)}>{row.status === "archived" ? <RotateCcw aria-hidden="true" className="h-4 w-4" /> : <Pencil aria-hidden="true" className="h-4 w-4" />}</button>
                   {row.status === "draft" && <>
-                    <button className={secondaryClass} disabled={pending} onClick={() => changeStatus(row, "archived")}>Archive</button>
-                    <button className="btn-primary rounded-lg px-3 py-2 text-sm font-semibold" disabled={pending} onClick={() => { setError(""); setPreview(row); }}>Publish</button>
+                    <button aria-label="Archive" title="Archive" className={iconClass} disabled={pending} onClick={() => changeStatus(row, "archived")}><Archive aria-hidden="true" className="h-4 w-4" /></button>
+                    <button aria-label="Publish" title="Publish" className={`${iconClass} btn-primary`} disabled={pending} onClick={() => { setError(""); setPreview(row); }}><Send aria-hidden="true" className="h-4 w-4" /></button>
                   </>}
                 </>}
+                <button aria-label="Delete" title="Delete" className={`${iconClass} text-rose-700 dark:text-rose-300`} disabled={pending} onClick={() => { setError(""); setDeleteTarget(row); }}><Trash2 aria-hidden="true" className="h-4 w-4" /></button>
               </div>
             </article>
           ))}
@@ -138,6 +146,17 @@ export default function AnnouncementsPage() {
           <p className="text-sm text-studio-500 dark:text-studio-400">{preview.status === "draft" ? "Publishing makes this announcement available to all signed-in app users." : preview.status === "published" ? "This announcement is published. Unpublish it before editing." : "This announcement is archived and hidden from students."}</p>
           <AnnouncementPreview title={preview.title} body={preview.body} />
         </>}
+      </Modal>
+      <Modal isOpen={!!deleteTarget} onClose={() => { if (!pending) setDeleteTarget(null); }} title="Delete announcement" maxWidth="md" footer={<div className="flex flex-wrap gap-2">
+        <button autoFocus className={secondaryClass} disabled={pending} onClick={() => setDeleteTarget(null)}>Cancel</button>
+        <button className="rounded-lg bg-rose-700 hover:bg-rose-800 text-white px-4 py-2 text-sm font-semibold disabled:opacity-50" disabled={pending} onClick={() => {
+          if (!deleteTarget) return;
+          void run(() => remove({ id: deleteTarget._id, expectedUpdatedAt: deleteTarget.updatedAt }), "Announcement deleted.", "Unable to delete. Please try again.");
+        }}>{pending ? "Deleting…" : "Delete permanently"}</button>
+      </div>}>
+        {errorAlert}
+        <p className="text-sm">Permanently delete <strong className="break-words">{deleteTarget?.title}</strong>? This cannot be undone.</p>
+        {deleteTarget?.status === "published" && <p className="text-sm text-rose-700 dark:text-rose-300">This announcement is published. Deleting it immediately removes it from What’s New for all readers.</p>}
       </Modal>
     </div>
   );
