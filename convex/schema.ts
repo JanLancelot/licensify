@@ -52,6 +52,14 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_role", ["role"]),
 
+  // Storage files a user has claimed as their profile image. updateProfile only
+  // deletes files listed here, so clients cannot delete files they do not own.
+  profileImageClaims: defineTable({
+    storageId: v.id("_storage"),
+    userId: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_storageId", ["storageId"]),
+
   // ---------------------------------------------------------------------------
   // 2. LEARNING CONTENT
   // ---------------------------------------------------------------------------
