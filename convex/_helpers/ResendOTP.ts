@@ -23,6 +23,11 @@ export const ResendOTP = Email({
   },
   async sendVerificationRequest({ identifier: email, token }) {
     if (!process.env.RESEND_API_KEY) {
+      // Logging codes lets anyone with log access sign in as the recipient, so
+      // it must be switched on explicitly for local development.
+      if (process.env.AUTH_LOG_OTP !== "true") {
+        throw new Error("Email delivery is not configured.");
+      }
       console.log(`[DEV OTP SIMULATION] Verification OTP for ${email}: ${token}`);
       return;
     }

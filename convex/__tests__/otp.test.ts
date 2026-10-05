@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { generateOtp } from "../_helpers/ResendOTP";
+import { generateOtp, ResendOTP } from "../_helpers/ResendOTP";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -22,3 +22,19 @@ test("OTPs keep leading zeros", () => {
   expect(generateOtp()).toBe("000042");
 });
 
+test("codes are not logged unless explicitly enabled for development", async () => {
+  vi.stubEnv("RESEND_API_KEY", "");
+  vi.stubEnv("AUTH_LOG_OTP", "");
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  const send = (ResendOTP as any).sendVerificationRequest;
+
+  await expect(send({ identifier: "a@example.com", token: "123456" })).rejects.toThrow(
+    "Email delivery is not configured."
+  );
+  expect(log).not.toHaveBeenCalled();
+
+  vi.stubEnv("AUTH_LOG_OTP", "true");
+  await send({ identifier: "a@example.com", token: "123456" });
+  expect(log).toHaveBeenCalledOnce();
+  vi.unstubAllEnvs();
+});
