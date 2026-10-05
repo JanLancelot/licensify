@@ -179,7 +179,13 @@ export const updateRole = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    const currentUser = await requireAdmin(ctx);
+
+    // The caller is always an active admin, so blocking self-demotion keeps at
+    // least one admin able to manage the dashboard.
+    if (currentUser._id === args.targetUserId && args.newRole !== "admin") {
+      throw new Error("Admins cannot remove their own admin role.");
+    }
 
     const targetUser = await ctx.db.get(args.targetUserId);
     if (!targetUser) {
