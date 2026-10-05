@@ -35,3 +35,20 @@ test("draft materials are hidden from students and anonymous callers", async () 
   expect(await student.query(api.materials.getMaterialById, { materialId: draftMaterialId })).toBeNull();
   expect((await staff.query(api.materials.getMaterialById, { materialId: draftMaterialId }))?.title).toBe("Draft note");
 });
+
+test("draft quizzes are hidden from students", async () => {
+  const { staff, student, draftQuizId } = await setup();
+  expect(await student.query(api.quizzes.getQuizWithQuestions, { quizId: draftQuizId })).toBeNull();
+  expect((await staff.query(api.quizzes.getQuizWithQuestions, { quizId: draftQuizId }))?.title).toBe("Draft quiz");
+
+  const online = await student.query(api.quizzes.getQuizWithQuestionsOnline, { quizId: draftQuizId });
+  expect(online?.quiz.title).not.toBe("Draft quiz");
+  const staffOnline = await staff.query(api.quizzes.getQuizWithQuestionsOnline, { quizId: draftQuizId });
+  expect(staffOnline?.quiz.title).toBe("Draft quiz");
+});
+
+test("the online quiz lookup never loads documents from other tables", async () => {
+  const { student, staffId } = await setup();
+  const result = await student.query(api.quizzes.getQuizWithQuestionsOnline, { quizId: staffId });
+  expect(result?.quiz).toEqual(expect.objectContaining({ id: staffId, title: "Architecture Board Exam Drill" }));
+});

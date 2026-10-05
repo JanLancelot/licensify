@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireContentManager, requireUser } from "./_helpers/auth";
+import { canViewDrafts, requireContentManager, requireUser } from "./_helpers/auth";
 import { paginationOptsValidator } from "convex/server";
 import { hashAnswer } from "./_helpers/crypto";
 
@@ -50,6 +50,7 @@ export const getQuizWithQuestions = query({
   handler: async (ctx, args) => {
     const quiz = await ctx.db.get(args.quizId);
     if (!quiz) return null;
+    if (!quiz.isPublished && !(await canViewDrafts(ctx))) return null;
 
     // Fetch all question documents in parallel
     const questions = await Promise.all(
@@ -129,11 +130,14 @@ export const getQuizWithQuestionsOnline = query({
 
     let quiz: any = null;
 
-    // 1. Try to find quiz by Convex document ID
-    try {
-      quiz = await ctx.db.get(args.quizId as any);
-    } catch {
-      // not a valid Convex ID
+    // 1. Try to find quiz by Convex document ID. normalizeId only accepts
+    // quiz IDs, so documents from other tables are never loaded here.
+    const quizId = ctx.db.normalizeId("quizzes", args.quizId);
+    if (quizId) {
+      quiz = await ctx.db.get(quizId);
+      if (quiz && !quiz.isPublished && !(await canViewDrafts(ctx))) {
+        quiz = null;
+      }
     }
 
     // 2. If not found by document ID, search by title match or set reference
