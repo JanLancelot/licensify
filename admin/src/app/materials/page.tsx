@@ -17,7 +17,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { marked } from "marked";
+import { renderMarkdown } from "@/lib/markdown";
 import React, { useMemo, useState } from "react";
 
 
@@ -600,7 +600,7 @@ export default function MaterialsPage() {
                     {formContent ? (
                       <div
                         dangerouslySetInnerHTML={{
-                          __html: marked.parse(formContent) as string,
+                          __html: renderMarkdown(formContent),
                         }}
                       />
                     ) : (
