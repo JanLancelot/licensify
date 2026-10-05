@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireContentManager } from "./_helpers/auth";
+import { canViewDrafts, requireContentManager } from "./_helpers/auth";
 
 /**
  * Public/Student query: Fetches all published subjects sorted by display order.
@@ -35,6 +35,7 @@ export const getSubjectWithTopics = query({
   handler: async (ctx, args) => {
     const subject = await ctx.db.get(args.subjectId);
     if (!subject) return null;
+    if (!subject.isPublished && !(await canViewDrafts(ctx))) return null;
 
     const topics = await ctx.db
       .query("topics")
@@ -57,6 +58,7 @@ export const getSubjectWithHierarchy = query({
   handler: async (ctx, args) => {
     const subject = await ctx.db.get(args.subjectId);
     if (!subject) return null;
+    if (!subject.isPublished && !(await canViewDrafts(ctx))) return null;
 
     const branches = await ctx.db
       .query("branches")
