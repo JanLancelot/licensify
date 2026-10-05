@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
-import { requireContentManager } from "./_helpers/auth";
+import { canViewDrafts, requireContentManager } from "./_helpers/auth";
 
 /**
  * Public query: Fetch published branches for a specific subject area, sorted by order.
@@ -51,7 +51,9 @@ export const listAllBranchesAdmin = query({
 export const getBranchById = query({
   args: { branchId: v.id("branches") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.branchId);
+    const branch = await ctx.db.get(args.branchId);
+    if (!branch || (!branch.isPublished && !(await canViewDrafts(ctx)))) return null;
+    return branch;
   },
 });
 

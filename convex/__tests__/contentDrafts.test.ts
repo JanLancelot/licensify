@@ -69,3 +69,20 @@ test("draft subjects are hidden from the topic listing", async () => {
     (await staff.query(api.subjects.getSubjectWithTopics, { subjectId: draftSubjectId }))?.name
   ).toBe("Draft subject");
 });
+
+test("draft branches, topics and lessons are hidden from students", async () => {
+  const { t, staff, student, subjectId } = await setup();
+  const ids = await t.run(async (ctx) => {
+    const base = { subjectId, order: 1, isPublished: false, createdAt: 0, updatedAt: 0 };
+    const branchId = await ctx.db.insert("branches", { ...base, name: "Draft branch" });
+    const topicId = await ctx.db.insert("topics", { ...base, name: "Draft topic" });
+    const lessonId = await ctx.db.insert("lessons", { ...base, topicId, name: "Draft lesson" });
+    return { branchId, topicId, lessonId };
+  });
+
+  for (const [caller, visible] of [[student, false], [staff, true]] as const) {
+    expect(!!(await caller.query(api.branches.getBranchById, { branchId: ids.branchId }))).toBe(visible);
+    expect(!!(await caller.query(api.topics.getTopicById, { topicId: ids.topicId }))).toBe(visible);
+    expect(!!(await caller.query(api.lessons.getLessonById, { lessonId: ids.lessonId }))).toBe(visible);
+  }
+});
