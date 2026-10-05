@@ -196,16 +196,6 @@ export const updateRole = mutation({
 });
 
 /**
- * Query to fetch a user profile by ID.
- */
-export const getUserById = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
-  },
-});
-
-/**
  * Mutation to store or refresh FCM Push Notification token for user.
  */
 export const updateFcmToken = mutation({
