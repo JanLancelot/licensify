@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { getCurrentUser, requireUser } from "./_helpers/auth";
 
 /**
@@ -50,7 +50,7 @@ export const markAsRead = mutation({
 /**
  * System/Admin mutation: Dispatch a notification to a specific user.
  */
-export const sendNotification = mutation({
+export const sendNotification = internalMutation({
   args: {
     userId: v.id("users"),
     type: v.union(
@@ -121,7 +121,7 @@ export const inviteUserToStudyRoom = mutation({
 /**
  * Background / Admin Mutation: Triggers automated study reminders to active users.
  */
-export const triggerStudyReminders = mutation({
+export const triggerStudyReminders = internalMutation({
   args: {},
   handler: async (ctx) => {
     const activeUsers = await ctx.db
