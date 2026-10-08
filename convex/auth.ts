@@ -83,7 +83,6 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         username: string;
         firstName?: string;
         lastName?: string;
-        role?: "student" | "admin" | "content_manager";
         isActive?: boolean;
       };
 
@@ -132,17 +131,14 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return existingByEmail._id;
       }
 
-      // Auto-assign admin for admin emails or explicit role
-      const isAdminEmail = profile.email.startsWith("admin@") || profile.email.includes("admin");
-      const assignedRole = isAdminEmail || profile.role === "admin" ? "admin" : "student";
-
-      // Insert brand new user
+      // Every new account starts as a student. Staff roles are granted only by an
+      // admin (users.updateRole) or an operator (admin:promoteUserToAdmin).
       const newUserId = await ctx.db.insert("users", {
         email: profile.email,
         username: profile.username ?? profile.email?.split('@')[0] ?? `user_${now}`,
         firstName: profile.firstName,
         lastName: profile.lastName,
-        role: assignedRole,
+        role: "student",
         isActive: true,
         createdAt: now,
         updatedAt: now,

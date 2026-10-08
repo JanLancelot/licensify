@@ -1,6 +1,6 @@
 import { internalAction, internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { getCurrentUser } from "./_helpers/auth";
 
 /**
@@ -19,9 +19,9 @@ export const createAdminUser = internalAction({
   handler: async (
     ctx,
     args
-  ): Promise<{ success: boolean; message: string; result?: any }> => {
+  ): Promise<{ success: boolean; message: string }> => {
     const email = args.email.trim().toLowerCase();
-    const result: any = await ctx.runAction(api.auth.signIn, {
+    await ctx.runAction(api.auth.signIn, {
       provider: "password",
       params: {
         email,
@@ -33,10 +33,12 @@ export const createAdminUser = internalAction({
       },
     });
 
+    // Sign-up always creates a student, so grant the admin role explicitly.
+    await ctx.runMutation(internal.admin.promoteUserToAdmin, { email, role: "admin" });
+
     return {
       success: true,
       message: `Admin account created successfully for ${email}. You can now sign in on the dashboard.`,
-      result,
     };
   },
 });
