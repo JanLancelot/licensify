@@ -1,5 +1,6 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { ConvexError, v } from "convex/values";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { getCurrentUser, requireUser, requireAdmin } from "./_helpers/auth";
 
 /**
@@ -100,6 +101,43 @@ export const generateProfileUploadUrl = mutation({
   },
 });
 
+const PROFILE_UPLOAD_MAX_AGE_MS = 10 * 60 * 1000;
+
+/**
+ * Records that a user owns a freshly uploaded file. Only recent, unclaimed
+ * uploads qualify, so a client cannot adopt an existing file such as a study
+ * material or another user's avatar and later have it deleted.
+ */
+async function claimProfileImage(ctx: MutationCtx, userId: Id<"users">, storageId: Id<"_storage">) {
+  const file = await ctx.db.system.get(storageId);
+  if (!file || Date.now() - file._creationTime > PROFILE_UPLOAD_MAX_AGE_MS) {
+    throw new ConvexError("Upload the profile image again before saving.");
+  }
+  const existing = await ctx.db
+    .query("profileImageClaims")
+    .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
+    .unique();
+  if (existing) {
+    throw new ConvexError("Upload the profile image again before saving.");
+  }
+  await ctx.db.insert("profileImageClaims", { storageId, userId, createdAt: Date.now() });
+}
+
+/** Deletes a previous profile image only if this user claimed it. */
+async function releaseProfileImage(ctx: MutationCtx, userId: Id<"users">, storageId: Id<"_storage">) {
+  const claim = await ctx.db
+    .query("profileImageClaims")
+    .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
+    .unique();
+  if (!claim || claim.userId !== userId) return;
+  await ctx.db.delete(claim._id);
+  try {
+    await ctx.storage.delete(storageId);
+  } catch (e) {
+    console.warn("Failed to delete old profile image:", e);
+  }
+}
+
 /**
  * Mutation for users to update their profile info.
  */
@@ -116,14 +154,12 @@ export const updateProfile = mutation({
     const user = await requireUser(ctx);
     const now = Date.now();
 
-    if (args.profileImageId !== undefined) {
-      // If replacing or removing previous profile image, delete old file from storage
-      if (user.profileImageId && user.profileImageId !== args.profileImageId) {
-        try {
-          await ctx.storage.delete(user.profileImageId);
-        } catch (e) {
-          console.warn("Failed to delete old profile image:", e);
-        }
+    if (args.profileImageId !== undefined && args.profileImageId !== user.profileImageId) {
+      if (args.profileImageId !== null) {
+        await claimProfileImage(ctx, user._id, args.profileImageId);
+      }
+      if (user.profileImageId) {
+        await releaseProfileImage(ctx, user._id, user.profileImageId);
       }
     }
 
