@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireContentManager } from "./_helpers/auth";
+import { canViewDrafts, requireContentManager } from "./_helpers/auth";
 
 /**
  * Fetches published topics for a given subject sorted by order.
@@ -22,7 +22,9 @@ export const listTopicsBySubject = query({
 export const getTopicById = query({
   args: { topicId: v.id("topics") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.topicId);
+    const topic = await ctx.db.get(args.topicId);
+    if (!topic || (!topic.isPublished && !(await canViewDrafts(ctx)))) return null;
+    return topic;
   },
 });
 
