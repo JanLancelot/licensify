@@ -459,4 +459,14 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"]),
+
+  // Append-only record of privileged changes made to user accounts.
+  userAuditLog: defineTable({
+    actorId: v.id("users"),
+    targetUserId: v.id("users"),
+    action: v.union(v.literal("role_changed"), v.literal("status_changed")),
+    previousValue: v.string(),
+    newValue: v.string(),
+    createdAt: v.number(),
+  }).index("by_targetUserId", ["targetUserId"]),
 });

@@ -215,16 +215,31 @@ export const updateRole = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    const currentUser = await requireAdmin(ctx);
+
+    // The caller is always an active admin, so blocking self-demotion keeps at
+    // least one admin able to manage the dashboard.
+    if (currentUser._id === args.targetUserId && args.newRole !== "admin") {
+      throw new Error("Admins cannot remove their own admin role.");
+    }
 
     const targetUser = await ctx.db.get(args.targetUserId);
     if (!targetUser) {
       throw new Error("Target user not found.");
     }
 
+    const now = Date.now();
     await ctx.db.patch(args.targetUserId, {
       role: args.newRole,
-      updatedAt: Date.now(),
+      updatedAt: now,
+    });
+    await ctx.db.insert("userAuditLog", {
+      actorId: currentUser._id,
+      targetUserId: args.targetUserId,
+      action: "role_changed",
+      previousValue: targetUser.role,
+      newValue: args.newRole,
+      createdAt: now,
     });
 
     return { success: true, userId: args.targetUserId, role: args.newRole };
@@ -316,9 +331,18 @@ export const toggleUserActive = mutation({
       throw new Error("Target user not found.");
     }
 
+    const now = Date.now();
     await ctx.db.patch(args.targetUserId, {
       isActive: args.isActive,
-      updatedAt: Date.now(),
+      updatedAt: now,
+    });
+    await ctx.db.insert("userAuditLog", {
+      actorId: currentUser._id,
+      targetUserId: args.targetUserId,
+      action: "status_changed",
+      previousValue: target.isActive ? "active" : "suspended",
+      newValue: args.isActive ? "active" : "suspended",
+      createdAt: now,
     });
 
     return { success: true, isActive: args.isActive };
