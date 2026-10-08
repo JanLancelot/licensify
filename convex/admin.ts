@@ -1,13 +1,14 @@
-import { mutation, query, action } from "./_generated/server";
+import { internalAction, internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { getCurrentUser } from "./_helpers/auth";
 
 /**
  * CLI / Cloud Helper: Directly creates a new Admin User account with email and password on Convex Live.
+ * Internal so it can only be run from the dashboard or CLI, never from a client.
  * Usage: `npx convex run admin:createAdminUser '{"email": "admin@reapp.com", "password": "admin12345"}'`
  */
-export const createAdminUser = action({
+export const createAdminUser = internalAction({
   args: {
     email: v.string(),
     password: v.string(),
@@ -42,8 +43,10 @@ export const createAdminUser = action({
 
 /**
  * CLI / Cloud Helper: Promotes an existing user by email to admin or content_manager.
+ * Internal so clients cannot grant themselves roles.
+ * Usage: `npx convex run admin:promoteUserToAdmin '{"email": "staff@reapp.com"}'`
  */
-export const promoteUserToAdmin = mutation({
+export const promoteUserToAdmin = internalMutation({
   args: {
     email: v.string(),
     role: v.optional(v.union(v.literal("admin"), v.literal("content_manager"), v.literal("student"))),
