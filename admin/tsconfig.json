@@ -29,6 +29,39 @@
       ],
       "@convex/*": [
         "../convex/*"
+      ],
+      "convex/*": [
+        "./node_modules/convex/*"
+      ],
+      "convex": [
+        "./node_modules/convex"
+      ],
+      "@convex-dev/auth/providers/*": [
+        "./node_modules/@convex-dev/auth/dist/providers/*"
+      ],
+      "@convex-dev/auth/*": [
+        "./node_modules/@convex-dev/auth/*"
+      ],
+      "@convex-dev/auth": [
+        "./node_modules/@convex-dev/auth"
+      ],
+      "@convex-dev/rate-limiter/*": [
+        "./node_modules/@convex-dev/rate-limiter/*"
+      ],
+      "@convex-dev/rate-limiter": [
+        "./node_modules/@convex-dev/rate-limiter"
+      ],
+      "@auth/core/*": [
+        "./node_modules/@auth/core/*"
+      ],
+      "@auth/core": [
+        "./node_modules/@auth/core"
+      ],
+      "resend/*": [
+        "./node_modules/resend/*"
+      ],
+      "resend": [
+        "./node_modules/resend"
       ]
     }
   },
