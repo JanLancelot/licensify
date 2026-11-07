@@ -4,6 +4,7 @@ import { convexAuth } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
 import type { DataModel } from "./_generated/dataModel";
 import { ResendOTP } from "./_helpers/ResendOTP";
+import { isAllowedRedirect } from "./_helpers/redirects";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -66,15 +67,13 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [CustomPassword(), Google, ResendOTP],
   callbacks: {
     async redirect({ redirectTo }) {
-      if (
-        redirectTo.startsWith("http://localhost:") ||
-        redirectTo.startsWith("licensify://") ||
-        redirectTo.startsWith("reactnativerepo://") ||
-        redirectTo.startsWith("exp://")
-      ) {
+      if (isAllowedRedirect(redirectTo)) {
         return redirectTo;
       }
-      return process.env.SITE_URL ?? redirectTo;
+      if (!process.env.SITE_URL) {
+        throw new ConvexError("SITE_URL is not configured.");
+      }
+      return process.env.SITE_URL;
     },
     async createOrUpdateUser(ctx, args) {
       const now = Date.now();

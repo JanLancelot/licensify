@@ -53,6 +53,7 @@ test("rejects unauthorized readers and writers, including suspended staff", asyn
   const id = await admin.mutation(api.announcements.saveDraft, { title: "Staff draft", body: "Private" });
   const row = (await admin.query(api.announcements.listAdmin, { paginationOpts })).page[0];
   for (const caller of [t, student, suspended]) {
+    await expect(caller.mutation(api.announcements.remove, { id, expectedUpdatedAt: row.updatedAt })).rejects.toThrow();
     await expect(caller.query(api.announcements.listAdmin, { paginationOpts })).rejects.toThrow();
     await expect(caller.mutation(api.announcements.saveDraft, { title: "Unauthorized", body: "Write" })).rejects.toThrow();
     await expect(caller.mutation(api.announcements.saveDraft, { id, expectedUpdatedAt: row.updatedAt, title: "Unauthorized", body: "Edit" })).rejects.toThrow();
@@ -72,8 +73,8 @@ test("validates content and rejects stale edits or publishing an outdated previe
   const id = await admin.mutation(api.announcements.saveDraft, { title: "Initial", body: "Initial" });
   const row = (await admin.query(api.announcements.listAdmin, { paginationOpts })).page[0];
   await admin.mutation(api.announcements.saveDraft, { id, expectedUpdatedAt: row.updatedAt, title: "Newer", body: "Newer" });
-  await expect(admin.mutation(api.announcements.saveDraft, { id, expectedUpdatedAt: row.updatedAt, title: "Stale", body: "Stale" })).rejects.toThrow("changed");
-  await expect(admin.mutation(api.announcements.setStatus, { id, expectedUpdatedAt: row.updatedAt, status: "published" })).rejects.toThrow("changed");
+  await expect(admin.mutation(api.announcements.saveDraft, { id, expectedUpdatedAt: row.updatedAt, title: "Stale", body: "Stale" })).rejects.toMatchObject({ data: "This announcement changed. Close the editor and reopen it before trying again." });
+  await expect(admin.mutation(api.announcements.setStatus, { id, expectedUpdatedAt: row.updatedAt, status: "published" })).rejects.toMatchObject({ data: "This announcement changed. Close the editor and reopen it before trying again." });
 });
 
 test("published pagination is newest first and never includes drafts or archives", async () => {
@@ -90,4 +91,35 @@ test("published pagination is newest first and never includes drafts or archives
   const last = await student.query(api.announcements.listPublished, { paginationOpts: { numItems: 2, cursor: first.continueCursor } });
   expect(last.page.map(row => row._id)).toEqual([ids[0]]);
   expect(last.isDone).toBe(true);
+});
+
+
+test.each(["draft", "archived", "published"] as const)("staff can permanently delete %s announcements from all reader queries", async status => {
+  const { admin, manager, student, t } = await setup();
+  for (const caller of [admin, manager]) {
+    const id = await caller.mutation(api.announcements.saveDraft, { title: "Delete me", body: "Message" });
+    let row = (await caller.query(api.announcements.listAdmin, { paginationOpts })).page[0];
+    if (status !== "draft") {
+      await caller.mutation(api.announcements.setStatus, { id, expectedUpdatedAt: row.updatedAt, status });
+      row = (await caller.query(api.announcements.listAdmin, { paginationOpts })).page[0];
+    }
+    await caller.mutation(api.announcements.remove, { id, expectedUpdatedAt: row.updatedAt });
+    expect(await t.run(ctx => ctx.db.get(id))).toBeNull();
+    expect((await caller.query(api.announcements.listAdmin, { paginationOpts })).page).toEqual([]);
+    expect((await student.query(api.announcements.listPublished, { paginationOpts })).page).toEqual([]);
+    expect(await student.query(api.announcements.getPublished, { id })).toBeNull();
+    await expect(caller.mutation(api.announcements.remove, { id, expectedUpdatedAt: row.updatedAt })).rejects.toMatchObject({ data: "Announcement not found." });
+  }
+});
+
+test("rejects stale deletion after another staff member edits or publishes", async () => {
+  const { admin, manager, t } = await setup();
+  const id = await admin.mutation(api.announcements.saveDraft, { title: "Original", body: "Message" });
+  const original = (await admin.query(api.announcements.listAdmin, { paginationOpts })).page[0];
+  await manager.mutation(api.announcements.saveDraft, { id, expectedUpdatedAt: original.updatedAt, title: "Revised", body: "Message" });
+  await expect(admin.mutation(api.announcements.remove, { id, expectedUpdatedAt: original.updatedAt })).rejects.toMatchObject({ data: "This announcement changed. Close the delete confirmation and reopen it before trying again." });
+  const revised = (await admin.query(api.announcements.listAdmin, { paginationOpts })).page[0];
+  await manager.mutation(api.announcements.setStatus, { id, expectedUpdatedAt: revised.updatedAt, status: "published" });
+  await expect(admin.mutation(api.announcements.remove, { id, expectedUpdatedAt: revised.updatedAt })).rejects.toThrow("changed");
+  expect(await t.run(ctx => ctx.db.get(id))).toMatchObject({ title: "Revised", status: "published" });
 });

@@ -1,8 +1,9 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import schema from "../schema";
 import { register as registerRateLimiter } from "@convex-dev/rate-limiter/test";
+import * as notifications from "../notifications";
 
 test("Notification & Study Room Invite System Tests", async () => {
   const t = convexTest(schema, import.meta.glob("../**/*.ts"));
@@ -58,8 +59,8 @@ test("Notification & Study Room Invite System Tests", async () => {
   });
   expect(remainingUnread.length).toBe(0);
 
-  // Test 3: Trigger automated study reminders
-  const reminderRes = await userA.mutation(api.notifications.triggerStudyReminders, {});
+  // Test 3: Trigger automated study reminders (runs from the daily cron)
+  const reminderRes = await t.mutation(internal.notifications.triggerStudyReminders, {});
   expect(reminderRes.success).toBe(true);
   expect(reminderRes.count).toBeGreaterThanOrEqual(2);
 
@@ -68,4 +69,12 @@ test("Notification & Study Room Invite System Tests", async () => {
     unreadOnly: true,
   });
   expect(userANotifications.some((n: any) => n.title === "Daily ALE Board Exam Study Reminder")).toBe(true);
+});
+
+test("notification senders are not exposed to clients", async () => {
+  // convex-test does not enforce visibility, so assert the registration itself.
+  for (const fn of [notifications.sendNotification, notifications.triggerStudyReminders]) {
+    expect((fn as any).isInternal).toBe(true);
+    expect((fn as any).isPublic).toBeFalsy();
+  }
 });

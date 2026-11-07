@@ -11,6 +11,7 @@
 import type * as _helpers_ResendOTP from "../_helpers/ResendOTP.js";
 import type * as _helpers_auth from "../_helpers/auth.js";
 import type * as _helpers_crypto from "../_helpers/crypto.js";
+import type * as _helpers_redirects from "../_helpers/redirects.js";
 import type * as _seed_assessments from "../_seed/assessments.js";
 import type * as _seed_curriculum from "../_seed/curriculum.js";
 import type * as admin from "../admin.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   "_helpers/ResendOTP": typeof _helpers_ResendOTP;
   "_helpers/auth": typeof _helpers_auth;
   "_helpers/crypto": typeof _helpers_crypto;
+  "_helpers/redirects": typeof _helpers_redirects;
   "_seed/assessments": typeof _seed_assessments;
   "_seed/curriculum": typeof _seed_curriculum;
   admin: typeof admin;

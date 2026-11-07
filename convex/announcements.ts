@@ -1,5 +1,5 @@
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireContentManager, requireUser } from "./_helpers/auth";
 import type { Doc } from "./_generated/dataModel";
@@ -7,15 +7,15 @@ import type { Doc } from "./_generated/dataModel";
 function content(title: string, body: string) {
   title = title.trim();
   body = body.trim();
-  if (!title || title.length > 120) throw new Error("Title must contain 1–120 characters.");
-  if (!body || body.length > 5000) throw new Error("Message must contain 1–5,000 characters.");
+  if (!title || title.length > 120) throw new ConvexError("Title must contain 1–120 characters.");
+  if (!body || body.length > 5000) throw new ConvexError("Message must contain 1–5,000 characters.");
   return { title, body };
 }
 
-function checkVersion(row: Doc<"announcements"> | null, expectedUpdatedAt?: number) {
-  if (!row) throw new Error("Announcement not found.");
+function checkVersion(row: Doc<"announcements"> | null, expectedUpdatedAt?: number, operation = "editor") {
+  if (!row) throw new ConvexError("Announcement not found.");
   if (expectedUpdatedAt !== row.updatedAt) {
-    throw new Error("This announcement changed. Close the editor and reopen it before trying again.");
+    throw new ConvexError(`This announcement changed. Close the ${operation} and reopen it before trying again.`);
   }
   return row;
 }
@@ -65,7 +65,7 @@ export const saveDraft = mutation({
     const values = content(args.title, args.body);
     if (args.id) {
       const row = checkVersion(await ctx.db.get(args.id), args.expectedUpdatedAt);
-      if (row.status === "published") throw new Error("Unpublish this announcement before editing it.");
+      if (row.status === "published") throw new ConvexError("Unpublish this announcement before editing it.");
       await ctx.db.patch(row._id, {
         ...values, status: "draft", publishedAt: undefined,
         updatedBy: user._id, updatedAt: Math.max(Date.now(), row.updatedAt + 1),
@@ -91,7 +91,7 @@ export const setStatus = mutation({
     const row = checkVersion(await ctx.db.get(args.id), args.expectedUpdatedAt);
     if (row.status === args.status) return;
     if (args.status === "published") {
-      if (row.status !== "draft") throw new Error("Restore this announcement to a draft before publishing.");
+      if (row.status !== "draft") throw new ConvexError("Restore this announcement to a draft before publishing.");
       content(row.title, row.body);
     }
     const now = Math.max(Date.now(), row.updatedAt + 1);
@@ -99,5 +99,17 @@ export const setStatus = mutation({
       status: args.status, updatedAt: now, updatedBy: user._id,
       publishedAt: args.status === "published" ? now : undefined,
     });
+  },
+});
+
+export const remove = mutation({
+  args: {
+    id: v.id("announcements"),
+    expectedUpdatedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    const row = checkVersion(await ctx.db.get(args.id), args.expectedUpdatedAt, "delete confirmation");
+    await ctx.db.delete(row._id);
   },
 });

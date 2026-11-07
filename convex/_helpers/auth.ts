@@ -114,3 +114,11 @@ export async function requireContentManager(
 ): Promise<Doc<"users">> {
   return requireRole(ctx, ["content_manager", "admin"]);
 }
+
+/**
+ * Returns true when the caller is active staff who may see unpublished content.
+ */
+export async function canViewDrafts(ctx: QueryCtx | MutationCtx): Promise<boolean> {
+  const user = await getCurrentUser(ctx);
+  return !!user && user.isActive && (user.role === "admin" || user.role === "content_manager");
+}

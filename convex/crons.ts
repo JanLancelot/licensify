@@ -1,5 +1,5 @@
 import { cronJobs } from "convex/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 
 const crons = cronJobs();
 
@@ -7,7 +7,7 @@ const crons = cronJobs();
 crons.daily(
   "daily-study-reminder",
   { hourUTC: 8, minuteUTC: 0 },
-  api.notifications.triggerStudyReminders
+  internal.notifications.triggerStudyReminders
 );
 
 export default crons;

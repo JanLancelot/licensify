@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireContentManager } from "./_helpers/auth";
+import { canViewDrafts, requireContentManager } from "./_helpers/auth";
 
 /**
  * Fetches published lessons for a given topic sorted by order.
@@ -36,7 +36,9 @@ export const listLessonsBySubject = query({
 export const getLessonById = query({
   args: { lessonId: v.id("lessons") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.lessonId);
+    const lesson = await ctx.db.get(args.lessonId);
+    if (!lesson || (!lesson.isPublished && !(await canViewDrafts(ctx)))) return null;
+    return lesson;
   },
 });
 

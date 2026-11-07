@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireContentManager } from "./_helpers/auth";
+import { canViewDrafts, requireContentManager } from "./_helpers/auth";
 
 /**
  * Public/Student query: Fetches published reviewer materials for a subject.
@@ -38,6 +38,7 @@ export const getMaterialById = query({
   handler: async (ctx, args) => {
     const material = await ctx.db.get(args.materialId);
     if (!material) return null;
+    if (!material.isPublished && !(await canViewDrafts(ctx))) return null;
 
     let fileUrl: string | null = null;
     if (material.storageId) {
