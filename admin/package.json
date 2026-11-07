@@ -26,6 +26,7 @@
     "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {
+    "@convex-dev/rate-limiter": "^0.3.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.4",
