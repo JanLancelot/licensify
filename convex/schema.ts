@@ -24,6 +24,8 @@ export default defineSchema({
     userId: v.optional(v.string()),
 
     email: v.optional(v.string()),
+    // Set once a provider proves ownership of `email`; gates account linking.
+    emailVerificationTime: v.optional(v.number()),
     username: v.string(),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
