@@ -1,12 +1,12 @@
-# Licensify Local SQLite Database Guide (Offline-First Architecture)
+# P App Local SQLite Database Guide (Offline-First Architecture)
 
-This guide documents the local database architecture, schema definitions, offline zero-trust answer verification, React hooks, and sync mechanisms used across the **Licensify** mobile application.
+This guide documents the local database architecture, schema definitions, offline zero-trust answer verification, React hooks, and sync mechanisms used across the **P App** mobile application.
 
 ---
 
 ## 1. Overview & Technology Stack
 
-Licensify utilizes a **Local-First, Offline-Capable** data architecture designed to allow students to study materials, flip flashcards, take quizzes, and check answers with zero network latency or completely offline.
+P App utilizes a **Local-First, Offline-Capable** data architecture designed to allow students to study materials, flip flashcards, take quizzes, and check answers with zero network latency or completely offline.
 
 * **Database Engine**: [`expo-sqlite`](https://docs.expo.dev/versions/v57.0.0/sdk/sqlite/) (Synchronous native SQLite database).
 * **Object-Relational Mapping (ORM)**: [`drizzle-orm`](https://orm.drizzle.team/) for type-safe SQLite queries and migrations.

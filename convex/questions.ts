@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
-import { requireContentManager } from "./_helpers/auth";
+import { requireContentManager, requireUser } from "./_helpers/auth";
 import { hashAnswer } from "./_helpers/crypto";
 
 /**
@@ -269,13 +269,26 @@ export const bulkCreateQuestions = mutation({
         subjectId: v.id("subjects"),
         topicId: v.optional(v.id("topics")),
         question: v.string(),
-        choices: v.array(
-          v.object({
-            id: v.string(),
-            text: v.string(),
-          })
+        choices: v.optional(
+          v.array(
+            v.object({
+              id: v.string(),
+              text: v.string(),
+            })
+          )
         ),
-        correctChoiceId: v.string(),
+        correctChoiceId: v.optional(v.string()),
+        questionType: v.optional(
+          v.union(
+            v.literal("multiple_choice"),
+            v.literal("identification"),
+            v.literal("essay")
+          )
+        ),
+        acceptedAnswers: v.optional(v.array(v.string())),
+        rubricCriteria: v.optional(v.array(v.string())),
+        idealAnswer: v.optional(v.string()),
+        isArchitectVerified: v.optional(v.boolean()),
         explanation: v.optional(v.string()),
         difficulty: v.union(
           v.literal("easy"),
@@ -292,19 +305,30 @@ export const bulkCreateQuestions = mutation({
 
     const createdIds: Id<"questions">[] = [];
     for (const item of args.items) {
-      const isValidChoice = item.choices.some((c) => c.id === item.correctChoiceId);
-      if (!isValidChoice) {
-        throw new Error(
-          `Validation failed for question "${item.question.slice(0, 30)}...": correctChoiceId "${item.correctChoiceId}" not found in choices.`
-        );
+      const qType = item.questionType || "multiple_choice";
+      const choices = item.choices || [];
+      const correctChoiceId = item.correctChoiceId || (choices[0]?.id || "a");
+
+      if (qType === "multiple_choice" && choices.length > 0) {
+        const isValidChoice = choices.some((c) => c.id === correctChoiceId);
+        if (!isValidChoice) {
+          throw new Error(
+            `Validation failed for question "${item.question.slice(0, 30)}...": correctChoiceId "${correctChoiceId}" not found in choices.`
+          );
+        }
       }
 
       const qId = await ctx.db.insert("questions", {
         subjectId: item.subjectId,
         topicId: item.topicId,
+        questionType: qType,
         question: item.question,
-        choices: item.choices.map((c) => ({ id: c.id, text: c.text })),
-        correctChoiceId: item.correctChoiceId,
+        choices: choices.map((c) => ({ id: c.id, text: c.text })),
+        correctChoiceId: correctChoiceId,
+        acceptedAnswers: item.acceptedAnswers,
+        rubricCriteria: item.rubricCriteria,
+        idealAnswer: item.idealAnswer,
+        isArchitectVerified: item.isArchitectVerified ?? true,
         explanation: item.explanation,
         difficulty: item.difficulty,
         isPublished: item.isPublished ?? true,
@@ -313,7 +337,7 @@ export const bulkCreateQuestions = mutation({
         updatedAt: now,
       });
 
-      const hash = await hashAnswer(qId, item.correctChoiceId);
+      const hash = await hashAnswer(qId, correctChoiceId);
       await ctx.db.patch(qId, { correctChoiceHash: hash });
       createdIds.push(qId);
     }
@@ -404,5 +428,83 @@ export const getQuestionsForPractice = query({
     );
   },
 });
+
+/**
+ * Architect Query: List questions pending review in the evaluation queue.
+ */
+export const listPendingArchitectReview = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireContentManager(ctx);
+    return await ctx.db
+      .query("questions")
+      .withIndex("by_reviewStatus", (q) => q.eq("reviewStatus", "pending_architect_review"))
+      .collect();
+  },
+});
+
+/**
+ * Student Mutation: Submit a personal question for Architect Review.
+ */
+export const submitQuestionForReview = mutation({
+  args: {
+    questionId: v.id("questions"),
+  },
+  handler: async (ctx, args) => {
+    await requireUser(ctx);
+    const question = await ctx.db.get(args.questionId);
+    if (!question) throw new Error("Question not found.");
+
+    await ctx.db.patch(args.questionId, {
+      reviewStatus: "pending_architect_review",
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, message: "Question submitted to Architect review queue." };
+  },
+});
+
+/**
+ * Architect Mutation: Approve, Edit & Approve, or Reject a question.
+ */
+export const evaluateCommunityQuestion = mutation({
+  args: {
+    questionId: v.id("questions"),
+    decision: v.union(v.literal("approved"), v.literal("rejected")),
+    editedQuestion: v.optional(v.string()),
+    editedExplanation: v.optional(v.string()),
+    rejectionReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const architect = await requireContentManager(ctx);
+    const question = await ctx.db.get(args.questionId);
+    if (!question) throw new Error("Question not found.");
+
+    const now = Date.now();
+
+    if (args.decision === "approved") {
+      await ctx.db.patch(args.questionId, {
+        question: args.editedQuestion || question.question,
+        explanation: args.editedExplanation || question.explanation,
+        isArchitectVerified: true,
+        verifiedBy: architect._id,
+        reviewStatus: "approved",
+        visibility: "public_verified",
+        isPublished: true,
+        updatedAt: now,
+      });
+      return { success: true, status: "approved" };
+    } else {
+      await ctx.db.patch(args.questionId, {
+        reviewStatus: "rejected",
+        rejectionReason: args.rejectionReason || "Did not meet PRC examination criteria.",
+        isArchitectVerified: false,
+        updatedAt: now,
+      });
+      return { success: true, status: "rejected" };
+    }
+  },
+});
+
 
 

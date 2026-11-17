@@ -18,7 +18,6 @@ import {
   Mail,
   Moon,
   Palette,
-  Send,
   Shield,
   Smartphone,
   Star,
@@ -28,7 +27,7 @@ import {
   User,
   Volume2,
   X,
-  Zap,
+  Zap
 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import {
@@ -49,8 +48,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ACCENT_THEME_LIST } from '@/constants/theme';
 import { ThemeMode, useAppTheme } from '@/context/theme-context';
-import { api } from '../../../convex/_generated/api';
 import { LocalAchievementItem, useLocalAchievements } from '@/hooks/useLocalData';
+import { api } from '../../../convex/_generated/api';
 
 interface FormattedAchievementDisplay extends LocalAchievementItem {
   icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
@@ -99,6 +98,8 @@ export default function ProfileScreen() {
   // Convex profile and mutation
   const userProfile = useQuery(api.users.getCurrentUserProfile);
   const updateProfileMutation = useMutation(api.users.updateProfile);
+  const deleteAccountMutation = useMutation(api.users.deleteAccount);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // User info state
   const [customUserName, setCustomUserName] = useState<string | null>(null);
@@ -325,7 +326,7 @@ export default function ProfileScreen() {
       }
 
       const cleanTitle = (ach.title || '').replace(/^\[(Seed|Mock)\]\s*/i, '');
-      const cleanDesc = (ach.description || '').replace(/^\[(Seed|Mock)\]\s*/i, '').replace(/Licensify/gi, 'The P App');
+      const cleanDesc = (ach.description || '').replace(/^\[(Seed|Mock)\]\s*/i, '').replace(/Licensify/gi, 'P App');
 
       return {
         ...ach,
@@ -395,6 +396,44 @@ export default function ProfileScreen() {
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign Out', style: 'destructive', onPress: doSignOut },
       ]);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    const doDeleteAccount = async () => {
+      setIsDeletingAccount(true);
+      try {
+        await deleteAccountMutation({});
+        await signOut();
+        router.replace('/(auth)/login' as any);
+      } catch (e: any) {
+        console.error('Delete account error:', e);
+        setIsDeletingAccount(false);
+        const msg = e?.message || 'Failed to delete account. Please try again.';
+        if (Platform.OS === 'web') {
+          window.alert(msg);
+        } else {
+          Alert.alert('Error', msg);
+        }
+      }
+    };
+
+    const confirmMessage =
+      'Are you sure you want to delete your account? In accordance with the Philippine Data Privacy Act of 2012 (Republic Act No. 10173) and App Store guidelines, all your profile data, progress, attempts, and notes will be permanently purged. This action cannot be undone.';
+
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(confirmMessage)) {
+        doDeleteAccount();
+      }
+    } else {
+      Alert.alert(
+        'Delete Account & Erase Data',
+        confirmMessage,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Permanently Delete', style: 'destructive', onPress: doDeleteAccount },
+        ]
+      );
     }
   };
 
@@ -522,68 +561,68 @@ export default function ProfileScreen() {
               </View>
             ) : (
               displayedAchievements.map((item: FormattedAchievementDisplay) => {
-              const IconComp = item.icon;
+                const IconComp = item.icon;
 
-              return (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.achievementBoxCard,
-                    {
-                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-                    },
-                  ]}>
-                  {/* Icon Badge */}
+                return (
                   <View
+                    key={item.id}
                     style={[
-                      styles.achieveIconCircle,
+                      styles.achievementBoxCard,
                       {
-                        backgroundColor: isDark ? item.darkBg : item.bg,
+                        backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
                       },
                     ]}>
-                    <IconComp size={22} color={item.iconColor} strokeWidth={2.3} />
-                  </View>
-
-                  {/* Clean Title */}
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.achieveBoxTitle,
-                      { color: isDark ? '#F9FAFB' : '#111827' },
-                    ]}>
-                    {item.title}
-                  </Text>
-
-                  {/* Minimal Progress Badge */}
-                  <View
-                    style={[
-                      styles.achieveStatusTag,
-                      {
-                        backgroundColor: item.isUnlocked
-                          ? isDark
-                            ? 'rgba(16, 185, 129, 0.2)'
-                            : '#D1FAE5'
-                          : isDark
-                            ? 'rgba(255, 255, 255, 0.06)'
-                            : '#F3F4F6',
-                      },
-                    ]}>
-                    <Text
+                    {/* Icon Badge */}
+                    <View
                       style={[
-                        styles.achieveStatusText,
+                        styles.achieveIconCircle,
                         {
-                          color: item.isUnlocked
-                            ? '#10B981'
-                            : colors.textSecondary,
+                          backgroundColor: isDark ? item.darkBg : item.bg,
                         },
                       ]}>
-                      {item.progressText}
+                      <IconComp size={22} color={item.iconColor} strokeWidth={2.3} />
+                    </View>
+
+                    {/* Clean Title */}
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.achieveBoxTitle,
+                        { color: isDark ? '#F9FAFB' : '#111827' },
+                      ]}>
+                      {item.title}
                     </Text>
+
+                    {/* Minimal Progress Badge */}
+                    <View
+                      style={[
+                        styles.achieveStatusTag,
+                        {
+                          backgroundColor: item.isUnlocked
+                            ? isDark
+                              ? 'rgba(16, 185, 129, 0.2)'
+                              : '#D1FAE5'
+                            : isDark
+                              ? 'rgba(255, 255, 255, 0.06)'
+                              : '#F3F4F6',
+                        },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.achieveStatusText,
+                          {
+                            color: item.isUnlocked
+                              ? '#10B981'
+                              : colors.textSecondary,
+                          },
+                        ]}>
+                        {item.progressText}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              );
-            }))}
+                );
+              }))}
           </ScrollView>
         </View>
 
@@ -818,6 +857,28 @@ export default function ProfileScreen() {
           ]}>
           <LogOut size={18} color="#EF4444" strokeWidth={2.4} />
           <Text style={styles.signOutText}>Sign Out</Text>
+        </Pressable>
+
+        {/* 7. DANGER ZONE: DELETE ACCOUNT (RA 10173 DPA RIGHT TO ERASURE & APP STORE COMPLIANCE) */}
+        <Pressable
+          onPress={handleDeleteAccount}
+          disabled={isDeletingAccount}
+          style={({ pressed }) => [
+            styles.deleteAccountBtn,
+            {
+              backgroundColor: 'transparent',
+              borderColor: isDark ? 'rgba(239, 68, 68, 0.35)' : '#FCA5A5',
+              opacity: pressed || isDeletingAccount ? 0.65 : 1,
+            },
+          ]}>
+          {isDeletingAccount ? (
+            <ActivityIndicator size="small" color="#EF4444" />
+          ) : (
+            <Trash2 size={15} color="#EF4444" strokeWidth={2.2} />
+          )}
+          <Text style={styles.deleteAccountText}>
+            {isDeletingAccount ? 'Erasing Account Data...' : 'Delete Account & Erase Data'}
+          </Text>
         </Pressable>
       </ScrollView>
 
@@ -1097,59 +1158,59 @@ export default function ProfileScreen() {
                             borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
                           },
                         ]}>
-                      <View
-                        style={[
-                          styles.achieveIconCircle,
-                          {
-                            backgroundColor: isDark ? item.darkBg : item.bg,
-                          },
-                        ]}>
-                        <IconComp size={20} color={item.iconColor} strokeWidth={2.3} />
-                      </View>
-                      <View style={{ flex: 1, gap: 2, alignItems: 'flex-start' }}>
-                        <Text
+                        <View
                           style={[
-                            styles.seeAllItemTitle,
-                            { color: isDark ? '#F9FAFB' : '#111827' },
-                          ]}>
-                          {item.title}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.seeAllItemCategory,
-                            { color: colors.textSecondary },
-                          ]}>
-                          {item.category}
-                        </Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.achieveStatusTag,
-                          {
-                            backgroundColor: item.isUnlocked
-                              ? isDark
-                                ? 'rgba(16, 185, 129, 0.2)'
-                                : '#D1FAE5'
-                              : isDark
-                                ? 'rgba(255, 255, 255, 0.06)'
-                                : '#F3F4F6',
-                          },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.achieveStatusText,
+                            styles.achieveIconCircle,
                             {
-                              color: item.isUnlocked
-                                ? '#10B981'
-                                : colors.textSecondary,
+                              backgroundColor: isDark ? item.darkBg : item.bg,
                             },
                           ]}>
-                          {item.progressText}
-                        </Text>
+                          <IconComp size={20} color={item.iconColor} strokeWidth={2.3} />
+                        </View>
+                        <View style={{ flex: 1, gap: 2, alignItems: 'flex-start' }}>
+                          <Text
+                            style={[
+                              styles.seeAllItemTitle,
+                              { color: isDark ? '#F9FAFB' : '#111827' },
+                            ]}>
+                            {item.title}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.seeAllItemCategory,
+                              { color: colors.textSecondary },
+                            ]}>
+                            {item.category}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.achieveStatusTag,
+                            {
+                              backgroundColor: item.isUnlocked
+                                ? isDark
+                                  ? 'rgba(16, 185, 129, 0.2)'
+                                  : '#D1FAE5'
+                                : isDark
+                                  ? 'rgba(255, 255, 255, 0.06)'
+                                  : '#F3F4F6',
+                            },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.achieveStatusText,
+                              {
+                                color: item.isUnlocked
+                                  ? '#10B981'
+                                  : colors.textSecondary,
+                              },
+                            ]}>
+                            {item.progressText}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  );
-                }))}
+                    );
+                  }))}
               </View>
             </ScrollView>
           </View>
@@ -1221,11 +1282,11 @@ export default function ProfileScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Shield size={16} color={colors.accent} strokeWidth={2.3} />
                   <Text style={[styles.legalCardTitle, { color: isDark ? '#F9FAFB' : '#111827' }]}>
-                    Privacy Policy
+                    Privacy Policy (RA 10173 Compliant)
                   </Text>
                 </View>
                 <Text style={[styles.legalCardBody, { color: colors.textSecondary }]}>
-                  Your study records, quiz scores, custom avatars, and theme settings are safely protected and encrypted. We respect candidate confidentiality and never sell study telemetry to third parties.
+                  P App strictly adheres to Republic Act No. 10173 (Philippine Data Privacy Act of 2012). We enforce zero-card storage for payments, maintain candidate confidentiality, and honor all rights to access, correction, and permanent erasure.
                 </Text>
               </View>
 
@@ -1719,6 +1780,21 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 14.5,
     fontWeight: '700',
+  },
+  deleteAccountBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  deleteAccountText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '600',
   },
   modalBackdrop: {
     flex: 1,

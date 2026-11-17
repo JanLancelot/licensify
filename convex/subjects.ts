@@ -120,50 +120,93 @@ export const getFullCurriculum = query({
       .collect();
     lessons.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    const materials = await ctx.db.query("materials").collect();
+    const materials = await ctx.db
+      .query("materials")
+      .filter((q) => q.neq(q.field("isPublished"), false))
+      .collect();
+
+    const extractKeyPoints = (content?: string, defaultTitle?: string): string[] => {
+      if (content) {
+        const bulletLines = content
+          .split("\n")
+          .filter((l) => l.trim().startsWith("* ") || l.trim().startsWith("- "));
+        if (bulletLines.length > 0) {
+          return bulletLines
+            .slice(0, 4)
+            .map((l) => l.replace(/^[\*\-]\s*/, "").replace(/\*\*/g, "").trim());
+        }
+      }
+      return [
+        `Definition & Scope: ${defaultTitle || "Architectural Review"}`,
+        `Regulatory Standard: Applicable architectural board guidelines & provisions.`,
+        `Practice Application: Professional architectural practice & code compliance.`,
+      ];
+    };
 
     return subjects.map((sub, sIdx) => {
+      const subMaterials = materials.filter((m) => m.subjectId === sub._id);
       const subTopics = topics.filter((t) => t.subjectId === sub._id);
+
       const mappedTopics = subTopics.map((top, tIdx) => {
         const topLessons = lessons.filter((l) => l.topicId === top._id);
-        const mappedLessons = topLessons.map((les, lIdx) => {
-          const mat = materials.find((m) => m.lessonId === les._id) || materials.find((m) => m.topicId === top._id);
-          const rawDesc = (mat?.description && mat.description.trim()) || (les.description && les.description.trim()) || "";
+        const topMaterials = subMaterials.filter((m) => m.topicId === top._id);
+
+        const mappedLessons: any[] = [];
+        const usedMaterialIds = new Set<string>();
+
+        // 1. Process explicit lessons
+        topLessons.forEach((les, lIdx) => {
+          const mat = topMaterials.find((m) => m.lessonId === les._id);
+          if (mat) usedMaterialIds.add(mat._id);
+
+          const title = mat?.title || les.name;
+          const rawDesc =
+            (mat?.description && mat.description.trim()) ||
+            (les.description && les.description.trim()) ||
+            "";
           const description = rawDesc.length > 0 ? rawDesc : undefined;
           const content = (mat?.content && mat.content.trim()) || undefined;
           const summary = description || "Core syllabus competencies and architectural provisions.";
-          let keyPoints: string[] = [];
-          if (mat?.content) {
-            const bulletLines = mat.content
-              .split("\n")
-              .filter((l) => l.trim().startsWith("* ") || l.trim().startsWith("- "));
-            if (bulletLines.length > 0) {
-              keyPoints = bulletLines
-                .slice(0, 4)
-                .map((l) => l.replace(/^[\*\-]\s*/, "").replace(/\*\*/g, "").trim());
-            }
-          }
-          if (keyPoints.length === 0) {
-            keyPoints = [
-              `Definition & Scope: ${les.name}`,
-              `Regulatory Standard: Applicable architectural board guidelines & provisions.`,
-              `Practice Application: Professional architectural practice & code compliance.`,
-            ];
-          }
+          const keyPoints = extractKeyPoints(mat?.content, title);
 
-          return {
+          mappedLessons.push({
             id: les._id,
             lessonId: les._id,
             topicId: top._id,
             subjectId: sub._id,
-            lessonNumber: les.order || (lIdx + 1),
-            title: les.name,
+            lessonNumber: lIdx + 1,
+            title,
             duration: "10 min",
             summary,
             keyPoints,
             description,
             content,
-          };
+          });
+        });
+
+        // 2. Add materials authored under this topic that are not attached to a pre-existing lesson
+        topMaterials.forEach((mat) => {
+          if (!usedMaterialIds.has(mat._id)) {
+            const rawDesc = mat.description?.trim() || "";
+            const description = rawDesc.length > 0 ? rawDesc : undefined;
+            const content = mat.content?.trim() || undefined;
+            const summary = description || "Core syllabus competencies and architectural provisions.";
+            const keyPoints = extractKeyPoints(mat.content, mat.title);
+
+            mappedLessons.push({
+              id: mat._id,
+              lessonId: mat._id,
+              topicId: top._id,
+              subjectId: sub._id,
+              lessonNumber: mappedLessons.length + 1,
+              title: mat.title,
+              duration: "10 min",
+              summary,
+              keyPoints,
+              description,
+              content,
+            });
+          }
         });
 
         return {
@@ -175,6 +218,41 @@ export const getFullCurriculum = query({
           lessons: mappedLessons,
         };
       });
+
+      // 3. Add General Notes topic for materials assigned to this subject with NO specific topic (-- All Topics --)
+      const generalMaterials = subMaterials.filter((m) => !m.topicId);
+      if (generalMaterials.length > 0) {
+        const generalLessons = generalMaterials.map((mat, gIdx) => {
+          const rawDesc = mat.description?.trim() || "";
+          const description = rawDesc.length > 0 ? rawDesc : undefined;
+          const content = mat.content?.trim() || undefined;
+          const summary = description || "Core syllabus competencies and architectural provisions.";
+          const keyPoints = extractKeyPoints(mat.content, mat.title);
+
+          return {
+            id: mat._id,
+            lessonId: mat._id,
+            topicId: `${sub._id}_general`,
+            subjectId: sub._id,
+            lessonNumber: gIdx + 1,
+            title: mat.title,
+            duration: "10 min",
+            summary,
+            keyPoints,
+            description,
+            content,
+          };
+        });
+
+        mappedTopics.unshift({
+          id: `${sub._id}_general` as any,
+          topicId: `${sub._id}_general` as any,
+          subjectId: sub._id,
+          topicNumber: 0,
+          title: "General Reference & Notes",
+          lessons: generalLessons,
+        });
+      }
 
       return {
         id: sub._id,

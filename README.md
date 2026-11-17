@@ -1,6 +1,6 @@
-# Licensify - ALE Reviewer Mobile Application 🏗️
+# P App - ALE Reviewer Mobile Application 🏗️
 
-Licensify is an offline-first mobile Architectural Licensure Examination (ALE) Reviewer application built with React Native (Expo SDK 52 / v57 docs), Convex Cloud, and SQLite with Drizzle ORM.
+P App is an offline-first mobile Architectural Licensure Examination (ALE) Reviewer application built with React Native (Expo SDK 52 / v57 docs), Convex Cloud, and SQLite with Drizzle ORM.
 
 ---
 

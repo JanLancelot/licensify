@@ -501,7 +501,7 @@ export const getUserAchievementsOnline = query({
 
       const cleanTitle = ach.title.replace(/^\[(Seed|Mock)\]\s*/i, "");
       const cleanDesc = ach.description
-        ? ach.description.replace(/^\[(Seed|Mock)\]\s*/i, "").replace(/Licensify/gi, "The P App")
+        ? ach.description.replace(/^\[(Seed|Mock)\]\s*/i, "").replace(/Licensify/gi, "P App")
         : "";
 
       return {
@@ -522,6 +522,93 @@ export const getUserAchievementsOnline = query({
     });
   },
 });
+
+/**
+ * Mutation: Permanent Account Deletion (Mandatory for App Store, Google Play & RA 10173 DPA).
+ * Permanently removes personal data, profile image, claims, and marks account deleted.
+ */
+export const deleteAccount = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      throw new ConvexError("Authentication required to delete account.");
+    }
+
+    // 1. Delete associated profile image if exists
+    if (user.profileImageId) {
+      try {
+        await ctx.storage.delete(user.profileImageId);
+      } catch {
+        // Continue even if storage delete fails
+      }
+    }
+
+    // 2. Delete profile image claims
+    const claims = await ctx.db
+      .query("profileImageClaims")
+      .withIndex("by_storageId")
+      .collect();
+    for (const claim of claims) {
+      if (claim.userId === user._id) {
+        await ctx.db.delete(claim._id);
+      }
+    }
+
+    // 3. Mark active subscriptions as canceled
+    const activeSubs = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    for (const sub of activeSubs) {
+      await ctx.db.patch(sub._id, {
+        status: "canceled",
+        cancelAtPeriodEnd: false,
+        updatedAt: Date.now(),
+      });
+    }
+
+    // 4. Anonymize/wipe user record (Right to Erasure)
+    await ctx.db.patch(user._id, {
+      email: undefined,
+      username: `deleted_user_${user._id.slice(-6)}`,
+      firstName: undefined,
+      lastName: undefined,
+      fcmToken: undefined,
+      isActive: false,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, message: "Account data erased successfully." };
+  },
+});
+
+/**
+ * Query: Fetches current user's active subscription tier.
+ */
+export const getUserSubscription = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return { tier: "free", status: "none" };
+
+    const sub = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .first();
+
+    if (!sub) return { tier: "free", status: "none" };
+
+    return {
+      tier: sub.tier,
+      status: sub.status,
+      currentPeriodEnd: sub.currentPeriodEnd,
+      provider: sub.provider,
+    };
+  },
+});
+
 
 
 

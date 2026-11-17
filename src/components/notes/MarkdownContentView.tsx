@@ -1,5 +1,21 @@
-import React from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
+import { Maximize2, X } from 'lucide-react-native';
+import {
+  ContentBlock,
+  normalizeInlineTags,
+  parseContentToBlocks,
+} from './contentParser';
+
+export { ContentBlock, parseContentToBlocks };
 
 interface MarkdownContentViewProps {
   content: string;
@@ -13,19 +29,30 @@ interface MarkdownContentViewProps {
 }
 
 /**
- * Parses inline markdown tokens like **bold**, *italic*, and `code` into nested React Native Text nodes.
+ * Parses inline tokens like bold, italic, underline, strikethrough, and code
+ * into styled React Native Text components.
  */
 function renderInlineTokens(
-  line: string,
+  rawText: string,
   baseStyle: any,
   isDark: boolean,
   accentColor: string
 ): React.ReactNode {
-  // Matches **bold**, *italic*, or `code`
-  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
-  const parts = line.split(regex);
+  const normalized = normalizeInlineTags(rawText);
+
+  // Regex matches:
+  // 1. **bold**
+  // 2. *italic*
+  // 3. `code`
+  // 4. __U_START__underline__U_END__
+  // 5. __S_START__strike__S_END__
+  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|__U_START__.*?__U_END__|__S_START__.*?__S_END__)/g;
+  const parts = normalized.split(regex);
 
   return parts.map((part, idx) => {
+    if (!part) return null;
+
+    // Bold
     if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
       return (
         <Text
@@ -41,6 +68,8 @@ function renderInlineTokens(
         </Text>
       );
     }
+
+    // Italic
     if (part.startsWith('*') && part.endsWith('*') && part.length >= 2) {
       return (
         <Text
@@ -55,6 +84,8 @@ function renderInlineTokens(
         </Text>
       );
     }
+
+    // Monospace Code
     if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
       return (
         <Text
@@ -75,6 +106,27 @@ function renderInlineTokens(
         </Text>
       );
     }
+
+    // Underline
+    if (part.startsWith('__U_START__') && part.endsWith('__U_END__')) {
+      const inner = part.slice(11, -9);
+      return (
+        <Text key={idx} style={[baseStyle, { textDecorationLine: 'underline' }]}>
+          {inner}
+        </Text>
+      );
+    }
+
+    // Strikethrough
+    if (part.startsWith('__S_START__') && part.endsWith('__S_END__')) {
+      const inner = part.slice(11, -9);
+      return (
+        <Text key={idx} style={[baseStyle, { textDecorationLine: 'line-through' }]}>
+          {inner}
+        </Text>
+      );
+    }
+
     return (
       <Text key={idx} style={baseStyle}>
         {part}
@@ -88,9 +140,12 @@ export function MarkdownContentView({
   isDark,
   colors,
 }: MarkdownContentViewProps) {
+  const [selectedImage, setSelectedImage] = useState<{ src: string; alt?: string } | null>(null);
+
   if (!content || !content.trim()) return null;
 
-  const lines = content.split('\n');
+  const blocks = parseContentToBlocks(content);
+
   const textColor = isDark ? '#CBD5E1' : '#334155';
   const headingColor = isDark ? '#F8FAFC' : '#0F172A';
   const subHeadingColor = isDark ? '#E2E8F0' : '#1E293B';
@@ -98,151 +153,220 @@ export function MarkdownContentView({
 
   return (
     <View style={styles.container}>
-      {lines.map((rawLine, index) => {
-        const trimmed = rawLine.trim();
+      {blocks.map((block, index) => {
+        switch (block.type) {
+          case 'spacer':
+            return <View key={index} style={styles.spacer} />;
 
-        // 1. Empty lines -> paragraph spacing
-        if (!trimmed) {
-          return <View key={index} style={styles.spacer} />;
-        }
+          case 'divider':
+            return (
+              <View
+                key={index}
+                style={[styles.divider, { backgroundColor: borderColor }]}
+              />
+            );
 
-        // 2. Horizontal divider
-        if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
-          return (
-            <View
-              key={index}
-              style={[styles.divider, { backgroundColor: borderColor }]}
-            />
-          );
-        }
+          case 'h1':
+            return (
+              <View key={index} style={styles.h1Container}>
+                <Text style={[styles.h1Text, { color: headingColor }]}>
+                  {renderInlineTokens(block.text, { color: headingColor }, isDark, colors.accent)}
+                </Text>
+                <View style={[styles.h1Underline, { backgroundColor: colors.accent }]} />
+              </View>
+            );
 
-        // 3. Heading 1 (# ...)
-        if (rawLine.startsWith('# ')) {
-          const text = rawLine.replace(/^#\s+/, '');
-          return (
-            <View key={index} style={styles.h1Container}>
-              <Text style={[styles.h1Text, { color: headingColor }]}>
-                {renderInlineTokens(text, { color: headingColor }, isDark, colors.accent)}
-              </Text>
-              <View style={[styles.h1Underline, { backgroundColor: colors.accent }]} />
-            </View>
-          );
-        }
+          case 'h2':
+            return (
+              <View key={index} style={styles.h2Container}>
+                <View style={[styles.h2Indicator, { backgroundColor: colors.accent }]} />
+                <Text style={[styles.h2Text, { color: headingColor }]}>
+                  {renderInlineTokens(block.text, { color: headingColor }, isDark, colors.accent)}
+                </Text>
+              </View>
+            );
 
-        // 4. Heading 2 (## ...)
-        if (rawLine.startsWith('## ')) {
-          const text = rawLine.replace(/^##\s+/, '');
-          return (
-            <View key={index} style={styles.h2Container}>
-              <View style={[styles.h2Indicator, { backgroundColor: colors.accent }]} />
-              <Text style={[styles.h2Text, { color: headingColor }]}>
-                {renderInlineTokens(text, { color: headingColor }, isDark, colors.accent)}
-              </Text>
-            </View>
-          );
-        }
+          case 'h3':
+            return (
+              <View key={index} style={styles.h3Container}>
+                <Text style={[styles.h3Text, { color: subHeadingColor }]}>
+                  {renderInlineTokens(block.text, { color: subHeadingColor }, isDark, colors.accent)}
+                </Text>
+              </View>
+            );
 
-        // 5. Heading 3 (### ...)
-        if (rawLine.startsWith('### ')) {
-          const text = rawLine.replace(/^###\s+/, '');
-          return (
-            <View key={index} style={styles.h3Container}>
-              <Text style={[styles.h3Text, { color: subHeadingColor }]}>
-                {renderInlineTokens(text, { color: subHeadingColor }, isDark, colors.accent)}
-              </Text>
-            </View>
-          );
-        }
-
-        // 6. Blockquote (> ...)
-        if (rawLine.startsWith('> ')) {
-          const text = rawLine.replace(/^>\s+/, '');
-          return (
-            <View
-              key={index}
-              style={[
-                styles.blockquote,
-                {
-                  borderLeftColor: colors.accent,
-                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                },
-              ]}>
-              <Text style={[styles.blockquoteText, { color: isDark ? '#94A3B8' : '#475569' }]}>
-                {renderInlineTokens(text, { color: isDark ? '#94A3B8' : '#475569' }, isDark, colors.accent)}
-              </Text>
-            </View>
-          );
-        }
-
-        // 7. Bullet lists (- ... or * ...) with indentation support
-        const bulletMatch = rawLine.match(/^(\s*)([\*\-])\s+(.*)$/);
-        if (bulletMatch) {
-          const indentSpaces = bulletMatch[1].length;
-          const text = bulletMatch[3];
-          const level = Math.min(Math.floor(indentSpaces / 2), 2);
-          const isNested = level > 0;
-
-          return (
-            <View
-              key={index}
-              style={[
-                styles.bulletRow,
-                { paddingLeft: level * 16 },
-              ]}>
-              <Text
+          case 'blockquote':
+            return (
+              <View
+                key={index}
                 style={[
-                  styles.bulletSymbol,
+                  styles.blockquote,
                   {
-                    color: isNested ? (isDark ? '#94A3B8' : '#64748B') : colors.accent,
-                    fontSize: isNested ? 14 : 16,
+                    borderLeftColor: colors.accent,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
                   },
                 ]}>
-                {level === 0 ? '•' : level === 1 ? '◦' : '–'}
-              </Text>
-              <Text style={[styles.bulletContent, { color: textColor }]}>
-                {renderInlineTokens(text, { color: textColor }, isDark, colors.accent)}
-              </Text>
-            </View>
-          );
-        }
+                <Text style={[styles.blockquoteText, { color: isDark ? '#94A3B8' : '#475569' }]}>
+                  {renderInlineTokens(block.text, { color: isDark ? '#94A3B8' : '#475569' }, isDark, colors.accent)}
+                </Text>
+              </View>
+            );
 
-        // 8. Numbered lists (1. ... or 2. ...)
-        const numberedMatch = rawLine.match(/^(\s*)(\d+)\.\s+(.*)$/);
-        if (numberedMatch) {
-          const num = numberedMatch[2];
-          const text = numberedMatch[3];
-
-          return (
-            <View key={index} style={styles.numberedRow}>
+          case 'code':
+            return (
               <View
+                key={index}
                 style={[
-                  styles.numberBadge,
+                  styles.codeBlock,
                   {
-                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                    backgroundColor: isDark ? '#14171F' : '#F1F5F9',
+                    borderColor: borderColor,
                   },
                 ]}>
                 <Text
                   style={[
-                    styles.numberText,
-                    { color: isDark ? '#E2E8F0' : '#334155' },
+                    styles.codeText,
+                    {
+                      color: isDark ? '#38BDF8' : '#0284C7',
+                    },
                   ]}>
-                  {num}
+                  {block.code}
                 </Text>
               </View>
-              <Text style={[styles.numberedContent, { color: textColor }]}>
-                {renderInlineTokens(text, { color: textColor }, isDark, colors.accent)}
-              </Text>
-            </View>
-          );
-        }
+            );
 
-        // 9. Standard body paragraph
-        return (
-          <Text key={index} style={[styles.paragraphText, { color: textColor }]}>
-            {renderInlineTokens(rawLine, { color: textColor }, isDark, colors.accent)}
-          </Text>
-        );
+          case 'bullet': {
+            const isNested = block.level > 0;
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.bulletRow,
+                  { paddingLeft: block.level * 16 },
+                ]}>
+                <Text
+                  style={[
+                    styles.bulletSymbol,
+                    {
+                      color: isNested ? (isDark ? '#94A3B8' : '#64748B') : colors.accent,
+                      fontSize: isNested ? 14 : 16,
+                    },
+                  ]}>
+                  {block.level === 0 ? '•' : block.level === 1 ? '◦' : '–'}
+                </Text>
+                <Text style={[styles.bulletContent, { color: textColor }]}>
+                  {renderInlineTokens(block.text, { color: textColor }, isDark, colors.accent)}
+                </Text>
+              </View>
+            );
+          }
+
+          case 'numbered':
+            return (
+              <View key={index} style={styles.numberedRow}>
+                <View
+                  style={[
+                    styles.numberBadge,
+                    {
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                    },
+                  ]}>
+                  <Text
+                    style={[
+                      styles.numberText,
+                      { color: isDark ? '#E2E8F0' : '#334155' },
+                    ]}>
+                    {block.num}
+                  </Text>
+                </View>
+                <Text style={[styles.numberedContent, { color: textColor }]}>
+                  {renderInlineTokens(block.text, { color: textColor }, isDark, colors.accent)}
+                </Text>
+              </View>
+            );
+
+          case 'image':
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.imageCard,
+                  {
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                    borderColor: borderColor,
+                  },
+                ]}>
+                <Pressable
+                  onPress={() => setSelectedImage({ src: block.src, alt: block.alt })}
+                  style={styles.imagePressable}
+                  accessibilityRole="imagebutton"
+                  accessibilityLabel={block.alt || 'Architectural study illustration'}>
+                  <ExpoImage
+                    source={{ uri: block.src }}
+                    style={styles.illustrationImage}
+                    contentFit="contain"
+                    transition={250}
+                    accessibilityLabel={block.alt || 'Illustration'}
+                  />
+                  <View style={styles.zoomPill}>
+                    <Maximize2 size={12} color="#FFFFFF" strokeWidth={2.4} />
+                    <Text style={styles.zoomPillText}>Expand</Text>
+                  </View>
+                </Pressable>
+
+                {block.alt && block.alt.trim().length > 0 ? (
+                  <Text
+                    style={[
+                      styles.imageCaption,
+                      { color: isDark ? '#94A3B8' : '#64748B' },
+                    ]}>
+                    {block.alt}
+                  </Text>
+                ) : null}
+              </View>
+            );
+
+          case 'p':
+          default:
+            return (
+              <Text key={index} style={[styles.paragraphText, { color: textColor }]}>
+                {renderInlineTokens(block.text, { color: textColor }, isDark, colors.accent)}
+              </Text>
+            );
+        }
       })}
+
+      {/* Full-screen Image Viewer Modal */}
+      <Modal
+        visible={!!selectedImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}>
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            style={styles.modalCloseButton}
+            onPress={() => setSelectedImage(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Close full-screen image">
+            <X size={20} color="#FFFFFF" strokeWidth={2.4} />
+          </Pressable>
+
+          {selectedImage ? (
+            <View style={styles.modalImageWrapper}>
+              <ExpoImage
+                source={{ uri: selectedImage.src }}
+                style={styles.modalImage}
+                contentFit="contain"
+              />
+              {selectedImage.alt ? (
+                <View style={styles.modalCaptionBox}>
+                  <Text style={styles.modalCaptionText}>{selectedImage.alt}</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -316,6 +440,17 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 20,
   },
+  codeBlock: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginVertical: 8,
+  },
+  codeText: {
+    fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -362,5 +497,91 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontWeight: '400',
     marginVertical: 2,
+  },
+  imageCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 6,
+    marginVertical: 10,
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  imagePressable: {
+    width: '100%',
+    height: 240,
+    borderRadius: 10,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  illustrationImage: {
+    width: '100%',
+    height: '100%',
+  },
+  zoomPill: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  zoomPillText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  imageCaption: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 6,
+    marginBottom: 4,
+    textAlign: 'center',
+    paddingHorizontal: 10,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.94)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  modalImageWrapper: {
+    width: '100%',
+    height: '80%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
+  },
+  modalCaptionBox: {
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+  },
+  modalCaptionText: {
+    color: '#F8FAFC',
+    fontSize: 13,
+    textAlign: 'center',
   },
 });

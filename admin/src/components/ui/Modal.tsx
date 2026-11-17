@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { Maximize2, Minimize2, X } from "lucide-react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,7 +10,10 @@ interface ModalProps {
   title: string;
   description?: string;
   icon?: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "full";
+  fullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  bodyClassName?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
 }
@@ -25,6 +28,7 @@ const MAX_WIDTH_MAP = {
   "4xl": "max-w-4xl",
   "5xl": "max-w-5xl",
   "6xl": "max-w-6xl",
+  full: "max-w-none",
 };
 
 const emptySubscribe = () => () => {};
@@ -36,6 +40,9 @@ export function Modal({
   description,
   icon,
   maxWidth = "2xl",
+  fullscreen = false,
+  onToggleFullscreen,
+  bodyClassName,
   children,
   footer,
 }: ModalProps) {
@@ -76,18 +83,26 @@ export function Modal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-fade-in"
+      className={
+        fullscreen
+          ? "fixed inset-0 z-[100] flex flex-col bg-black/85 backdrop-blur-sm animate-fade-in"
+          : "fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-fade-in"
+      }
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && !fullscreen) {
           onClose();
         }
       }}
     >
       <div
-        className={`surface-modal ${maxWidthClass} w-full max-h-[90vh] sm:max-h-[85vh] rounded-xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-700/80 relative z-[101]`}
+        className={
+          fullscreen
+            ? "surface-modal w-full h-full max-w-none max-h-none rounded-none flex flex-col shadow-2xl overflow-hidden border-none relative z-[101]"
+            : `surface-modal ${maxWidthClass} w-full max-h-[90vh] sm:max-h-[85vh] rounded-xl flex flex-col shadow-2xl overflow-hidden border border-studio-200/80 dark:border-studio-700/80 relative z-[101]`
+        }
       >
         {/* Pinned Header */}
-        <div className="p-5 sm:px-7 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/70 dark:bg-studio-900/70">
+        <div className="p-4 sm:px-6 border-b border-studio-200 dark:border-studio-800 flex items-center justify-between shrink-0 bg-studio-50/80 dark:bg-studio-900/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
             {icon && (
               <div className="w-9 h-9 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
@@ -97,7 +112,7 @@ export function Modal({
             <div>
               <h3
                 id="modal-title"
-                className="font-bold text-lg text-studio-900 dark:text-studio-50"
+                className="font-bold text-base sm:text-lg text-studio-900 dark:text-studio-50"
               >
                 {title}
               </h3>
@@ -108,24 +123,44 @@ export function Modal({
               )}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close modal"
-            className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 p-1.5 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onToggleFullscreen && (
+              <button
+                type="button"
+                onClick={onToggleFullscreen}
+                aria-label={fullscreen ? "Restore window" : "Expand to fullscreen"}
+                title={fullscreen ? "Restore window" : "Expand to fullscreen"}
+                className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 p-1.5 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800 transition-colors"
+              >
+                {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close modal"
+              className="text-studio-400 hover:text-studio-600 dark:hover:text-studio-200 p-1.5 rounded-lg hover:bg-studio-100 dark:hover:bg-studio-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Scrollable Modal Body */}
-        <div className="p-6 sm:p-7 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+        {/* Modal Body */}
+        <div
+          className={
+            bodyClassName ||
+            (fullscreen
+              ? "flex-1 overflow-hidden p-0 flex flex-col"
+              : "p-6 sm:p-7 space-y-4 overflow-y-auto flex-1 custom-scrollbar")
+          }
+        >
           {children}
         </div>
 
         {/* Optional Pinned Footer */}
         {footer && (
-          <div className="p-4 sm:px-7 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
+          <div className="p-3.5 sm:px-6 border-t border-studio-200 dark:border-studio-800 flex items-center justify-end gap-3 shrink-0 bg-studio-50/80 dark:bg-studio-900/80">
             {footer}
           </div>
         )}
