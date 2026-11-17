@@ -1,6 +1,6 @@
 # Database Integration & Mock Data Migration TODO
 
-This document tracks all tasks required to eliminate mock, static, and ephemeral data across the Licensify mobile and web applications, fully connecting every feature to the Convex cloud database and local offline SQLite (Drizzle ORM) database.
+This document tracks all tasks required to eliminate mock, static, and ephemeral data across the P App mobile and web applications, fully connecting every feature to the Convex cloud database and local offline SQLite (Drizzle ORM) database.
 
 ---
 

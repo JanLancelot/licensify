@@ -1,3 +1,4 @@
+import * as crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -9,13 +10,15 @@ import {
   Trophy,
   XCircle,
 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,21 +28,26 @@ import Svg, {
   Rect,
   Stop,
 } from 'react-native-svg';
-import * as crypto from 'expo-crypto';
 
-import { useQuery } from 'convex/react';
 import { useAppTheme } from '@/context/theme-context';
 import { useLocalQuestions, useSubmitLocalAttempt } from '@/hooks/useLocalData';
+import { useQuery } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 
 interface FormattedQuestion {
   id: string;
   areaLabel: string;
   question: string;
+  questionType?: 'multiple_choice' | 'identification' | 'essay';
   options: string[];
   choiceIds: string[];
   correctIndex: number;
   correctChoiceHash?: string;
+  acceptedAnswers?: string[];
+  numericTolerance?: number;
+  rubricCriteria?: string[];
+  idealAnswer?: string;
+  diagramUrl?: string;
   explanation: string;
   difficulty: string;
 }
@@ -78,11 +86,13 @@ export default function PracticeQuizScreen() {
   const [questions, setQuestions] = useState<FormattedQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [textAnswer, setTextAnswer] = useState<string>('');
+  const [isInputCorrect, setIsInputCorrect] = useState<boolean>(false);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
   const [isQuizFinished, setIsQuizFinished] = useState(false);
   const [recordedAnswers, setRecordedAnswers] = useState<{ questionId: string; selectedChoiceId: string; correctChoiceHash?: string }[]>([]);
-  
+
   // Timer State
   const [timeLeft, setTimeLeft] = useState<number>(timerLimit);
 
@@ -127,14 +137,42 @@ export default function PracticeQuizScreen() {
                 ? 'Area 2: Tech & Utilities'
                 : 'Area 3: Design & Laws';
 
+          let parsedAccepted: string[] | undefined = undefined;
+          if (Array.isArray(anyQ.acceptedAnswers)) {
+            parsedAccepted = anyQ.acceptedAnswers;
+          } else if (typeof anyQ.acceptedAnswers === 'string') {
+            try {
+              parsedAccepted = JSON.parse(anyQ.acceptedAnswers);
+            } catch {
+              parsedAccepted = [anyQ.acceptedAnswers];
+            }
+          }
+
+          let parsedRubric: string[] | undefined = undefined;
+          if (Array.isArray(anyQ.rubricCriteria)) {
+            parsedRubric = anyQ.rubricCriteria;
+          } else if (typeof anyQ.rubricCriteria === 'string') {
+            try {
+              parsedRubric = JSON.parse(anyQ.rubricCriteria);
+            } catch {
+              parsedRubric = [anyQ.rubricCriteria];
+            }
+          }
+
           formatted.push({
             id: q.id,
             areaLabel,
             question: q.question,
+            questionType: (anyQ.questionType as any) || 'multiple_choice',
             options: choices.map((c) => c.text),
             choiceIds: choices.map((c) => c.id),
             correctIndex: correctIdx,
             correctChoiceHash: anyQ.correctChoiceHash || anyQ.correctChoiceId || undefined,
+            acceptedAnswers: parsedAccepted,
+            numericTolerance: anyQ.numericTolerance !== undefined ? Number(anyQ.numericTolerance) : undefined,
+            rubricCriteria: parsedRubric,
+            idealAnswer: anyQ.idealAnswer,
+            diagramUrl: anyQ.diagramUrl || anyQ.imageUrl,
             explanation: q.explanation || 'Essential architectural standard and code specification.',
             difficulty: q.difficulty,
           });
@@ -161,6 +199,19 @@ export default function PracticeQuizScreen() {
     if (isAnswerSubmitted || !questions[currentIdx]) return;
 
     const currQ = questions[currentIdx];
+
+    if (currQ.questionType === 'identification' || currQ.questionType === 'essay') {
+      setIsAnswerSubmitted(true);
+      setRecordedAnswers((prev) => [
+        ...prev,
+        {
+          questionId: currQ.id,
+          selectedChoiceId: textAnswer.trim() || 'unanswered',
+        },
+      ]);
+      return;
+    }
+
     const userSelected = selectedOption !== null ? selectedOption : -1;
     const selectedChoiceId = userSelected >= 0 && currQ.choiceIds[userSelected]
       ? currQ.choiceIds[userSelected]
@@ -189,7 +240,7 @@ export default function PracticeQuizScreen() {
         correctChoiceHash: currQ.correctChoiceHash,
       },
     ]);
-  }, [isAnswerSubmitted, questions, currentIdx, selectedOption]);
+  }, [isAnswerSubmitted, questions, currentIdx, selectedOption, textAnswer]);
 
   const handleTimeOutRef = useRef(handleTimeOut);
   useEffect(() => {
@@ -219,6 +270,8 @@ export default function PracticeQuizScreen() {
   const restartQuiz = () => {
     setCurrentIdx(0);
     setSelectedOption(null);
+    setTextAnswer('');
+    setIsInputCorrect(false);
     setIsAnswerSubmitted(false);
     setCorrectAnswersCount(0);
     setIsQuizFinished(false);
@@ -234,11 +287,64 @@ export default function PracticeQuizScreen() {
   };
 
   const handleSubmitAnswer = async () => {
-    if (selectedOption === null || !questions[currentIdx]) return;
-    
     const currQ = questions[currentIdx];
+    if (!currQ) return;
+
+    if (currQ.questionType === 'identification') {
+      if (!textAnswer.trim()) return;
+      const normalizedInput = textAnswer.trim().toLowerCase();
+      let isCorrect = false;
+      const numInput = parseFloat(normalizedInput);
+      const tolerance = currQ.numericTolerance ?? 0;
+
+      if (!isNaN(numInput) && currQ.acceptedAnswers && currQ.acceptedAnswers.length > 0) {
+        for (const ans of currQ.acceptedAnswers) {
+          const numAns = parseFloat(ans);
+          if (!isNaN(numAns) && Math.abs(numInput - numAns) <= tolerance) {
+            isCorrect = true;
+            break;
+          }
+        }
+      }
+
+      if (!isCorrect && currQ.acceptedAnswers) {
+        isCorrect = currQ.acceptedAnswers.some(
+          (ans) => ans.trim().toLowerCase() === normalizedInput
+        );
+      }
+
+      setIsInputCorrect(isCorrect);
+      setIsAnswerSubmitted(true);
+      if (isCorrect) setCorrectAnswersCount((prev) => prev + 1);
+      setRecordedAnswers((prev) => [
+        ...prev,
+        {
+          questionId: currQ.id,
+          selectedChoiceId: textAnswer.trim(),
+        },
+      ]);
+      return;
+    }
+
+    if (currQ.questionType === 'essay') {
+      if (!textAnswer.trim()) return;
+      setIsInputCorrect(true);
+      setIsAnswerSubmitted(true);
+      setCorrectAnswersCount((prev) => prev + 1);
+      setRecordedAnswers((prev) => [
+        ...prev,
+        {
+          questionId: currQ.id,
+          selectedChoiceId: textAnswer.trim(),
+        },
+      ]);
+      return;
+    }
+
+    if (selectedOption === null) return;
+
     const selectedChoiceId = currQ.choiceIds[selectedOption] || `c${selectedOption + 1}`;
-    
+
     let isCorrect = selectedOption === currQ.correctIndex;
     if (currQ.correctChoiceHash) {
       const userHash = await crypto.digestStringAsync(
@@ -268,6 +374,8 @@ export default function PracticeQuizScreen() {
     if (currentIdx < questions.length - 1) {
       setCurrentIdx((prev) => prev + 1);
       setSelectedOption(null);
+      setTextAnswer('');
+      setIsInputCorrect(false);
       setIsAnswerSubmitted(false);
       setTimeLeft(timerLimit);
     } else {
@@ -549,90 +657,293 @@ export default function PracticeQuizScreen() {
               </Text>
             </View>
 
-            {/* Options List */}
-            <View style={styles.optionsContainer}>
-              {currentQ?.options.map((opt, idx) => {
-                const isSelected = selectedOption === idx;
-                const isCorrect = idx === currentQ.correctIndex;
+            {/* Diagram Image if available */}
+            {currentQ?.diagramUrl ? (
+              <View
+                style={[
+                  styles.diagramWrapper,
+                  {
+                    backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                    borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                  },
+                ]}>
+                <Image
+                  source={{ uri: currentQ.diagramUrl }}
+                  style={styles.diagramImage}
+                  resizeMode="contain"
+                />
+                <Text style={[styles.diagramCaption, { color: colors.textSecondary }]}>
+                  Architectural Diagram / Site Specification
+                </Text>
+              </View>
+            ) : null}
 
-                let optBg: string = isDark ? '#23262F' : '#FFFFFF';
-                let optBorder: string = 'transparent';
-                let pillBg: string = isDark ? '#1C1F26' : '#F3F4F6';
-                let pillTextColor: string = colors.textSecondary;
+            {/* Question Format Badge */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, paddingHorizontal: 4 }}>
+              <View style={[styles.typeBadge, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : '#EEF2FF' }]}>
+                <Text style={[styles.typeBadgeText, { color: colors.accent }]}>
+                  {currentQ?.questionType === 'identification'
+                    ? 'IDENTIFICATION / SPECIFICATION'
+                    : currentQ?.questionType === 'essay'
+                      ? 'ESSAY / DESIGN RATIONALE'
+                      : 'MULTIPLE CHOICE'}
+                </Text>
+              </View>
+            </View>
 
-                if (isAnswerSubmitted) {
-                  if (isCorrect) {
-                    optBg = isDark ? 'rgba(16, 185, 129, 0.16)' : '#E8F8F0';
-                    optBorder = '#10B981';
-                    pillBg = '#10B981';
-                    pillTextColor = '#FFFFFF';
-                  } else if (isSelected && !isCorrect) {
-                    optBg = isDark ? 'rgba(239, 68, 68, 0.16)' : '#FEECEB';
-                    optBorder = '#EF4444';
-                    pillBg = '#EF4444';
-                    pillTextColor = '#FFFFFF';
-                  }
-                } else if (isSelected) {
-                  optBg = colors.accentMuted;
-                  optBorder = colors.accent;
-                  pillBg = colors.accent;
-                  pillTextColor = '#FFFFFF';
-                }
+            {/* MULTI-FORMAT RENDERER */}
+            {currentQ?.questionType === 'identification' ? (
+              <View style={styles.identificationContainer}>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E2E8F0',
+                    },
+                  ]}>
+                  <TextInput
+                    value={textAnswer}
+                    onChangeText={setTextAnswer}
+                    editable={!isAnswerSubmitted}
+                    placeholder="Type the exact term or numeric computation..."
+                    placeholderTextColor={colors.textSecondary}
+                    style={[styles.answerTextInput, { color: isDark ? '#F9FAFB' : '#0F172A' }]}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
 
-                return (
-                  <Pressable
-                    key={idx}
-                    disabled={isAnswerSubmitted}
-                    onPress={() => handleSelectOption(idx)}
-                    style={({ pressed }) => [
-                      styles.optionItem,
+                {isAnswerSubmitted ? (
+                  <View
+                    style={[
+                      styles.answerResultBadge,
                       {
-                        backgroundColor: optBg,
-                        borderColor: optBorder,
-                        borderWidth: optBorder !== 'transparent' ? 1.4 : 0,
-                        opacity: pressed ? 0.85 : 1,
+                        backgroundColor: isInputCorrect
+                          ? isDark
+                            ? 'rgba(16, 185, 129, 0.15)'
+                            : '#E8F8F0'
+                          : isDark
+                            ? 'rgba(239, 68, 68, 0.15)'
+                            : '#FEECEB',
+                        borderColor: isInputCorrect ? '#10B981' : '#EF4444',
                       },
                     ]}>
-                    <View
-                      style={[
-                        styles.optionPill,
-                        {
-                          backgroundColor: pillBg,
-                        },
-                      ]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      {isInputCorrect ? (
+                        <CheckCircle2 size={18} color="#10B981" />
+                      ) : (
+                        <XCircle size={18} color="#EF4444" />
+                      )}
                       <Text
-                        style={[
-                          styles.optionPillText,
-                          {
-                            color: pillTextColor,
-                          },
-                        ]}>
-                        {String.fromCharCode(65 + idx)}
+                        style={{
+                          fontWeight: '700',
+                          fontSize: 13.5,
+                          color: isInputCorrect ? '#10B981' : '#EF4444',
+                        }}>
+                        {isInputCorrect ? 'Exact Match / Within Tolerance!' : 'Incorrect Answer'}
                       </Text>
                     </View>
-
                     <Text
-                      style={[
-                        styles.optionLabel,
+                      style={{
+                        fontSize: 13,
+                        color: isDark ? '#D1D5DB' : '#374151',
+                        marginTop: 4,
+                      }}>
+                      Your Answer: <Text style={{ fontWeight: '600' }}>{textAnswer || '(Blank)'}</Text>
+                    </Text>
+                    {currentQ.acceptedAnswers && currentQ.acceptedAnswers.length > 0 ? (
+                      <Text style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: 4 }}>
+                        Accepted Keys: {currentQ.acceptedAnswers.join(' / ')}{' '}
+                        {currentQ.numericTolerance !== undefined
+                          ? `(±${currentQ.numericTolerance} tolerance)`
+                          : ''}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ) : currentQ?.questionType === 'essay' ? (
+              <View style={styles.essayContainer}>
+                <View
+                  style={[
+                    styles.essayInputWrapper,
+                    {
+                      backgroundColor: isDark ? '#1C1F26' : '#FFFFFF',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E2E8F0',
+                    },
+                  ]}>
+                  <TextInput
+                    value={textAnswer}
+                    onChangeText={setTextAnswer}
+                    editable={!isAnswerSubmitted}
+                    multiline
+                    numberOfLines={5}
+                    placeholder="Compose your architectural explanation, statutory citations, or design rationale..."
+                    placeholderTextColor={colors.textSecondary}
+                    style={[styles.essayTextInput, { color: isDark ? '#F9FAFB' : '#0F172A' }]}
+                    textAlignVertical="top"
+                  />
+                  <Text
+                    style={{
+                      alignSelf: 'flex-end',
+                      fontSize: 11,
+                      color: colors.textSecondary,
+                      marginTop: 4,
+                    }}>
+                    {textAnswer.trim().split(/\s+/).filter(Boolean).length} words
+                  </Text>
+                </View>
+
+                {isAnswerSubmitted ? (
+                  <View style={{ gap: 12, marginTop: 10 }}>
+                    {currentQ.rubricCriteria && currentQ.rubricCriteria.length > 0 ? (
+                      <View
+                        style={[
+                          styles.rubricBox,
+                          {
+                            backgroundColor: isDark ? '#23262F' : '#F8FAFC',
+                            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+                          },
+                        ]}>
+                        <Text style={[styles.rubricTitle, { color: colors.accent }]}>
+                          GRADING RUBRIC & KEY PROVISIONS
+                        </Text>
+                        {currentQ.rubricCriteria.map((c, i) => (
+                          <View
+                            key={i}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'flex-start',
+                              gap: 6,
+                              marginTop: 4,
+                            }}>
+                            <CheckCircle2 size={14} color="#10B981" style={{ marginTop: 2 }} />
+                            <Text
+                              style={{
+                                fontSize: 12.5,
+                                color: isDark ? '#D1D5DB' : '#374151',
+                                flex: 1,
+                              }}>
+                              {c}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+
+                    {currentQ.idealAnswer ? (
+                      <View
+                        style={[
+                          styles.rubricBox,
+                          {
+                            backgroundColor: isDark ? '#1E293B' : '#EFF6FF',
+                            borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE',
+                          },
+                        ]}>
+                        <Text style={[styles.rubricTitle, { color: '#3B82F6' }]}>
+                          IDEAL BENCHMARK ANSWER
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: isDark ? '#E2E8F0' : '#1E3A8A',
+                            marginTop: 4,
+                            lineHeight: 18,
+                          }}>
+                          {currentQ.idealAnswer}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              /* Options List */
+              <View style={styles.optionsContainer}>
+                {currentQ?.options.map((opt, idx) => {
+                  const isSelected = selectedOption === idx;
+                  const isCorrect = idx === currentQ.correctIndex;
+
+                  let optBg: string = isDark ? '#23262F' : '#FFFFFF';
+                  let optBorder: string = 'transparent';
+                  let pillBg: string = isDark ? '#1C1F26' : '#F3F4F6';
+                  let pillTextColor: string = colors.textSecondary;
+
+                  if (isAnswerSubmitted) {
+                    if (isCorrect) {
+                      optBg = isDark ? 'rgba(16, 185, 129, 0.16)' : '#E8F8F0';
+                      optBorder = '#10B981';
+                      pillBg = '#10B981';
+                      pillTextColor = '#FFFFFF';
+                    } else if (isSelected && !isCorrect) {
+                      optBg = isDark ? 'rgba(239, 68, 68, 0.16)' : '#FEECEB';
+                      optBorder = '#EF4444';
+                      pillBg = '#EF4444';
+                      pillTextColor = '#FFFFFF';
+                    }
+                  } else if (isSelected) {
+                    optBg = colors.accentMuted;
+                    optBorder = colors.accent;
+                    pillBg = colors.accent;
+                    pillTextColor = '#FFFFFF';
+                  }
+
+                  return (
+                    <Pressable
+                      key={idx}
+                      disabled={isAnswerSubmitted}
+                      onPress={() => handleSelectOption(idx)}
+                      style={({ pressed }) => [
+                        styles.optionItem,
                         {
-                          color: isDark ? '#F9FAFB' : '#111827',
-                          fontWeight: isSelected ? '700' : '500',
+                          backgroundColor: optBg,
+                          borderColor: optBorder,
+                          borderWidth: optBorder !== 'transparent' ? 1.4 : 0,
+                          opacity: pressed ? 0.85 : 1,
                         },
                       ]}>
-                      {opt}
-                    </Text>
+                      <View
+                        style={[
+                          styles.optionPill,
+                          {
+                            backgroundColor: pillBg,
+                          },
+                        ]}>
+                        <Text
+                          style={[
+                            styles.optionPillText,
+                            {
+                              color: pillTextColor,
+                            },
+                          ]}>
+                          {String.fromCharCode(65 + idx)}
+                        </Text>
+                      </View>
 
-                    {/* Checkmark or Cross Icon if Submitted */}
-                    {isAnswerSubmitted && isCorrect && (
-                      <CheckCircle2 size={20} color="#10B981" strokeWidth={2.4} />
-                    )}
-                    {isAnswerSubmitted && isSelected && !isCorrect && (
-                      <XCircle size={20} color="#EF4444" strokeWidth={2.4} />
-                    )}
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <Text
+                        style={[
+                          styles.optionLabel,
+                          {
+                            color: isDark ? '#F9FAFB' : '#111827',
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}>
+                        {opt}
+                      </Text>
+
+                      {/* Checkmark or Cross Icon if Submitted */}
+                      {isAnswerSubmitted && isCorrect && (
+                        <CheckCircle2 size={20} color="#10B981" strokeWidth={2.4} />
+                      )}
+                      {isAnswerSubmitted && isSelected && !isCorrect && (
+                        <XCircle size={20} color="#EF4444" strokeWidth={2.4} />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
             {/* Explanation Rationale Box */}
             {isAnswerSubmitted && currentQ?.explanation && (
@@ -673,34 +984,45 @@ export default function PracticeQuizScreen() {
             ]}>
             {!isAnswerSubmitted ? (
               <Pressable
-                disabled={selectedOption === null}
+                disabled={
+                  currentQ?.questionType === 'identification' || currentQ?.questionType === 'essay'
+                    ? !textAnswer.trim()
+                    : selectedOption === null
+                }
                 onPress={handleSubmitAnswer}
-                style={({ pressed }) => [
-                  styles.submitBtn,
-                  {
-                    backgroundColor:
-                      selectedOption !== null
+                style={({ pressed }) => {
+                  const canSubmit =
+                    currentQ?.questionType === 'identification' || currentQ?.questionType === 'essay'
+                      ? Boolean(textAnswer.trim())
+                      : selectedOption !== null;
+                  return [
+                    styles.submitBtn,
+                    {
+                      backgroundColor: canSubmit
                         ? colors.accent
                         : isDark
                           ? '#23262F'
                           : '#E2E8F0',
-                    opacity: pressed ? 0.9 : 1,
-                    transform: [{ scale: pressed ? 0.985 : 1 }],
-                  },
-                ]}>
+                      opacity: pressed ? 0.9 : 1,
+                      transform: [{ scale: pressed ? 0.985 : 1 }],
+                    },
+                  ];
+                }}>
                 <Text
                   style={[
                     styles.submitBtnText,
                     {
                       color:
-                        selectedOption !== null
+                        (currentQ?.questionType === 'identification' || currentQ?.questionType === 'essay'
+                          ? Boolean(textAnswer.trim())
+                          : selectedOption !== null)
                           ? '#FFFFFF'
                           : isDark
                             ? '#6B7280'
                             : '#94A3B8',
                     },
                   ]}>
-                  Check Answer
+                  {currentQ?.questionType === 'essay' ? 'Submit Essay for Rubric' : 'Check Answer'}
                 </Text>
               </Pressable>
             ) : (
@@ -958,5 +1280,79 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     fontSize: 15,
     fontWeight: '700',
+  },
+  diagramWrapper: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 14,
+    padding: 8,
+    alignItems: 'center',
+  },
+  diagramImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 12,
+  },
+  diagramCaption: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  typeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  identificationContainer: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  inputWrapper: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  answerTextInput: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  answerResultBadge: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+  },
+  essayContainer: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  essayInputWrapper: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  essayTextInput: {
+    fontSize: 14.5,
+    minHeight: 120,
+    lineHeight: 20,
+  },
+  rubricBox: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+  },
+  rubricTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    marginBottom: 4,
   },
 });

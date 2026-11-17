@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { canViewDrafts, requireContentManager } from "./_helpers/auth";
+import { canViewDrafts, requireContentManager, requireUser } from "./_helpers/auth";
 
 /**
  * Public/Student query: Fetches published reviewer materials for a subject.
@@ -60,6 +60,28 @@ export const generateUploadUrl = mutation({
   handler: async (ctx) => {
     await requireContentManager(ctx);
     return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Mutation: Resolves a Convex storage ID into its public CDN download URL.
+ */
+export const resolveStorageUrl = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    await requireContentManager(ctx);
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
+
+/**
+ * Query: Resolves a Convex storage ID into its download/CDN URL.
+ */
+export const getStorageUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    await requireUser(ctx);
+    return await ctx.storage.getUrl(args.storageId);
   },
 });
 
@@ -167,8 +189,8 @@ export const updateMaterial = mutation({
   args: {
     materialId: v.id("materials"),
     subjectId: v.optional(v.id("subjects")),
-    topicId: v.optional(v.id("topics")),
-    lessonId: v.optional(v.id("lessons")),
+    topicId: v.optional(v.union(v.id("topics"), v.null())),
+    lessonId: v.optional(v.union(v.id("lessons"), v.null())),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     type: v.optional(
@@ -189,8 +211,8 @@ export const updateMaterial = mutation({
 
     await ctx.db.patch(args.materialId, {
       ...(args.subjectId !== undefined && { subjectId: args.subjectId }),
-      ...(args.topicId !== undefined && { topicId: args.topicId }),
-      ...(args.lessonId !== undefined && { lessonId: args.lessonId }),
+      ...(args.topicId !== undefined && { topicId: args.topicId === null ? undefined : args.topicId }),
+      ...(args.lessonId !== undefined && { lessonId: args.lessonId === null ? undefined : args.lessonId }),
       ...(args.title !== undefined && { title: args.title }),
       ...(args.description !== undefined && { description: args.description }),
       ...(args.type !== undefined && { type: args.type }),

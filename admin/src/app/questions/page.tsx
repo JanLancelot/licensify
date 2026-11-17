@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
+import { SmartDocumentImporter } from "@/components/questions/SmartDocumentImporter";
 
 
 
@@ -748,104 +749,37 @@ export default function QuestionsPage() {
         </form>
       </Modal>
 
-      {/* Bulk Import Modal */}
+      {/* Smart Question Importer (PDF, CSV, JSON) Modal */}
       <Modal
         isOpen={bulkModalOpen}
         onClose={() => setBulkModalOpen(false)}
-        title="Bulk Question Importer (JSON / CSV)"
-        description="Import multiple questions at once with automated schema validation."
+        title="Smart Question Importer (PDF, Excel, JSON)"
+        description="Extract and import questionnaires directly with AI document parsing and schema validation."
         icon={<FileSpreadsheet className="w-5 h-5" />}
         maxWidth="3xl"
-        footer={
-          <>
-            <button
-              type="button"
-              onClick={() => setBulkModalOpen(false)}
-              className="px-4 py-2.5 rounded-lg text-studio-600 dark:text-studio-400 hover:bg-studio-100 dark:hover:bg-studio-800 text-xs font-semibold"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleExecuteBulkImport}
-              disabled={saving || bulkParsedItems.length === 0}
-              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
-            >
-              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>Commit {bulkParsedItems.length} Questions to Database</span>
-            </button>
-          </>
-        }
       >
-        <div className="space-y-4">
-          {bulkError && (
-            <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{bulkError}</span>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-              Paste JSON Array or CSV Text
-            </label>
-            <textarea
-              value={bulkRawText}
-              onChange={(e) => setBulkRawText(e.target.value)}
-              placeholder={`[
-  {
-    "question": "What is the maximum stair riser height under NBCP?",
-    "choices": [
-      { "id": "a", "text": "150mm" },
-      { "id": "b", "text": "200mm" },
-      { "id": "c", "text": "250mm" },
-      { "id": "d", "text": "300mm" }
-    ],
-    "correctChoiceId": "b",
-    "difficulty": "easy",
-    "explanation": "NBCP Rule VII prescribes maximum 200mm riser."
-  }
-]`}
-              rows={8}
-              className="w-full p-4 font-mono text-xs rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={handleParseBulkData}
-              className="px-4 py-2 rounded-lg bg-studio-200 dark:bg-studio-800 hover:bg-studio-300 dark:hover:bg-studio-700 text-xs font-semibold text-studio-800 dark:text-studio-200 transition-colors"
-            >
-              Validate & Parse
-            </button>
-
-            {bulkParsedItems.length > 0 && (
-              <span className="text-xs font-semibold text-emerald-500 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{bulkParsedItems.length} questions ready to import</span>
-              </span>
-            )}
-          </div>
-
-          {/* Preview parsed items table */}
-          {bulkParsedItems.length > 0 && (
-            <div className="max-h-56 overflow-y-auto rounded-lg border border-studio-200 dark:border-studio-700 divide-y divide-studio-200 dark:divide-studio-800 text-xs">
-              {bulkParsedItems.map((item, idx) => (
-                <div key={idx} className="p-3 bg-studio-50 dark:bg-studio-900/50 flex items-center justify-between gap-3">
-                  <div className="truncate">
-                    <p className="font-semibold text-studio-900 dark:text-studio-100 truncate">
-                      {idx + 1}. {item.question}
-                    </p>
-                    <p className="text-[11px] text-studio-500 dark:text-studio-400">
-                      {item.choices.length} choices • Correct: <strong>{item.correctChoiceId.toUpperCase()}</strong> • {item.difficulty}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <SmartDocumentImporter
+          subjects={subjects || []}
+          defaultSubjectId={(subjects && subjects[0]?._id) as any}
+          onImport={async (items) => {
+            const formatted = items.map((it) => ({
+              subjectId: it.subjectId,
+              topicId: it.topicId,
+              question: it.question,
+              questionType: it.questionType || "multiple_choice",
+              choices: it.choices && it.choices.length > 0 ? it.choices : [{ id: "a", text: "Answer" }],
+              correctChoiceId: it.correctChoiceId || "a",
+              acceptedAnswers: it.acceptedAnswers,
+              explanation: it.explanation,
+              difficulty: it.difficulty,
+              isPublished: true,
+            }));
+            await bulkCreateQuestions({ items: formatted });
+            success(`Successfully imported ${formatted.length} questions to bank!`);
+            setBulkModalOpen(false);
+          }}
+          onClose={() => setBulkModalOpen(false)}
+        />
       </Modal>
 
       {/* Delete Confirmation Modal */}

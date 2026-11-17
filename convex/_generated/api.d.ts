@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as __tests___authTestEnv from "../__tests__/authTestEnv.js";
 import type * as _helpers_ResendOTP from "../_helpers/ResendOTP.js";
 import type * as _helpers_auth from "../_helpers/auth.js";
 import type * as _helpers_crypto from "../_helpers/crypto.js";
@@ -41,6 +42,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "__tests__/authTestEnv": typeof __tests___authTestEnv;
   "_helpers/ResendOTP": typeof _helpers_ResendOTP;
   "_helpers/auth": typeof _helpers_auth;
   "_helpers/crypto": typeof _helpers_crypto;

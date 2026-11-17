@@ -33,7 +33,7 @@ export const ResendOTP = Email({
     }
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { error } = await resend.emails.send({
-      from: "Licensify <noreply@adrianmorrisseybelo.website>",
+      from: "P App <noreply@adrianmorrisseybelo.website>",
       to: [email],
       subject: "Your Verification Code",
       text: `Your verification code is ${token}. It expires in 20 minutes.`,

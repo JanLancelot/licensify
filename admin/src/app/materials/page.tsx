@@ -1,7 +1,9 @@
 "use client";
 
+import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
+import { renderMarkdown } from "@/lib/markdown";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -17,8 +19,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { renderMarkdown } from "@/lib/markdown";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 
 
 
@@ -34,6 +35,7 @@ export default function MaterialsPage() {
   const updateMaterial = useMutation(api.materials.updateMaterial);
   const deleteMaterial = useMutation(api.materials.deleteMaterial);
   const generateUploadUrl = useMutation(api.materials.generateUploadUrl);
+  const resolveStorageUrl = useMutation(api.materials.resolveStorageUrl);
 
   // Filters
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
@@ -41,6 +43,7 @@ export default function MaterialsPage() {
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
+  const [isModalFullscreen, setIsModalFullscreen] = useState(true);
   const [editingMaterial, setEditingMaterial] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -56,7 +59,7 @@ export default function MaterialsPage() {
   const [formContent, setFormContent] = useState("");
   const [formStorageId, setFormStorageId] = useState<Id<"_storage"> | undefined>(undefined);
   const [formPublished, setFormPublished] = useState(true);
-  const [previewMode, setPreviewMode] = useState<"write" | "preview" | "split">("split");
+  const [previewMode, setPreviewMode] = useState<"write" | "preview">("write");
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: Id<"materials">; title: string } | null>(null);
 
@@ -76,9 +79,16 @@ export default function MaterialsPage() {
 
   const openEditModal = (m: any) => {
     setEditingMaterial(m);
-    setFormSubjectId(m.subjectId);
-    setFormTopicId(m.topicId || "");
-    setFormLessonId(m.lessonId || "");
+    const validSubj = subjects?.find((s: any) => s._id === m.subjectId);
+    const validSubjectId = validSubj ? validSubj._id : (subjects && subjects[0]?._id) || "";
+    setFormSubjectId(validSubjectId);
+
+    const validTopic = topics?.find((t: any) => t._id === m.topicId && t.subjectId === validSubjectId);
+    setFormTopicId(validTopic ? validTopic._id : "");
+
+    const validLesson = lessons?.find((l: any) => l._id === m.lessonId && l.topicId === (validTopic?._id || ""));
+    setFormLessonId(validLesson ? validLesson._id : "");
+
     setFormTitle(m.title);
     setFormDescription(m.description || "");
     setFormType(m.type);
@@ -113,9 +123,39 @@ export default function MaterialsPage() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formTitle.trim() || !formSubjectId) return;
+  const handleEditorImageUpload = async (file: File): Promise<string> => {
+    try {
+      const postUrl = await generateUploadUrl();
+      const res = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const json = await res.json();
+      if (!json.storageId) throw new Error("No storage ID returned.");
+
+      const cdnUrl = await resolveStorageUrl({ storageId: json.storageId });
+      if (!cdnUrl) throw new Error("Could not resolve CDN URL for uploaded image.");
+
+      return cdnUrl;
+    } catch (err: any) {
+      showError("Failed to upload editor image: " + (err?.message || "Unknown error"));
+      throw err;
+    }
+  };
+
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
+    }
+    if (!formTitle.trim()) {
+      showError("Please enter an article title.");
+      return;
+    }
+    if (!formSubjectId) {
+      showError("Please select a subject area.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -123,8 +163,8 @@ export default function MaterialsPage() {
         await updateMaterial({
           materialId: editingMaterial._id,
           subjectId: formSubjectId as Id<"subjects">,
-          topicId: formTopicId ? (formTopicId as Id<"topics">) : undefined,
-          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : undefined,
+          topicId: formTopicId ? (formTopicId as Id<"topics">) : null,
+          lessonId: formLessonId ? (formLessonId as Id<"lessons">) : null,
           title: formTitle.trim(),
           description: formDescription.trim() || undefined,
           type: formType,
@@ -359,7 +399,9 @@ export default function MaterialsPage() {
         title={editingMaterial ? "Edit Study Material" : "Author Study Note / Reference"}
         description="Compose markdown articles or attach reference documents."
         icon={<BookOpen className="w-5 h-5" />}
-        maxWidth="6xl"
+        fullscreen={isModalFullscreen}
+        onToggleFullscreen={() => setIsModalFullscreen(!isModalFullscreen)}
+        maxWidth="full"
         footer={
           <>
             <button
@@ -370,10 +412,10 @@ export default function MaterialsPage() {
               Cancel
             </button>
             <button
-              type="submit"
-              form="material-form"
+              type="button"
+              onClick={() => handleSave()}
               disabled={saving}
-              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="px-5 py-2.5 rounded-lg btn-primary text-xs font-semibold shadow-sm flex items-center gap-2 disabled:opacity-60 cursor-pointer"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingMaterial ? "Save Changes" : "Publish Article"}</span>
@@ -381,234 +423,222 @@ export default function MaterialsPage() {
           </>
         }
       >
-        <form id="material-form" onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column: Metadata & Settings */}
-            <div className="lg:col-span-5 space-y-4">
+        <form
+          id="material-form"
+          onSubmit={handleSave}
+          className="flex-1 flex flex-col lg:flex-row h-full min-h-0 overflow-hidden"
+        >
+          {/* Left Column: Metadata & Settings */}
+          <div className="w-full lg:w-80 xl:w-96 shrink-0 border-b lg:border-b-0 lg:border-r border-studio-200 dark:border-studio-800 p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar bg-studio-50/50 dark:bg-studio-900/40">
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Subject Area
+              </label>
+              <select
+                value={formSubjectId}
+                onChange={(e) => {
+                  setFormSubjectId(e.target.value as Id<"subjects">);
+                  setFormTopicId("");
+                  setFormLessonId("");
+                }}
+                required
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                {subjects.map((s: any) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                  Subject Area
+                  Topic (Optional)
                 </label>
                 <select
-                  value={formSubjectId}
+                  value={formTopicId}
                   onChange={(e) => {
-                    setFormSubjectId(e.target.value as Id<"subjects">);
-                    setFormTopicId("");
+                    setFormTopicId(e.target.value as Id<"topics">);
                     setFormLessonId("");
                   }}
-                  required
-                  className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  {subjects.map((s: any) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
+                  <option value="">-- All Topics --</option>
+                  {availableTopicsForForm.map((t: any) => (
+                    <option key={t._id} value={t._id}>
+                      {t.name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Topic (Optional)
-                  </label>
-                  <select
-                    value={formTopicId}
-                    onChange={(e) => {
-                      setFormTopicId(e.target.value as Id<"topics">);
-                      setFormLessonId("");
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    <option value="">-- All Topics --</option>
-                    {availableTopicsForForm.map((t: any) => (
-                      <option key={t._id} value={t._id}>
-                        {t.name}
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Lesson (Optional)
+                </label>
+                <select
+                  value={formLessonId}
+                  onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
+                  className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value="">-- All Lessons --</option>
+                  {(lessons || [])
+                    .filter((l: any) => l.topicId === formTopicId)
+                    .map((l: any) => (
+                      <option key={l._id} value={l._id}>
+                        {l.name}
                       </option>
                     ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Lesson (Optional)
-                  </label>
-                  <select
-                    value={formLessonId}
-                    onChange={(e) => setFormLessonId(e.target.value as Id<"lessons">)}
-                    className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    <option value="">-- All Lessons --</option>
-                    {(lessons || [])
-                      .filter((l: any) => l.topicId === formTopicId)
-                      .map((l: any) => (
-                        <option key={l._id} value={l._id}>
-                          {l.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                  Article Title
-                </label>
-                <input
-                  type="text"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="e.g., National Building Code (PD 1096) Rule VII & VIII Summary"
-                  required
-                  className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                  Short Description (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  placeholder="e.g., Comprehensive guide to Doric, Ionic, and Corinthian columns."
-                  className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Format Type
-                  </label>
-                  <select
-                    value={formType}
-                    onChange={(e) => setFormType(e.target.value as any)}
-                    className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    <option value="article">Article</option>
-                    <option value="pdf">PDF</option>
-                    <option value="image">Diagram</option>
-                    <option value="document">Document</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Status
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setFormPublished(!formPublished)}
-                    className={`w-full py-2.5 px-3 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${
-                      formPublished
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                        : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
-                    }`}
-                  >
-                    {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    <span>{formPublished ? "Live" : "Draft"}</span>
-                  </button>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
-                    Attachment
-                  </label>
-                  <label className="w-full py-2.5 px-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-brand-500 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
-                    {uploadingFile ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-brand-600 dark:text-brand-400" />
-                    ) : (
-                      <Upload className="w-4 h-4 text-studio-400" />
-                    )}
-                    <span className="truncate">
-                      {formStorageId ? "Attached ✓" : "Upload"}
-                    </span>
-                    <input
-                      type="file"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                    />
-                  </label>
-                </div>
+                </select>
               </div>
             </div>
 
-            {/* Right Column: Markdown Editor & Preview */}
-            <div className="lg:col-span-7 flex flex-col min-w-0 space-y-2">
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
-                  Markdown Note Content
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Article Title
+              </label>
+              <input
+                type="text"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                placeholder="e.g., National Building Code (PD 1096) Rule VII & VIII Summary"
+                required
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                Short Description (Optional)
+              </label>
+              <input
+                type="text"
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                placeholder="e.g., Comprehensive guide to Doric, Ionic, and Corinthian columns."
+                className="w-full px-4 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+
+            <div className="grid gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Format Type
                 </label>
-                <div className="flex items-center gap-1 bg-studio-100 dark:bg-studio-800 p-1 rounded-lg border border-studio-200 dark:border-studio-700 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMode("write")}
-                    className={`px-2.5 py-1 rounded-md transition-colors ${
-                      previewMode === "write"
-                        ? "btn-primary font-semibold shadow-sm"
-                        : "text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100"
-                    }`}
-                  >
-                    Write
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMode("split")}
-                    className={`px-2.5 py-1 rounded-md transition-colors ${
-                      previewMode === "split"
-                        ? "btn-primary font-semibold shadow-sm"
-                        : "text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100"
-                    }`}
-                  >
-                    Split
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewMode("preview")}
-                    className={`px-2.5 py-1 rounded-md transition-colors ${
-                      previewMode === "preview"
-                        ? "btn-primary font-semibold shadow-sm"
-                        : "text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100"
-                    }`}
-                  >
-                    Preview
-                  </button>
-                </div>
+                <select
+                  value={formType}
+                  onChange={(e) => setFormType(e.target.value as any)}
+                  className="w-full px-3 py-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value="article">Article</option>
+                  <option value="pdf">PDF</option>
+                  <option value="image">Diagram</option>
+                  <option value="document">Document</option>
+                </select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
-                {(previewMode === "write" || previewMode === "split") && (
-                  <textarea
-                    value={formContent}
-                    onChange={(e) => setFormContent(e.target.value)}
-                    placeholder="# Markdown Title&#10;&#10;Write comprehensive study materials here..."
-                    className={`w-full h-80 p-4 font-mono text-xs rounded-lg bg-studio-100 dark:bg-studio-800 border border-studio-200 dark:border-studio-700 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none ${
-                      previewMode === "write" ? "md:col-span-2" : ""
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Status
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setFormPublished(!formPublished)}
+                  className={`w-full py-2.5 px-3 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-colors border ${formPublished
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-studio-200 dark:bg-studio-800 text-studio-600 dark:text-studio-400 border-studio-300 dark:border-studio-700"
                     }`}
+                >
+                  {formPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  <span>{formPublished ? "Live" : "Draft"}</span>
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider mb-1.5">
+                  Attachment
+                </label>
+                <label className="w-full py-2.5 px-2.5 rounded-lg bg-studio-100 dark:bg-studio-800 border border-dashed border-studio-300 dark:border-studio-700 hover:border-brand-500 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
+                  {uploadingFile ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-brand-600 dark:text-brand-400" />
+                  ) : (
+                    <Upload className="w-4 h-4 text-studio-400" />
+                  )}
+                  <span className="truncate">
+                    {formStorageId ? "Attached ✓" : "Upload"}
+                  </span>
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
                   />
-                )}
-
-                {(previewMode === "preview" || previewMode === "split") && (
-                  <div
-                    className={`p-4 rounded-lg bg-studio-50 dark:bg-studio-900 border border-studio-200 dark:border-studio-700 overflow-y-auto h-80 text-xs markdown-preview ${
-                      previewMode === "preview" ? "md:col-span-2" : ""
-                    }`}
-                  >
-                    {formContent ? (
-                      <div
-                        dangerouslySetInnerHTML={{
-                          __html: renderMarkdown(formContent),
-                        }}
-                      />
-                    ) : (
-                      <span className="text-studio-400 italic">Preview will appear here...</span>
-                    )}
-                  </div>
-                )}
+                </label>
               </div>
+            </div>
+          </div>
+
+          {/* Right Column: Full-Height Note Content Editor */}
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden p-4 sm:p-6 bg-studio-100/30 dark:bg-studio-950/30 space-y-3">
+            <div className="flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-semibold text-studio-700 dark:text-studio-300 uppercase tracking-wider">
+                  Content
+                </label>
+              </div>
+              <div className="flex items-center gap-1 bg-studio-100 dark:bg-studio-800 p-1 rounded-lg border border-studio-200 dark:border-studio-700 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("write")}
+                  className={`px-3 py-1 rounded-md transition-colors ${previewMode === "write"
+                    ? "btn-primary font-semibold shadow-sm"
+                    : "text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100"
+                    }`}
+                >
+                  Write
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode("preview")}
+                  className={`px-3 py-1 rounded-md transition-colors ${previewMode === "preview"
+                    ? "btn-primary font-semibold shadow-sm"
+                    : "text-studio-500 dark:text-studio-400 hover:text-studio-900 dark:hover:text-studio-100"
+                    }`}
+                >
+                  Preview
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              {previewMode === "write" ? (
+                <RichTextEditor
+                  value={formContent}
+                  onChange={(newContent) => setFormContent(newContent)}
+                  onUploadImage={handleEditorImageUpload}
+                  placeholder="Write comprehensive study material here like in Microsoft Word (headings, lists, pictures in the middle)..."
+                  className="flex-1 h-full min-h-0"
+                />
+              ) : (
+                <div
+                  className="flex-1 overflow-y-auto p-6 md:p-8 rounded-xl bg-white dark:bg-studio-900 border border-studio-200 dark:border-studio-700 text-xs markdown-preview tiptap-prose custom-scrollbar"
+                >
+                  {formContent ? (
+                    <div
+                      className="max-w-4xl mx-auto"
+                      dangerouslySetInnerHTML={{
+                        __html: formContent.trim().startsWith("<")
+                          ? formContent
+                          : renderMarkdown(formContent),
+                      }}
+                    />
+                  ) : (
+                    <span className="text-studio-400 italic">Preview will appear here...</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </form>

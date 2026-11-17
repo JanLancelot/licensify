@@ -62,6 +62,27 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_storageId", ["storageId"]),
 
+  // Subscriptions & Zero-Card Payment Records (PCI-DSS & DPA Compliant)
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    tier: v.union(v.literal("free"), v.literal("pro_monthly"), v.literal("pro_annual")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("past_due"),
+      v.literal("canceled"),
+      v.literal("expired")
+    ),
+    provider: v.union(v.literal("paymongo"), v.literal("apple_iap"), v.literal("google_play")),
+    externalCustomerId: v.string(), // e.g., "cus_12345" from PayMongo
+    externalSubscriptionId: v.optional(v.string()),
+    currentPeriodEnd: v.number(),
+    cancelAtPeriodEnd: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
+
   // ---------------------------------------------------------------------------
   // 2. LEARNING CONTENT
   // ---------------------------------------------------------------------------
@@ -137,11 +158,31 @@ export default defineSchema({
       v.literal("article"),
       v.literal("pdf"),
       v.literal("image"),
-      v.literal("document")
+      v.literal("document"),
+      v.literal("model_3d")
     ),
 
     content: v.optional(v.string()), // Inline markdown / article body
-    storageId: v.optional(v.id("_storage")), // Uploaded document / PDF storage reference
+    storageId: v.optional(v.id("_storage")), // Uploaded document / PDF / 3D model storage reference
+    model3dStorageId: v.optional(v.id("_storage")), // Uploaded .glb 3D model storage reference
+
+    // Interactive Hotspot & Guided Zoom tours
+    hotspots: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          stepIndex: v.number(),
+          title: v.string(),
+          description: v.optional(v.string()),
+          xPercent: v.number(),
+          yPercent: v.number(),
+          widthPercent: v.number(),
+          heightPercent: v.number(),
+          zoomScale: v.optional(v.number()),
+          isOccluded: v.optional(v.boolean()),
+        })
+      )
+    ),
 
     isPublished: v.boolean(),
     createdBy: v.id("users"),
@@ -164,6 +205,25 @@ export default defineSchema({
     back: v.string(),
 
     imageId: v.optional(v.id("_storage")),
+    model3dStorageId: v.optional(v.id("_storage")),
+
+    // Interactive Hotspot & Guided Zoom tours / Image Occlusion
+    hotspots: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          stepIndex: v.number(),
+          title: v.string(),
+          description: v.optional(v.string()),
+          xPercent: v.number(),
+          yPercent: v.number(),
+          widthPercent: v.number(),
+          heightPercent: v.number(),
+          zoomScale: v.optional(v.number()),
+          isOccluded: v.optional(v.boolean()),
+        })
+      )
+    ),
 
     isPublished: v.boolean(),
     createdBy: v.id("users"),
@@ -207,6 +267,46 @@ export default defineSchema({
       v.literal("hard")
     ),
 
+    // Question Type Discriminator (Multiple Choice, Identification, Essay)
+    questionType: v.optional(
+      v.union(
+        v.literal("multiple_choice"),
+        v.literal("identification"),
+        v.literal("essay")
+      )
+    ),
+
+    // Identification Specifics
+    acceptedAnswers: v.optional(v.array(v.string())),
+    numericTolerance: v.optional(v.number()),
+
+    // Essay & Situational Specifics
+    rubricCriteria: v.optional(v.array(v.string())),
+    idealAnswer: v.optional(v.string()),
+
+    // Multi-Diagram Blueprint inspection
+    diagramImageIds: v.optional(v.array(v.id("_storage"))),
+
+    // Two-Tier User Generated Content & Architect Evaluation Queue
+    isArchitectVerified: v.optional(v.boolean()),
+    verifiedBy: v.optional(v.id("users")),
+    visibility: v.optional(
+      v.union(
+        v.literal("private"),
+        v.literal("study_room"),
+        v.literal("public_verified")
+      )
+    ),
+    reviewStatus: v.optional(
+      v.union(
+        v.literal("personal"),
+        v.literal("pending_architect_review"),
+        v.literal("approved"),
+        v.literal("rejected")
+      )
+    ),
+    rejectionReason: v.optional(v.string()),
+
     specializedType: v.optional(v.string()), // e.g. "developmental_control"
     isPublished: v.boolean(),
     createdBy: v.id("users"),
@@ -221,7 +321,8 @@ export default defineSchema({
     .index("by_difficulty", ["difficulty"])
     .index("by_published", ["isPublished"])
     .index("by_subject_and_published", ["subjectId", "isPublished"])
-    .index("by_topic_and_published", ["topicId", "isPublished"]),
+    .index("by_topic_and_published", ["topicId", "isPublished"])
+    .index("by_reviewStatus", ["reviewStatus"]),
 
   quizzes: defineTable({
     title: v.string(),

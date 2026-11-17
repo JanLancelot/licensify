@@ -75,15 +75,19 @@ describe("Question Bank Page", () => {
     expect(screen.getByPlaceholderText("Option D text...")).toBeInTheDocument();
   });
 
-  it("opens bulk import modal, validates and parses JSON input", async () => {
+  it("opens smart import modal, validates and imports JSON input", async () => {
     render(<QuestionsPage />);
 
     const bulkBtn = screen.getByRole("button", { name: /Bulk JSON \/ CSV Import/i });
     fireEvent.click(bulkBtn);
 
-    expect(screen.getByText(/Bulk Question Importer/i)).toBeInTheDocument();
+    expect(screen.getByText(/Smart Question Importer/i)).toBeInTheDocument();
+    expect(screen.getByText("PDF & Document AI")).toBeInTheDocument();
 
-    const textarea = screen.getByPlaceholderText(/maximum stair riser height/i);
+    // Switch to Raw JSON tab
+    fireEvent.click(screen.getByText("Raw JSON"));
+
+    const textarea = screen.getByPlaceholderText(/choices/i);
     const jsonSample = JSON.stringify([
       {
         question: "What is the maximum riser height under NBCP?",
@@ -98,14 +102,14 @@ describe("Question Bank Page", () => {
 
     fireEvent.change(textarea, { target: { value: jsonSample } });
 
-    const validateBtn = screen.getByRole("button", { name: /Validate & Parse/i });
-    fireEvent.click(validateBtn);
+    const parseBtn = screen.getByRole("button", { name: /Parse JSON Data/i });
+    fireEvent.click(parseBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/1 questions ready to import/i)).toBeInTheDocument();
+      expect(screen.getByText(/Staging Preview \(1 Items Detected\)/i)).toBeInTheDocument();
     });
 
-    const commitBtn = screen.getByRole("button", { name: /Commit 1 Questions to Database/i });
+    const commitBtn = screen.getByRole("button", { name: /Confirm & Import 1 Questions/i });
     fireEvent.click(commitBtn);
 
     await waitFor(() => {
